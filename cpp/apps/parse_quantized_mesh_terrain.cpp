@@ -17,11 +17,12 @@ namespace po = boost::program_options ;
 int main ( int argc, char **argv)
 {
     // Parse input parameters
-    std::string inputFile ;
+    std::string inputFile, outputFile ;
     po::options_description options("Reads a quantized mesh terrain file") ;
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse" )
+            ( "output,o", po::value<std::string>(&outputFile), "Output OFF file. The tile can be converted to this format to ease visualization in common 3D viewers" )
     ;
 
     po::variables_map vm ;
@@ -40,6 +41,12 @@ int main ( int argc, char **argv)
         return -1 ;
     }
 
+    // Print information on screen
+    qmt.print() ;
+
+    // Export to OFF
+    if (!outputFile.empty())
+        qmt.exportToOFF( outputFile ) ;
 
     return 1 ;
 }

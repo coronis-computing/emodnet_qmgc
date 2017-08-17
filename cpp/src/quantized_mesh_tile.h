@@ -6,6 +6,7 @@
 #define EMODNET_TOOLS_QUANTIZEDMESHTILE_H
 
 #include <string>
+#include <vector>
 
 class QuantizedMeshTile {
 
@@ -13,7 +14,7 @@ public:
 
     // Various structs as described in the documentation
     // (https://cesiumjs.org/data-and-assets/terrain/formats/quantized-mesh-1.0.html)
-    struct QuantizedMeshHeader
+    struct Header
     {
         // The center of the tile in Earth-centered Fixed coordinates.
         double CenterX;
@@ -43,27 +44,75 @@ public:
         double HorizonOcclusionPointZ;
     };
 
-//    struct VertexData
-//    {
-//        unsigned int vertexCount;
-//        unsigned short u[vertexCount];
-//        unsigned short v[vertexCount];
-//        unsigned short height[vertexCount];
-//    };
+    struct VertexData
+    {
+        unsigned int vertexCount ;
+        std::vector<unsigned short> u ;
+        std::vector<unsigned short> v ;
+        std::vector<unsigned short> height ;
+    };
 
+    struct IndexData
+    {
+        unsigned int triangleCount ;
+        std::vector< unsigned int > indices ; // While they can be ints or shorts, we store them as ints
+    };
+
+    struct EdgeIndices
+    {
+        unsigned int westVertexCount ;
+        std::vector<unsigned int> westIndices ;
+
+        unsigned int southVertexCount ;
+        std::vector<unsigned int> southIndices ;
+
+        unsigned int eastVertexCount;
+        std::vector<unsigned int> eastIndices ;
+
+        unsigned int northVertexCount;
+        std::vector<unsigned int> northIndices ;
+    };
+
+    /* Functions */
+
+    //! Constructor
+    QuantizedMeshTile() {
+        m_header = Header() ;
+        m_vertexData = VertexData() ;
+        m_indexData = IndexData() ;
+        m_edgeIndices = EdgeIndices() ;
+        m_bytesPerIndex = 0 ;
+    }
+
+    //! Read the tile from a file
     bool readFile( const std::string &filePath ) ;
+
+    //! Show the contents of the tile on screen
+    void print() ;
+
+    //! Export to OFF format
+    bool exportToOFF( const std::string &outFilePath ) ;
 
 private:
 
     // --- Attributes ---
-    QuantizedMeshHeader m_header ;
-
+    Header m_header ;
+    VertexData m_vertexData ;
+    IndexData m_indexData ;
+    EdgeIndices m_edgeIndices ;
+    int m_bytesPerIndex ; // Number of bytes used per index
 
     // --- Functions ---
 
     // Decode a zig-zag encoded value
     unsigned short zigZagDecode( const unsigned short &value ) {
         return (value >> 1) ^ (-(value & 1));
+    }
+
+    // Simple linear interpolation function
+    double lint( double a, double b, double t )
+    {
+        return a + (b - a) * t ;
     }
 
 };
