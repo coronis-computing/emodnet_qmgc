@@ -8,13 +8,9 @@
 #include <iostream>
 // Project-specific
 #include "quantized_mesh_tile.h"
-// Cesium-terrain-builder
-#include <ctb.hpp>
 
 using namespace std ;
 namespace po = boost::program_options ;
-
-
 
 int main ( int argc, char **argv)
 {
@@ -24,12 +20,12 @@ int main ( int argc, char **argv)
     po::options_description options("Reads a quantized mesh terrain file") ;
     options.add_options()
             ( "help,h", "Produce help message" )
-            ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse" )
-            ( "output,o", po::value<std::string>(&outputFile), "Output OFF file. The tile can be converted to this format to ease visualization in common 3D viewers" )
+            ( "input,i", po::value<std::string>(&inputFile), "Input terrain file in heightmap-1.0 format" )
+            ( "output,o", po::value<std::string>(&outputFile), "Output terrain file in quantized-mesh-1.0 format" )
             ( "tileX,x", po::value<int>(&x), "Tile X" )
             ( "tileY,y", po::value<int>(&y), "Tile Y" )
-            ( "tileZ,z", po::value<int>(&z), "Tile Zoom" )
-    ;
+            ( "tileZ,z", po::value<int>(&z), "Tile Z" )
+            ;
 
     po::variables_map vm ;
     po::store( po::parse_command_line(argc, argv, options), vm ) ;
@@ -40,20 +36,15 @@ int main ( int argc, char **argv)
         return 1;
     }
 
-    // Read the quantized mesh tile
+
+
+    // Convert the file
     const ctb::TileCoordinate coord(z, x, y);
     QuantizedMeshTile qmt(coord);
-    if ( !qmt.readFile(inputFile) ) {
-        cerr << "[ERROR] Cannot read the input file" << endl ;
+    if ( !qmt.convertFromHeightMapTile(inputFile) ) {
+        cerr << "[ERROR] Cannot convert the input file" << endl ;
         return -1 ;
     }
 
-    // Print information on screen
-    qmt.print() ;
-
-    // Export to OFF
-    if (!outputFile.empty())
-        qmt.exportToOFF( outputFile ) ;
-
-    return 1 ;
+    return 0 ;
 }
