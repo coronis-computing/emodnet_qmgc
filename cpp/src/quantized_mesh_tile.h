@@ -36,8 +36,6 @@ public:
 
     // --- Debugging functions ---
 
-
-
 };
 
 

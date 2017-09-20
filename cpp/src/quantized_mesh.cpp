@@ -366,7 +366,6 @@ void QuantizedMesh::print()
 
 
 
-//! Show the contents of the header of the tile on screen
 void QuantizedMesh::printHeader() {
     using namespace std;
 
@@ -383,4 +382,15 @@ void QuantizedMesh::printHeader() {
     cout << "  HorizonOcclusionPointX = " << m_header.HorizonOcclusionPointX << endl;
     cout << "  HorizonOcclusionPointY = " << m_header.HorizonOcclusionPointY << endl;
     cout << "  HorizonOcclusionPointZ = " << m_header.HorizonOcclusionPointZ << endl;
+}
+
+
+
+void QuantizedMesh::createConnectivityAndSimplify()
+{
+    if ( m_vertexData.vertexCount <= 0 )
+        // No data to mesh, return
+        return ;
+
+
 }

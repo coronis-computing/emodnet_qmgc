@@ -44,8 +44,6 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord) const {
         }
     }
 
-    // Add 4 vertices in the borders
-    
 
     Delaunay dt( hMPoints.begin(), hMPoints.end() );
     std::cout << dt.number_of_vertices() << std::endl;

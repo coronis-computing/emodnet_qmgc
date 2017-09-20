@@ -49,7 +49,7 @@ public:
 
     struct VertexData
     {
-        unsigned int vertexCount ;
+        unsigned int vertexCount = 0;
         std::vector<unsigned short> u ;
         std::vector<unsigned short> v ;
         std::vector<unsigned short> height ;
@@ -162,6 +162,8 @@ private:
     unsigned short zigZagEncode( const short &value ) {
         return (value << 1) ^ (value >> 31) ;
     }
+
+    void createConnectivityAndSimplify() ;
 
 };
 
