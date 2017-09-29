@@ -386,11 +386,62 @@ void QuantizedMesh::printHeader() {
 
 
 
-void QuantizedMesh::createConnectivityAndSimplify()
-{
-    if ( m_vertexData.vertexCount <= 0 )
-        // No data to mesh, return
-        return ;
+//void QuantizedMesh::createConnectivityAndSimplify(GDALRasterBand *heightsBand)
+//{
+//
+//
+////// Create a base triangulation (using Delaunay) with all the raster info available
+//    std::vector< Point_3 > hMPoints ;
+//    float minHeight = 999999 ;
+//    float maxHeight = -999999 ;
+//    for ( int i = 0; i < heightsBand->GetXSize(); i++ ) {
+//        for ( int j = 0; j < heightsBand->GetYSize(); j++ ) {
+//            float height = rasterHeights[i*heightsBand->GetXSize()+j] ;
+//
+////            std::cout << "height = " << height << std::endl ;
+//
+//            if ( height < minHeight )
+//                minHeight = height ;
+//            else if ( height > maxHeight )
+//                maxHeight = height ;
+//
+//            hMPoints.push_back( Point_3(i, j, height) ) ;
+//        }
+//    }
+//
+//
+//    Delaunay dt( hMPoints.begin(), hMPoints.end() );
+//    std::cout << dt.number_of_vertices() << std::endl;
+//    std::cout << "here" << std::endl ;
+//
+//    delaunayToOFF("./BaseTerrainFromRaster.off", dt) ;
+//
+//    // Translate to Polyhedron
+//    Polyhedron surface ;
+//    PolyhedronBuilder<Gt, HalfedgeDS> builder(dt);
+//    surface.delegate(builder);
+//
+////    // --- Simplify the mesh ---
+////    // This is a stop predicate (defines when the algorithm terminates).
+////    // In this example, the simplification stops when the number of undirected edges
+////    // left in the surface mesh drops below the specified number (1000)
+////    SMS::Count_stop_predicate<Polyhedron> stop(1000);
+////
+////    // This the actual call to the simplification algorithm.
+////    // The surface mesh and stop conditions are mandatory arguments.
+////    // The index maps are needed because the vertices and edges
+////    // of this surface mesh lack an "id()" field.
+////    int r = SMS::edge_collapse
+////            ( surface, stop,
+////              CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
+////                      .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
+////                      .get_cost (SMS::Edge_length_cost <Polyhedron>())
+////                      .get_placement(SMS::Midpoint_placement<Polyhedron>())
+////            ) ;
+////
+////    // Write the simplified polyhedron to file
+////    std::ofstream os("./HeightMapSimplified.off");
+////    os << surface;
+////    os.close();
 
-
-}
+//}

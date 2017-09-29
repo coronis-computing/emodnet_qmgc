@@ -125,13 +125,21 @@ public:
 
     // --- Constants ---
     const unsigned short int TILE_SIZE = 65;
+    static const unsigned short MAX_VERTEX_DATA = 32767;
 
     // --- Convenience static functions ---
     static unsigned short remapToVertexDataValue(const double& value, const double& minOr, const double& maxOr) {
-        const unsigned short MAX_VERTEX_DATA = 32767;
+//        const unsigned short MAX_VERTEX_DATA = 32767;
         double valueRemap = remap(value, minOr, maxOr, 0, MAX_VERTEX_DATA) ;
 //        std::cout << "value = " << value << ", minOr = " << minOr <<", maxOr = " << maxOr << ", valueRemap = " << valueRemap << std::endl ;
         return static_cast<unsigned short>(valueRemap);
+    }
+
+    static double remapFromVertexDataValue(const double& value, const double& minOr, const double& maxOr) {
+//        const unsigned short MAX_VERTEX_DATA = 32767;
+        double valueRemap = remap(value, 0, MAX_VERTEX_DATA, minOr, maxOr ) ;
+//        std::cout << "value = " << value << ", minOr = " << minOr <<", maxOr = " << maxOr << ", valueRemap = " << valueRemap << std::endl ;
+        return valueRemap;
     }
 
     static double remap(const double& value, const double& minOr, const double& maxOr, const double& minDest, const double& maxDest) {
@@ -163,7 +171,7 @@ private:
         return (value << 1) ^ (value >> 31) ;
     }
 
-    void createConnectivityAndSimplify() ;
+//    void createConnectivityAndSimplify(ctb::GDALTile *rasterTile, GDALRasterBand *heightsBand) ;
 
 };
 

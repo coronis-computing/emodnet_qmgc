@@ -108,8 +108,8 @@ bool QuantizedMeshTile::convertFromHeightMapTile( const std::string &filePath )
             ( surface, stop,
               CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
                       .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
-                      .get_cost (SMS::Edge_length_cost <Polyhedron>())
-                      .get_placement(SMS::Midpoint_placement<Polyhedron>())
+                      .get_cost(SimplificationCost())
+                      .get_placement(SimplificationPlacement())
             ) ;
 
     // Write the simplified polyhedron to file
@@ -129,9 +129,9 @@ void QuantizedMeshTile::convertUVHToLonLatHeight( const unsigned short &u, const
     const ctb::CRSBounds tileBounds = profile.tileBounds(*this);
     const Header header = getHeader() ;
 
-    lon = tileBounds.getMinX() + ( tileBounds.getMaxX() - tileBounds.getMinX() ) * u/32767 ;
-    lat = tileBounds.getMinY() + ( tileBounds.getMaxY() - tileBounds.getMinY() ) * v/32767 ;
-    height = header.MinimumHeight + ( header.MaximumHeight - header.MinimumHeight ) * h/32767 ;
+    lon = tileBounds.getMinX() + ( tileBounds.getMaxX() - tileBounds.getMinX() ) * u/QuantizedMesh::MAX_VERTEX_DATA ;
+    lat = tileBounds.getMinY() + ( tileBounds.getMaxY() - tileBounds.getMinY() ) * v/QuantizedMesh::MAX_VERTEX_DATA ;
+    height = header.MinimumHeight + ( header.MaximumHeight - header.MinimumHeight ) * h/QuantizedMesh::MAX_VERTEX_DATA ;
 }
 
 

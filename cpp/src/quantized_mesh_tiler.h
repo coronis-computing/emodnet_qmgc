@@ -31,8 +31,30 @@ public:
     /// Overload the assignment operator
     QuantizedMeshTiler & operator=(const QuantizedMeshTiler &other);
 
-    /// Override to return a covariant data type
-    QuantizedMeshTile * createTile(const ctb::TileCoordinate &coord) const override;
+    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord) const override { return new QuantizedMeshTile(coord) ;} // Dummy
+
+    /**
+     * \brief Create the quantized mesh tile.
+     *
+     * Create the quantized-mesh tile given the raster enclosed by the coordinates \p coord and the vertices to maintain from previous tiles
+     * The original full resolution regular grid extracted from the rasters is decimated to obrain a Triangulated Irregular Network (TIN)
+     *
+     * Note: the parameters tileEastVertices and tileNorthVertices represent the vertices to maintain from the neighboring tiles on input,
+     * but after the function they are output parameters containing the eastern/northen vertices to maintain for the CURRENT tile
+     *
+     */
+    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord,
+                                  std::vector<Point_3> &tileWestVertices,
+                                  std::vector<Point_3> &tileSouthVertices ) const ;
+
+    /**
+     * \brief Create the tile pyramid
+     *
+     * Due to the quantized-mesh format requiring the vertices on the edges to coincide between neighbors, the creation
+     * of the tiles' for each zoom is not as simple as in the heightmap format, and it requires a more complex loop taking
+     * into account vertices at borders of the neighbors of the current tile
+     */
+    void createTilePyramid(const int &startZoom, const int &endZoom) ;
 
 private:
 

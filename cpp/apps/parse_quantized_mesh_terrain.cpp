@@ -53,7 +53,7 @@ int main ( int argc, char **argv)
 
     // Export to OFF
     if (!outputFile.empty())
-        qmt.exportToOFF( outputFile ) ;
+        qmt.exportToOFF( outputFile, false ) ;
 
     return 1 ;
 }

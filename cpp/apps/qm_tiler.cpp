@@ -91,23 +91,25 @@ int main ( int argc, char **argv)
     // Create the tiles
     QuantizedMeshIterator iter(tiler, (ctb::i_zoom)startZoom, (ctb::i_zoom)endZoom);
 
-    std::shared_ptr<boost::progress_display> showProgress = std::make_shared<boost::progress_display>( iter.getSize() ) ;
-    while (!iter.exhausted()) {
-        // Create the tile
-        const ctb::TileCoordinate *coordinate = iter.GridIterator::operator*();
-        const string filename = getTileFileAndCreateDirs(coordinate, outDir);
-
-        QuantizedMeshTile *tile = *iter;
-
-
+//    std::shared_ptr<boost::progress_display> showProgress = std::make_shared<boost::progress_display>( iter.getSize() ) ;
+//    while (!iter.exhausted()) {
+//        // Create the tile
+//        const ctb::TileCoordinate *coordinate = iter.GridIterator::operator*();
+//        const string filename = getTileFileAndCreateDirs(coordinate, outDir);
+//
+//        QuantizedMeshTile *tile = *iter;
+//
 //        tile->writeFile(filename.c_str());
+//
+//        // Delete the tile
+//        delete tile;
+//
+//        // Update progress
+////        ++(*showProgress) ;
+//        ++iter ;
+//    }
 
-        // Delete the tile
-        delete tile;
-
-        // Update progress
-        ++(*showProgress) ;
-    }
+    tiler.createTilePyramid(startZoom, endZoom) ;
 
     return 0 ;
 }

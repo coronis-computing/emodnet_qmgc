@@ -4,11 +4,16 @@
 
 #include "quantized_mesh_tiler.h"
 #include <GeographicLib/Geocentric.hpp>
+#include <algorithm>
+#include "cgal_simplification_constrained_borders.h"
+#include <cmath>
 
 
 
 QuantizedMeshTile *
-QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord) const {
+QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
+                               std::vector<Point_3> &tileWestVertices,
+                               std::vector<Point_3> &tileSouthVertices ) const {
     // Get a terrain tile represented by the tile coordinate
     QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord);
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
@@ -29,55 +34,35 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord) const {
     std::vector< Point_3 > hMPoints ;
     float minHeight = 999999 ;
     float maxHeight = -999999 ;
-    for ( int i = 0; i < heightsBand->GetXSize(); i++ ) {
-        for ( int j = 0; j < heightsBand->GetYSize(); j++ ) {
-            float height = rasterHeights[i*heightsBand->GetXSize()+j] ;
 
-//            std::cout << "height = " << height << std::endl ;
+    // Check the start of the rasters: if there are constrained vertices from neighboring tiles to maintain,
+    // the western and/or the southern vertices are not touched, and thus we should parse the raster starting from index 1
+    int startX, startY ;
+    if ( tileWestVertices.size() > 0 )
+        startX = 1;
+    else
+        startX = 0 ;
+    if ( tileSouthVertices.size() > 0 )
+        startY = 1;
+    else
+        startY = 0 ;
+
+    std::cout << "Collecting raster height samples" << std::endl ;
+    std::cout << "startX = " << startX << std::endl ;
+    std::cout << "startY = " << startY << std::endl ;
+
+    for ( int i = startX; i < heightsBand->GetXSize(); i++ ) {
+        for ( int j = startY; j < heightsBand->GetYSize(); j++ ) {
+            float height = rasterHeights[j*heightsBand->GetXSize()+i] ;
 
             if ( height < minHeight )
                 minHeight = height ;
             else if ( height > maxHeight )
                 maxHeight = height ;
 
-            hMPoints.push_back( Point_3(i, j, height) ) ;
+            hMPoints.push_back( Point_3(i, (heightsBand->GetYSize()-1)-j, height) ) ;
         }
     }
-
-
-    Delaunay dt( hMPoints.begin(), hMPoints.end() );
-    std::cout << dt.number_of_vertices() << std::endl;
-    std::cout << "here" << std::endl ;
-
-    delaunayToOFF("./BaseTerrainFromRaster.off", dt) ;
-
-    // Translate to Polyhedron
-    Polyhedron surface ;
-    PolyhedronBuilder<Gt, HalfedgeDS> builder(dt);
-    surface.delegate(builder);
-
-//    // --- Simplify the mesh ---
-//    // This is a stop predicate (defines when the algorithm terminates).
-//    // In this example, the simplification stops when the number of undirected edges
-//    // left in the surface mesh drops below the specified number (1000)
-//    SMS::Count_stop_predicate<Polyhedron> stop(1000);
-//
-//    // This the actual call to the simplification algorithm.
-//    // The surface mesh and stop conditions are mandatory arguments.
-//    // The index maps are needed because the vertices and edges
-//    // of this surface mesh lack an "id()" field.
-//    int r = SMS::edge_collapse
-//            ( surface, stop,
-//              CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
-//                      .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
-//                      .get_cost (SMS::Edge_length_cost <Polyhedron>())
-//                      .get_placement(SMS::Midpoint_placement<Polyhedron>())
-//            ) ;
-//
-//    // Write the simplified polyhedron to file
-//    std::ofstream os("./HeightMapSimplified.off");
-//    os << surface;
-//    os.close();
 
     // --- Set all the info in the quantized mesh format ---
 
@@ -96,7 +81,7 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord) const {
     header.MaximumHeight = maxHeight ;
 
     // Compute the minimum enclosing sphere given the points
-    MinSphere ms( surface.points_begin(), surface.points_end() ) ;
+    MinSphere ms( hMPoints.begin(), hMPoints.end() ) ;
 
     header.BoundingSphereRadius = CGAL::to_double( ms.radius() ) ;
     header.BoundingSphereCenterX = CGAL::to_double( *ms.center_cartesian_begin() ) ;
@@ -110,7 +95,81 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord) const {
 
     qmTile->setHeader(header) ;
 
+    // --> Create connectivity
+
+    // Encode the points in u/v/height format
+    // We simplify the mesh in u/v/h format because they are normalized values and the surface will contain better conditioned triangles
+    std::vector< Point_3 > uvhPts ;
+    for ( std::vector<Point_3>::iterator it = hMPoints.begin(); it != hMPoints.end(); ++it ) {
+        unsigned short u = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->x()), 0, heightsBand->GetXSize()-1) ;
+        unsigned short v = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->y()), 0, heightsBand->GetYSize()-1) ;
+        unsigned short h = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->z()), minHeight, maxHeight ) ;
+
+        uvhPts.push_back( Point_3( static_cast<double>(u),
+                                   static_cast<double>(v),
+                                   static_cast<double>(h) ) ) ;
+    }
+
+    // Add the neighboring tiles vertices to preserve
+    bool constrainWestVertices = false ;
+    bool constrainSouthVertices = false ;
+    std::cout << "hMPoints.size() = " << hMPoints.size() << std::endl ;
+    if ( tileWestVertices.size() > 0 ) {
+        // If there are points available
+        std::cout << "Inserting western points" << std::endl ;
+//        uvhPts.insert( uvhPts.end(), tileWestVertices.begin(), tileWestVertices.end() ) ;
+        for ( std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it ) {
+            Point_3 p( it->x(), it->y(), QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->z()), minHeight, maxHeight ) ) ; // Map the height of the previous tile to the values of this one
+            uvhPts.push_back(p);
+        }
+        constrainWestVertices = true ;
+        std::cout << "uvhPts.size() = " << uvhPts.size() << std::endl ;
+    }
+    if ( tileSouthVertices.size() > 0 ) {
+        std::cout << "Inserting southern points" << std::endl;
+//        uvhPts.insert( uvhPts.end(), tileSouthVertices.begin(), tileSouthVertices.end());
+        for ( std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it ) {
+            Point_3 p( it->x(), it->y(), QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->z()), minHeight, maxHeight ) ) ;
+            uvhPts.push_back(p);
+        }
+        constrainSouthVertices = true ;
+        std::cout << "uvhPts.size() = " << uvhPts.size() << std::endl ;
+    }
+
+    // Delaunay triangulation
+    Delaunay dt( uvhPts.begin(), uvhPts.end() );
+
+    // --- Debug ---
+//    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
+
+    // Translate to Polyhedron
+    Polyhedron surface ;
+    PolyhedronBuilder<Gt, HalfedgeDS> builder(dt);
+    surface.delegate(builder);
+
+    // --- Simplify the mesh ---
+    std::cout << "Simplifying the mesh" << std::endl ;
+
+    // Set up the edge constrainer
+    CGALSimplificationConstrainedBorders scb(surface, constrainWestVertices, constrainSouthVertices);
+
+    int r = SMS::edge_collapse
+            ( surface, SimplificationStopPredicate(0.1),
+              CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
+                      .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
+//                      .get_placement(SMS::Midpoint_placement<Polyhedron>())
+                      .get_cost(SimplificationCost())
+                      .get_placement(SimplificationPlacement())
+                      .edge_is_constrained_map(scb)
+            ) ;
+
+    // Write the simplified polyhedron to file
+    std::ofstream os("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp.off") ;
+    os << surface;
+    os.close();
+
     // --> VertexData part
+
     QuantizedMesh::VertexData vertexData ;
 
     vertexData.vertexCount = surface.size_of_vertices() ;
@@ -118,16 +177,11 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord) const {
     vertexData.v.reserve(vertexData.vertexCount) ;
     vertexData.height.reserve(vertexData.vertexCount) ;
 
-    // Encode the points in u/v/height format
-    const unsigned short maxVertVal = 32767 ;
     for ( Polyhedron::Point_iterator it = surface.points_begin(); it != surface.points_end(); ++it ) {
-//        unsigned short u = ( maxVertVal * CGAL::to_double( it->x() ) - tileBounds.getMinX() ) / (tileBounds.getMaxX()-tileBounds.getMinX()) ;
-//        unsigned short v = ( maxVertVal * CGAL::to_double( it->y() ) - tileBounds.getMinY() ) / (tileBounds.getMaxY()-tileBounds.getMinY()) ;
-//        unsigned short h = ( maxVertVal * CGAL::to_double( it->z() ) - minHeight ) / (maxHeight-minHeight) ;
-        unsigned short u = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->x()), 0, heightsBand->GetXSize()) ;
-        unsigned short v = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->y()), 0, heightsBand->GetYSize()) ;
-        unsigned short h = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->z()), minHeight, maxHeight ) ;
-        //std::cout << "u = " << u << ", v = " << v << ", h = " << h << std::endl ;
+        unsigned short u = static_cast<unsigned short>( it->x() ) ;
+        unsigned short v = static_cast<unsigned short>( it->y() ) ;
+        unsigned short h = static_cast<unsigned short>( it->z() ) ;
+
         vertexData.u.push_back(u) ;
         vertexData.v.push_back(v) ;
         vertexData.height.push_back(h) ;
@@ -140,37 +194,80 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord) const {
 
     indexData.triangleCount = surface.size_of_facets() ;
     indexData.indices.reserve(indexData.triangleCount*3) ;
-    int i = 0 ;
     for ( Polyhedron::Facet_iterator it = surface.facets_begin(); it != surface.facets_end(); ++it) {
         Polyhedron::Halfedge_around_facet_circulator j = it->facet_begin();
         // Facets in our polyhedral surface should be triangles
         CGAL_assertion( CGAL::circulator_size(j) == 3);
         // Extract integer indices
         do {
-            indexData.indices[i++] = (int)std::distance(surface.vertices_begin(), j->vertex()) ;
+            indexData.indices.push_back( (int)std::distance(surface.vertices_begin(), j->vertex()) );
         } while ( ++j != it->facet_begin());
     }
 
     qmTile->setIndexData(indexData) ;
 
-    // TODO: The edge vertices/indices in the tile... For now we just add dummy values
+    // --> EdgeIndices part (also collect the vertices to maintain for this tile)
     QuantizedMesh::EdgeIndices edgeIndices ;
-
-    edgeIndices.westVertexCount = 0 ;
     edgeIndices.westIndices = std::vector<unsigned int>() ;
-
-    edgeIndices.southVertexCount = 0 ;
     edgeIndices.southIndices = std::vector<unsigned int>() ;
-
-    edgeIndices.eastVertexCount = 0 ;
     edgeIndices.eastIndices = std::vector<unsigned int>() ;
-
-    edgeIndices.northVertexCount = 0 ;
     edgeIndices.northIndices = std::vector<unsigned int>() ;
+    tileWestVertices.clear() ;
+    tileSouthVertices.clear() ;
+    surface.normalize_border() ; // Important call! Sorts halfedges such that the non-border edges precede the border edges
+//    const double myEPS = DBL_EPSILON ; // Since the vertices are supposed to be integers, this value can be "large"
+    const double myEPS = 0.9 ;
+    for ( Polyhedron::Edge_iterator e = surface.border_edges_begin(); e != surface.edges_end(); ++e )
+    {
+        Point_3 p( e->vertex()->point() ) ;
+        int vertInd = (int)std::distance(surface.vertices_begin(), e->vertex() ) ;
+        bool alreadyInserted = false ;
+
+        if( p.x() < myEPS ) {
+            // Western border vertex
+            edgeIndices.westIndices.push_back( vertInd ) ;
+        }
+        if ( abs( p.x() - QuantizedMesh::MAX_VERTEX_DATA ) < myEPS ) {
+            // Eastern border vertex
+            edgeIndices.eastIndices.push_back( vertInd ) ;
+            // Add this vertex to the list of western vertex to maintain for the next tile
+            // Change the X to be 0 (i.e., eastern to western border)
+//            std::cout << "( p.x() - QuantizedMesh::MAX_VERTEX_DATA ) = " << ( p.x() - QuantizedMesh::MAX_VERTEX_DATA ) << std::endl ;
+            std::cout << "east vertex = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
+            double h = QuantizedMesh::remapFromVertexDataValue( p.z(), minHeight, maxHeight ) ; // The height data must be converted back to double... because the ranges for height depend on min/max height for each tile
+            tileWestVertices.push_back( Point_3( 0, p.y(), h ) ) ;
+            alreadyInserted = true ;
+        }
+        if ( p.y() < myEPS ) {
+            // Southern border vertex
+            edgeIndices.southIndices.push_back( vertInd ) ;
+        }
+        if ( abs( p.y() - QuantizedMesh::MAX_VERTEX_DATA ) < myEPS ) {
+            // Northern border vertex
+            edgeIndices.northIndices.push_back( vertInd ) ;
+            // Add this vertex to the list of southern vertex to maintain for the tile on the same X on the next row (Y)
+            // Change the Y to be 0 (i.e., northern to southern border)
+            std::cout << "north vertex = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
+//            if (!alreadyInserted)
+            double h = QuantizedMesh::remapFromVertexDataValue( p.z(), minHeight, maxHeight ) ; // The height data must be converted back to double... because the ranges for height depend on min/max height for each tile
+                tileSouthVertices.push_back( Point_3( p.x(), 0.0, h ) ) ;
+//            else {
+//                std::cout << "Hereeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" << std::endl ;
+//                // This is the special case for the corner point in the tile. It is in the south and western border!
+//                // it has already been entered in the western border, so we replace its value
+//                tileWestVertices[tileWestVertices.size() - 1] = Point_3(0.0, 0.0, p.z());
+//            }
+        }
+    }
+    edgeIndices.westVertexCount = edgeIndices.westIndices.size() ;
+    edgeIndices.southVertexCount = edgeIndices.southIndices.size() ;
+    edgeIndices.eastVertexCount = edgeIndices.eastIndices.size() ;
+    edgeIndices.northVertexCount = edgeIndices.northIndices.size() ;
 
     qmTile->setEdgeIndices(edgeIndices) ;
 
     qmTile->printHeader() ;
+//    qmTile->print() ;
 
     delete rasterTile;
 
@@ -222,9 +319,53 @@ QuantizedMeshTiler::createRasterTile(const ctb::TileCoordinate &coord) const {
 }
 
 
-ctb::TerrainTiler &
-ctb::TerrainTiler::operator=(const ctb::TerrainTiler &other) {
-    GDALTiler::operator=(other);
+QuantizedMeshTiler &
+QuantizedMeshTiler::operator=(const QuantizedMeshTiler &other) {
+    ctb::GDALTiler::operator=(other);
 
     return *this;
+}
+
+
+/**
+ * \brief Create the tile pyramid in quantized-mesh format
+ *
+ * Create the tile pyramid in quantized-mesh format. Ensures that the vertices between neighboring tiles in the same
+ * zoom are the the same
+ *
+ */
+void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZoom)
+{
+    for (ctb::i_zoom zoom = endZoom; zoom <= startZoom; ++zoom) {
+        ctb::TileCoordinate ll = this->grid().crsToTile( this->bounds().getLowerLeft(), zoom ) ;
+        ctb::TileCoordinate ur = this->grid().crsToTile( this->bounds().getUpperRight(), zoom ) ;
+
+        ctb::TileBounds zoomBounds(ll, ur);
+
+        int numStepsX = (int)zoomBounds.getWidth() + 1 ;
+
+        std::vector<Point_3 > prevTileWesternVertices(0) ; // Stores the vertices to maintain from the previous tile's eastern border. Since we are creating the tiles from left-right, down-up, just the previous one is required
+        std::vector< std::vector<Point_3 > > prevRowTilesSouthernVertices( numStepsX, std::vector<Point_3>(0) ) ; // Stores the vertices to maintain of the previous row of tiles' northern borders. Since we process a row each time, we need to store all the vertices of all the tiles from the previous row.
+        int tileColumnInd = 0 ;
+        // Processing the tiles row-wise, from
+        for ( int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++ ) {
+            for ( int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx++, tileColumnInd++ ) {
+                std::cout << "Processing tile: zoom = " << zoom << ", x = " << tx << ", y = " << ty << std::endl ;
+
+                ctb::TileCoordinate coord( zoom, tx, ty ) ;
+
+                QuantizedMeshTile *terrainTile = this->createTile(coord, prevTileWesternVertices, prevRowTilesSouthernVertices[tileColumnInd] ) ;
+                std::cout << "Num western vertices = " << prevTileWesternVertices.size() << std::endl ;
+                for (int i = 0; i < prevTileWesternVertices.size(); i++ )
+                    std::cout << prevTileWesternVertices[i].x() << ", " << prevTileWesternVertices[i].y() << ", " << prevTileWesternVertices[i].z() << std::endl ;
+                std::cout << "Num southern vertices = " << prevRowTilesSouthernVertices[tileColumnInd].size() << std::endl ;
+//                for (int i = 0; i < prevRowTilesSouthernVertices[tileColumnInd].size(); i++ )
+//                    std::cout << prevRowTilesSouthernVertices[tileColumnInd][i].x() << ", " << prevRowTilesSouthernVertices[tileColumnInd][i].y() << ", " << prevRowTilesSouthernVertices[tileColumnInd][i].z() << std::endl ;
+
+            }
+            tileColumnInd = 0 ;
+            // The first tile on the row does not have to maintain the western edge, clear the list
+            prevTileWesternVertices.clear() ;
+        }
+    }
 }
