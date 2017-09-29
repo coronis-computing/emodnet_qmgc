@@ -33,9 +33,6 @@ public:
 
     //! Creates a quantized-mesh-tile from a terrain tile
     bool convertFromHeightMapTile( const std::string &filePath ) ;
-
-    // --- Debugging functions ---
-
 };
 
 
