@@ -4,7 +4,6 @@
 
 // Boost
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/progress.hpp>
 // Std
 #include <iostream>
@@ -15,24 +14,10 @@
 
 using namespace std ;
 namespace po = boost::program_options ;
-namespace fs = boost::filesystem ;
 
 
-static string getTileFileAndCreateDirs( const ctb::TileCoordinate *coord,
-                                        const string mainOutDir )
-{
-    // Check/create the tile folder (zoom/x)
-    fs::path mainOutDirPath(mainOutDir) ;
-    fs::path tileFolder = mainOutDirPath / fs::path(std::to_string(coord->zoom)) / fs::path(std::to_string(coord->x)) ;
-    if ( !fs::exists( tileFolder ) && !fs::create_directories( tileFolder ) ) {
-        cerr << "[ERROR] Cannot create the tile folder" << tileFolder << endl ;
-        return string() ;
-    }
 
-    fs::path fileNamePath = tileFolder / fs::path(std::to_string(coord->y) + ".terrain") ;
 
-    return fileNamePath.string() ;
-}
 
 
 int main ( int argc, char **argv)
@@ -44,7 +29,7 @@ int main ( int argc, char **argv)
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse" )
-            ( "output-dir,o", po::value<std::string>(&outDir)->default_value("quantized_mesh_tiles"), "The output directory for the tiles" )
+            ( "output-dir,o", po::value<std::string>(&outDir)->default_value("terrain_tiles"), "The output directory for the tiles" )
             ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level")
             ( "end-zoom,e", po::value<int>(&endZoom)->default_value(-1), "The zoom level to end at. This should be less than the start zoom level and >= 0. If smaller than zero, defaults to max_zoom")
     ;
@@ -109,7 +94,9 @@ int main ( int argc, char **argv)
 //        ++iter ;
 //    }
 
-    tiler.createTilePyramid(startZoom, endZoom) ;
+    tiler.createTilePyramid(startZoom, endZoom, outDir) ;
+
+    std::cout << "TMS pyramid created." << std::endl << "Remember to create a layer.json file in the root folder! (see ""create_layer_json.py script"")" << std::endl ;
 
     return 0 ;
 }

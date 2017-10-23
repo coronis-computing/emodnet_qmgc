@@ -123,6 +123,13 @@ public:
     /// Get the index data of the quantized mesh structure
     IndexData getIndexData() { return m_indexData ; }
 
+    /**
+     * Compute the horizon occlusion point for the given tile
+     *
+     * \p pts Points are supposed to be in ECEF coordinates
+     */
+    static Point_3 horizonOcclusionPoint( const std::vector<Point_3> &pts, const Point_3 &center ) ;
+
     // --- Constants ---
     const unsigned short int TILE_SIZE = 65;
     static const unsigned short MAX_VERTEX_DATA = 32767;
@@ -172,6 +179,11 @@ private:
     }
 
 //    void createConnectivityAndSimplify(ctb::GDALTile *rasterTile, GDALRasterBand *heightsBand) ;
+
+    // Function as described in https://cesium.com/blog/2013/05/09/computing-the-horizon-occlusion-point/
+    // We ommit the ellipsoid here for simplicity (hard-coded)
+    static double computeHorizonOcclusionPointMagnitude( const Point_3 &position, const Vector_3 &scaledSpaceDirectionToPoint ) ;
+
 
 };
 

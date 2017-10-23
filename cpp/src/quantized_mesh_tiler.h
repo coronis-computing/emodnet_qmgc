@@ -9,6 +9,10 @@
 #include "quantized_mesh_tile.h"
 #include "cgal_defines.h"
 #include <ctb.hpp>
+#include <boost/filesystem.hpp>
+
+namespace fs = boost::filesystem ;
+
 
 
 
@@ -54,7 +58,7 @@ public:
      * of the tiles' for each zoom is not as simple as in the heightmap format, and it requires a more complex loop taking
      * into account vertices at borders of the neighbors of the current tile
      */
-    void createTilePyramid(const int &startZoom, const int &endZoom) ;
+    void createTilePyramid(const int &startZoom, const int &endZoom, const std::string &outDir) ;
 
 private:
 
@@ -90,6 +94,22 @@ private:
         tile.setMaxY(tile.getMaxY() + resolution);
 
         return tile;
+    }
+
+    static std::string getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
+                                                 const std::string &mainOutDir )
+    {
+        // Check/create the tile folder (zoom/x)
+        fs::path mainOutDirPath(mainOutDir) ;
+        fs::path tileFolder = mainOutDirPath / fs::path(std::to_string(coord.zoom)) / fs::path(std::to_string(coord.x)) ;
+        if ( !fs::exists( tileFolder ) && !fs::create_directories( tileFolder ) ) {
+            std::cerr << "[ERROR] Cannot create the tile folder" << tileFolder << std::endl ;
+            return std::string() ;
+        }
+
+        fs::path fileNamePath = tileFolder / fs::path(std::to_string(coord.y) + ".terrain") ;
+
+        return fileNamePath.string() ;
     }
 };
 

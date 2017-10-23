@@ -9,7 +9,6 @@
 #include <cmath>
 
 
-
 QuantizedMeshTile *
 QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
                                std::vector<Point_3> &tileWestVertices,
@@ -32,7 +31,7 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
 
     // Create a base triangulation (using Delaunay) with all the raster info available
     std::vector< Point_3 > hMPoints ;
-    float minHeight = 999999 ;
+    float minHeight =  999999 ;
     float maxHeight = -999999 ;
 
     // Check the start of the rasters: if there are constrained vertices from neighboring tiles to maintain,
@@ -54,6 +53,12 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
     for ( int i = startX; i < heightsBand->GetXSize(); i++ ) {
         for ( int j = startY; j < heightsBand->GetYSize(); j++ ) {
             float height = rasterHeights[j*heightsBand->GetXSize()+i] ;
+
+//            // WARNING: This is just for EMODNET data, should not be included in the final code...
+//            if ( height < -9000 )
+//                height = 0 ;
+//
+//                std::cout << "Height = " << height << std::endl ;
 
             if ( height < minHeight )
                 minHeight = height ;
@@ -88,10 +93,28 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
     header.BoundingSphereCenterY = CGAL::to_double( *(ms.center_cartesian_begin()+1) ) ;
     header.BoundingSphereCenterZ = CGAL::to_double( *(ms.center_cartesian_begin()+2) ) ;
 
-    // TODO: Check a good value for this...
-    header.HorizonOcclusionPointX = 0.5 ;
-    header.HorizonOcclusionPointY = 0.5 ;
-    header.HorizonOcclusionPointZ = 0.5 ;
+    // Explanation of horizonOcclusion in: https://cesium.com/blog/2013/04/25/horizon-culling/
+    // and: https://groups.google.com/forum/#!topic/cesium-dev/8NTW1Wl0d8s
+    // The test point for occlusion is scaled within the WGS84 ellipsoid
+
+    // Points in ECEF coordinates
+    std::vector< Point_3 > ecefPoints ;
+    ecefPoints.reserve(hMPoints.size()) ;
+    for ( int i = 0; i < hMPoints.size(); i++ ) {
+        GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f()) ;
+        double tmpx, tmpy, tmpz ;
+        earth.Forward( hMPoints[i].y(), hMPoints[i].x(), hMPoints[i].z(), tmpx, tmpy, tmpz ) ;
+        ecefPoints.push_back( Point_3( tmpx, tmpy, tmpz )) ;
+    }
+
+    Point_3 hop = QuantizedMesh::horizonOcclusionPoint( ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ) ) ;
+    header.HorizonOcclusionPointX = hop.x() ;
+    header.HorizonOcclusionPointY = hop.y() ;
+    header.HorizonOcclusionPointZ = hop.z() ;
+
+//    header.HorizonOcclusionPointX = header.BoundingSphereCenterX / rX ;
+//    header.HorizonOcclusionPointY = header.BoundingSphereCenterY / rY ;
+//    header.HorizonOcclusionPointZ = header.BoundingSphereCenterZ / rZ ;
 
     qmTile->setHeader(header) ;
 
@@ -233,7 +256,7 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
             // Add this vertex to the list of western vertex to maintain for the next tile
             // Change the X to be 0 (i.e., eastern to western border)
 //            std::cout << "( p.x() - QuantizedMesh::MAX_VERTEX_DATA ) = " << ( p.x() - QuantizedMesh::MAX_VERTEX_DATA ) << std::endl ;
-            std::cout << "east vertex = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
+//            std::cout << "east vertex = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
             double h = QuantizedMesh::remapFromVertexDataValue( p.z(), minHeight, maxHeight ) ; // The height data must be converted back to double... because the ranges for height depend on min/max height for each tile
             tileWestVertices.push_back( Point_3( 0, p.y(), h ) ) ;
             alreadyInserted = true ;
@@ -247,7 +270,7 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
             edgeIndices.northIndices.push_back( vertInd ) ;
             // Add this vertex to the list of southern vertex to maintain for the tile on the same X on the next row (Y)
             // Change the Y to be 0 (i.e., northern to southern border)
-            std::cout << "north vertex = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
+//            std::cout << "north vertex = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
 //            if (!alreadyInserted)
             double h = QuantizedMesh::remapFromVertexDataValue( p.z(), minHeight, maxHeight ) ; // The height data must be converted back to double... because the ranges for height depend on min/max height for each tile
                 tileSouthVertices.push_back( Point_3( p.x(), 0.0, h ) ) ;
@@ -334,7 +357,7 @@ QuantizedMeshTiler::operator=(const QuantizedMeshTiler &other) {
  * zoom are the the same
  *
  */
-void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZoom)
+void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZoom, const std::string &outDir)
 {
     for (ctb::i_zoom zoom = endZoom; zoom <= startZoom; ++zoom) {
         ctb::TileCoordinate ll = this->grid().crsToTile( this->bounds().getLowerLeft(), zoom ) ;
@@ -347,6 +370,9 @@ void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZ
         std::vector<Point_3 > prevTileWesternVertices(0) ; // Stores the vertices to maintain from the previous tile's eastern border. Since we are creating the tiles from left-right, down-up, just the previous one is required
         std::vector< std::vector<Point_3 > > prevRowTilesSouthernVertices( numStepsX, std::vector<Point_3>(0) ) ; // Stores the vertices to maintain of the previous row of tiles' northern borders. Since we process a row each time, we need to store all the vertices of all the tiles from the previous row.
         int tileColumnInd = 0 ;
+
+
+
         // Processing the tiles row-wise, from
         for ( int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++ ) {
             for ( int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx++, tileColumnInd++ ) {
@@ -362,6 +388,9 @@ void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZ
 //                for (int i = 0; i < prevRowTilesSouthernVertices[tileColumnInd].size(); i++ )
 //                    std::cout << prevRowTilesSouthernVertices[tileColumnInd][i].x() << ", " << prevRowTilesSouthernVertices[tileColumnInd][i].y() << ", " << prevRowTilesSouthernVertices[tileColumnInd][i].z() << std::endl ;
 
+                // write the file
+                const std::string fileName = getTileFileAndCreateDirs(coord, outDir);
+                terrainTile->writeFile(fileName) ;
             }
             tileColumnInd = 0 ;
             // The first tile on the row does not have to maintain the western edge, clear the list
