@@ -6,7 +6,9 @@
 #include <GeographicLib/Geocentric.hpp>
 #include <algorithm>
 #include "cgal_simplification_constrained_borders.h"
+#include <CGAL/centroid.h>
 #include <cmath>
+
 
 
 QuantizedMeshTile *
@@ -75,23 +77,10 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
 
     QuantizedMesh::Header header ;
 
-    // Get the middle point
-    double midX = tileBounds.getMinX() + ( ( tileBounds.getMaxX() - tileBounds.getMinX() ) / 2 ) ;
-    double midY = tileBounds.getMinY() + ( ( tileBounds.getMaxY() - tileBounds.getMinY() ) / 2 ) ;
-    // Convert to ECEF and store on the structure
-    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f()) ;
-    earth.Forward( midY, midX, 0, header.CenterX, header.CenterY, header.CenterZ ) ;
+
 
     header.MinimumHeight = minHeight ;
     header.MaximumHeight = maxHeight ;
-
-    // Compute the minimum enclosing sphere given the points
-    MinSphere ms( hMPoints.begin(), hMPoints.end() ) ;
-
-    header.BoundingSphereRadius = CGAL::to_double( ms.radius() ) ;
-    header.BoundingSphereCenterX = CGAL::to_double( *ms.center_cartesian_begin() ) ;
-    header.BoundingSphereCenterY = CGAL::to_double( *(ms.center_cartesian_begin()+1) ) ;
-    header.BoundingSphereCenterZ = CGAL::to_double( *(ms.center_cartesian_begin()+2) ) ;
 
     // Explanation of horizonOcclusion in: https://cesium.com/blog/2013/04/25/horizon-culling/
     // and: https://groups.google.com/forum/#!topic/cesium-dev/8NTW1Wl0d8s
@@ -106,6 +95,25 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
         earth.Forward( hMPoints[i].y(), hMPoints[i].x(), hMPoints[i].z(), tmpx, tmpy, tmpz ) ;
         ecefPoints.push_back( Point_3( tmpx, tmpy, tmpz )) ;
     }
+
+    // Get the middle point
+//    double midX = tileBounds.getMinX() + ( ( tileBounds.getMaxX() - tileBounds.getMinX() ) / 2 ) ;
+//    double midY = tileBounds.getMinY() + ( ( tileBounds.getMaxY() - tileBounds.getMinY() ) / 2 ) ;
+//    // Convert to ECEF and store on the structure
+//    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f()) ;
+//    earth.Forward( midY, midX, 0, header.CenterX, header.CenterY, header.CenterZ ) ;
+    Point_3 centroid = CGAL::centroid( ecefPoints.begin(), ecefPoints.end(), CGAL::Dimension_tag<0>() ) ;
+    header.CenterX = centroid.x() ;
+    header.CenterY = centroid.y() ;
+    header.CenterZ = centroid.z() ;
+
+    // Compute the minimum enclosing sphere given the points
+    MinSphere ms( ecefPoints.begin(), ecefPoints.end() ) ;
+
+    header.BoundingSphereRadius = CGAL::to_double( ms.radius() ) ;
+    header.BoundingSphereCenterX = CGAL::to_double( *ms.center_cartesian_begin() ) ;
+    header.BoundingSphereCenterY = CGAL::to_double( *(ms.center_cartesian_begin()+1) ) ;
+    header.BoundingSphereCenterZ = CGAL::to_double( *(ms.center_cartesian_begin()+2) ) ;
 
     Point_3 hop = QuantizedMesh::horizonOcclusionPoint( ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ) ) ;
     header.HorizonOcclusionPointX = hop.x() ;
@@ -177,7 +185,7 @@ QuantizedMeshTiler::createTile(const ctb::TileCoordinate &coord,
     CGALSimplificationConstrainedBorders scb(surface, constrainWestVertices, constrainSouthVertices);
 
     int r = SMS::edge_collapse
-            ( surface, SimplificationStopPredicate(0.1),
+            ( surface, SimplificationStopPredicate(0.05),
               CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
                       .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
 //                      .get_placement(SMS::Midpoint_placement<Polyhedron>())
