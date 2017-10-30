@@ -88,6 +88,8 @@ public:
 //        m_hasBounds = false ;
     }
 
+
+    //! Constructor from file
     QuantizedMesh( const std::string &filePath ) { readFile(filePath) ; }
 
     //! Read the tile from a file
@@ -124,7 +126,7 @@ public:
     IndexData getIndexData() { return m_indexData ; }
 
     /**
-     * Compute the horizon occlusion point for the given tile
+     * \brief Compute the horizon occlusion point for the given tile
      *
      * \p pts Points are supposed to be in ECEF coordinates
      */

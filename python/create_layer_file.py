@@ -38,11 +38,12 @@ if __name__ == '__main__':
     data["maxzoom"] = max(list_zoom_ints)
 
     # Get the limits for each zoom
-    list_zoom_dirs = sorted(list_zoom_dirs)
-    available = []
-    for folder_x in list_zoom_dirs:
-        cur_limits = {}
+    list_zoom_ints = sorted(list_zoom_ints)
 
+    available = []
+    for folder_x_int in list_zoom_ints:
+        cur_limits = {}
+	folder_x = str(folder_x_int)
 
         # --- Limits in X ---
         dir_cnt_X = get_folders(os.path.join(param.tms_dir, folder_x))

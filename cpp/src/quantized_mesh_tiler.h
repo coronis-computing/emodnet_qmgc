@@ -51,6 +51,10 @@ public:
                                   std::vector<Point_3> &tileWestVertices,
                                   std::vector<Point_3> &tileSouthVertices ) const ;
 
+    QuantizedMeshTile* createTileNoSimp(const ctb::TileCoordinate &coord ) const ;
+
+
+
     /**
      * \brief Create the tile pyramid
      *
