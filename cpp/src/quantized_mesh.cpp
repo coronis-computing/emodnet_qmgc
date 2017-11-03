@@ -160,87 +160,96 @@ bool QuantizedMesh::readFile( const std::string &filePath )
 
 
 
-bool QuantizedMesh::writeFile( const std::string &filePath )
-{
+bool QuantizedMesh::writeFile( const std::string &filePath ) {
     // Open the file for writing
-    GZipFileWriter writer( filePath ) ;
-    if ( !writer.isFileOpen() ) {
-        return false ;
+    GZipFileWriter writer(filePath);
+    if (!writer.isFileOpen()) {
+        return false;
     }
 
     // Number of bytes per index
-    m_bytesPerIndex = 2 ;
-    if (m_vertexData.vertexCount  > ( 64 * 1024 ) ) {
+    m_bytesPerIndex = 2;
+    if (m_vertexData.vertexCount > (64 * 1024)) {
         // More than 64k vertices, so indices are 32-bit.
-        m_bytesPerIndex = 4 ;
+        m_bytesPerIndex = 4;
     }
 
     // Header
-    writer.writeDouble( m_header.CenterX ) ;
-    writer.writeDouble( m_header.CenterY ) ;
-    writer.writeDouble( m_header.CenterZ ) ;
-    writer.writeFloat( m_header.MinimumHeight ) ;
-    writer.writeFloat( m_header.MaximumHeight ) ;
-    writer.writeDouble( m_header.BoundingSphereCenterX ) ;
-    writer.writeDouble( m_header.BoundingSphereCenterY ) ;
-    writer.writeDouble( m_header.BoundingSphereCenterZ ) ;
-    writer.writeDouble( m_header.BoundingSphereRadius ) ;
-    writer.writeDouble( m_header.HorizonOcclusionPointX ) ;
-    writer.writeDouble( m_header.HorizonOcclusionPointY ) ;
-    writer.writeDouble( m_header.HorizonOcclusionPointZ ) ;
+    writer.writeDouble(m_header.CenterX);
+    writer.writeDouble(m_header.CenterY);
+    writer.writeDouble(m_header.CenterZ);
+    writer.writeFloat(m_header.MinimumHeight);
+    writer.writeFloat(m_header.MaximumHeight);
+    writer.writeDouble(m_header.BoundingSphereCenterX);
+    writer.writeDouble(m_header.BoundingSphereCenterY);
+    writer.writeDouble(m_header.BoundingSphereCenterZ);
+    writer.writeDouble(m_header.BoundingSphereRadius);
+    writer.writeDouble(m_header.HorizonOcclusionPointX);
+    writer.writeDouble(m_header.HorizonOcclusionPointY);
+    writer.writeDouble(m_header.HorizonOcclusionPointZ);
 
     // Vertex data
-    writer.writeUInt( m_vertexData.vertexCount ) ;
+    writer.writeUInt(m_vertexData.vertexCount);
 
-    unsigned short u = zigZagEncode( m_vertexData.u[0] ) ;
-    writer.writeUShort(u) ;
-    for ( int i = 0; i < m_vertexData.vertexCount-1; i++ ) {
-        short ud = m_vertexData.u[i+1] - m_vertexData.u[i] ;
-        unsigned short ue = zigZagEncode(ud) ;
-        writer.writeUShort(ue) ;
+    unsigned short u = zigZagEncode(m_vertexData.u[0]);
+    writer.writeUShort(u);
+    for (int i = 0; i < m_vertexData.vertexCount - 1; i++) {
+        short ud = m_vertexData.u[i + 1] - m_vertexData.u[i];
+        unsigned short ue = zigZagEncode(ud);
+        writer.writeUShort(ue);
     }
-    unsigned short v = zigZagEncode( m_vertexData.v[0] ) ;
-    writer.writeUShort(v) ;
-    for ( int i = 0; i < m_vertexData.vertexCount-1; i++ ) {
-        short vd = m_vertexData.v[i+1] - m_vertexData.v[i] ;
-        unsigned short ve = zigZagEncode(vd) ;
-        writer.writeUShort(ve) ;
+    unsigned short v = zigZagEncode(m_vertexData.v[0]);
+    writer.writeUShort(v);
+    for (int i = 0; i < m_vertexData.vertexCount - 1; i++) {
+        short vd = m_vertexData.v[i + 1] - m_vertexData.v[i];
+        unsigned short ve = zigZagEncode(vd);
+        writer.writeUShort(ve);
     }
-    unsigned short h = zigZagEncode( m_vertexData.height[0] ) ;
-    writer.writeUShort(h) ;
-    for ( int i = 0; i < m_vertexData.vertexCount-1; i++ ) {
-        short hd = m_vertexData.height[i+1] - m_vertexData.height[i] ;
-        unsigned short he = zigZagEncode(hd) ;
-        writer.writeUShort(he) ;
+    unsigned short h = zigZagEncode(m_vertexData.height[0]);
+    writer.writeUShort(h);
+    for (int i = 0; i < m_vertexData.vertexCount - 1; i++) {
+        short hd = m_vertexData.height[i + 1] - m_vertexData.height[i];
+        unsigned short he = zigZagEncode(hd);
+        writer.writeUShort(he);
     }
 
     // Add padding for 2/4 byte alignment
-    unsigned int bytesToSkip = 0 ;
+    unsigned int bytesToSkip = 0;
     if (writer.getPos() % m_bytesPerIndex != 0) {
         bytesToSkip = (m_bytesPerIndex - (writer.getPos() % m_bytesPerIndex));
     }
     if (bytesToSkip > 0) {
-        for ( int i = 0; i < bytesToSkip; i++ ) {
-            unsigned char dummy = 0 ;
-            writer.writeByte( dummy ) ;
+        for (int i = 0; i < bytesToSkip; i++) {
+            unsigned char dummy = 0;
+            writer.writeByte(dummy);
         }
     }
 
     // Faces data
-    writer.writeUInt( m_indexData.triangleCount ) ;
+    writer.writeUInt(m_indexData.triangleCount);
 
     // High water mark encoding
-    unsigned int highest = 0 ;
-    for ( int i = 0; i < m_indexData.triangleCount*3; i++ ) {
-        unsigned int code = highest - m_indexData.indices[i]; // CHECK! Can this overflow?
+    if (m_bytesPerIndex == 2) {
+        unsigned short highest = 0;
+        for (int i = 0; i < m_indexData.triangleCount * 3; i++) {
+            unsigned short code = highest - m_indexData.indices[i]; // Can this overflow? --> No if using vertex cache optimization...
 
-        if (m_bytesPerIndex == 2)
-            writer.writeUShort((unsigned short)code) ;
-        else
-            writer.writeUInt(code) ;
+            writer.writeUShort(code);
 
-        if (code == 0) {
-            ++highest ;
+            if (code == 0) {
+                ++highest;
+            }
+        }
+    } else {
+        unsigned int highest = 0;
+        for (int i = 0; i < m_indexData.triangleCount * 3; i++) {
+            unsigned int code = highest - m_indexData.indices[i]; // CHECK! Can this overflow?
+
+            writer.writeUInt( code );
+
+            if (code == 0) {
+                ++highest;
+            }
         }
     }
 

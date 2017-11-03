@@ -21,6 +21,7 @@ int main ( int argc, char **argv)
     // Parse input parameters
     std::string inputFile, outputFile ;
     int x = -1, y = -1, z = -1 ;
+    bool headerOnly ;
     po::options_description options("Reads a quantized mesh terrain file") ;
     options.add_options()
             ( "help,h", "Produce help message" )
@@ -29,6 +30,7 @@ int main ( int argc, char **argv)
             ( "tileX,x", po::value<int>(&x), "Tile X" )
             ( "tileY,y", po::value<int>(&y), "Tile Y" )
             ( "tileZ,z", po::value<int>(&z), "Tile Zoom" )
+            ( "header", po::value<bool>(&headerOnly)->default_value(false), "Flag to show only the header of the tile on screen")
     ;
 
     po::variables_map vm ;
@@ -49,7 +51,10 @@ int main ( int argc, char **argv)
     }
 
     // Print information on screen
-    qmt.print() ;
+    if (headerOnly)
+        qmt.printHeader() ;
+    else
+        qmt.print() ;
 
     // Export to OFF
     if (!outputFile.empty())

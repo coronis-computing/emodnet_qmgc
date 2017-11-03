@@ -69,6 +69,7 @@ endif()
 # Project-related include dirs
 include_directories("./src")
 include_directories("./apps")
+include_directories("./3rdParty")
 
 # -----------------------------------------------------------------------------
 # Compilation

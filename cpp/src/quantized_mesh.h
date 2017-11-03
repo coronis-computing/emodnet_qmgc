@@ -152,11 +152,15 @@ public:
     }
 
     static double remap(const double& value, const double& minOr, const double& maxOr, const double& minDest, const double& maxDest) {
-        double originalRange = maxOr - minOr ;
-        double newRange = maxDest - minDest ;
-        double ratio = newRange / originalRange ;
-        double newValue = value * ratio ;
-        return newValue + minDest ;
+//        double originalRange = maxOr - minOr ;
+//        double newRange = maxDest - minDest ;
+//        double ratio = newRange / originalRange ;
+//        double newValue = value * ratio ;
+//        return newValue + minDest ;
+        if ( maxOr-minOr == 0 ) // Avoid division by zero
+            return 0 ;
+        else
+            return ( (value-minOr)/(maxOr-minOr) ) * (maxDest-minDest) + minDest ;
     }
 
 private:
@@ -175,7 +179,7 @@ private:
         return (value >> 1) ^ (-(value & 1)) ;
     }
 
-    /// Encode a value using zig-zag
+    /// Encode a value using zig-zag encoding
     unsigned short zigZagEncode( const short &value ) {
         return (value << 1) ^ (value >> 31) ;
     }

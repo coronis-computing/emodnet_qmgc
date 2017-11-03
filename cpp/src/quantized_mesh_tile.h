@@ -29,7 +29,7 @@ public:
                                    double &lon, double &lat, double &height ) ;
 
     //! Export to OFF format
-    bool exportToOFF( const std::string &outFilePath, const bool& useRealWorldValues = true ) ;
+    bool exportToOFF( const std::string &outFilePath, const bool& useRealWorldValues = false ) ;
 
     //! Creates a quantized-mesh-tile from a terrain tile
     bool convertFromHeightMapTile( const std::string &filePath ) ;

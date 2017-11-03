@@ -19,5 +19,7 @@ add_executable(qm_tiler qm_tiler.cpp ../src/quantized_mesh_tile.cpp
                                      ../src/gzip_file_writer.cpp
                                      ../src/quantized_mesh.cpp
                                      ../src/quantized_mesh_tiler.cpp
+                                     ../3rdParty/meshoptimizer/vcacheoptimizer.cpp
+                                     ../3rdParty/meshoptimizer/vfetchoptimizer.cpp
                                      ../src/cgal_utils.cpp)
 target_link_libraries(qm_tiler ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CTB_LIBRARY} ${CGAL_LIBRARIES} ${GDAL_LIBRARY} ${GeographicLib_LIBRARIES})

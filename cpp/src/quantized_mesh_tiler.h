@@ -47,9 +47,9 @@ public:
      * but after the function they are output parameters containing the eastern/northen vertices to maintain for the CURRENT tile
      *
      */
-    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord,
-                                  std::vector<Point_3> &tileWestVertices,
-                                  std::vector<Point_3> &tileSouthVertices ) const ;
+//    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord,
+//                                  std::vector<Point_3> &tileWestVertices,
+//                                  std::vector<Point_3> &tileSouthVertices ) const ;
 
     QuantizedMeshTile* createTileNoSimp(const ctb::TileCoordinate &coord ) const ;
 
