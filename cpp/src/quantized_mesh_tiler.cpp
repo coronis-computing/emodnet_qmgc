@@ -376,20 +376,20 @@ QuantizedMeshTile* QuantizedMeshTiler::createTileNoSimp(const ctb::TileCoordinat
             if (height > maxHeight)
                 maxHeight = height;
 
-//            // In heightmap format
-//            heightMapPoints.push_back(Point_3(i, (tileSize - 1) - j, height));
-//
-//            // In Latitude, Longitude, Height format
-//            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((((float)tileSize - 1) - j)/((float)tileSize-1)));
-//            float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)i/((float)tileSize-1)));
-
-
             // In heightmap format
-            heightMapPoints.push_back(Point_3(i, j, height));
+            heightMapPoints.push_back(Point_3(i, (tileSize - 1) - j, height));
 
             // In Latitude, Longitude, Height format
-            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)j/((float)tileSize-1)));
+            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((((float)tileSize - 1) - j)/((float)tileSize-1)));
             float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)i/((float)tileSize-1)));
+
+
+//            // In heightmap format
+//            heightMapPoints.push_back(Point_3(i, j, height));
+//
+//            // In Latitude, Longitude, Height format
+//            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)j/((float)tileSize-1)));
+//            float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)i/((float)tileSize-1)));
 
 
 //            std::cout << "heightsBand->GetXSize() = " << heightsBand->GetXSize() << std::endl ;
