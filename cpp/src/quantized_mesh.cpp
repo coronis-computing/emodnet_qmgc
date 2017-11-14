@@ -477,8 +477,6 @@ Point_3 QuantizedMesh::horizonOcclusionPoint( const std::vector<Point_3> &pts, c
             maxMagnitude = magnitude ;
     }
 
-    std::cout << "maxMagnitude = " << maxMagnitude << std::endl ;
-
     Vector_3 hov = scaledSpaceDirectionToPoint * maxMagnitude ;
 
     return Point_3( hov.x(), hov.y(), hov.z() ) ;

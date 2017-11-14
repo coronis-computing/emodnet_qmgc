@@ -18,7 +18,7 @@
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/Min_sphere_of_spheres_d.h>
 #include <CGAL/Min_sphere_of_points_d_traits_3.h>
-// Simplification function
+// Simplification
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_stop_predicate.h> // Stop-condition policy based on a fixed number of desired output edges
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h> // // Stop-condition policy that stops when the number of undirected edges drops below a given % of the initial count
@@ -30,11 +30,16 @@
 namespace SMS = CGAL::Surface_mesh_simplification ;
 
 // CGAL types
-typedef CGAL::Exact_predicates_inexact_constructions_kernel     K;
+// typedef CGAL::Exact_predicates_inexact_constructions_kernel     K;
+typedef CGAL::Simple_cartesian<double>                          K;
 typedef CGAL::Projection_traits_xy_3<K>                         Gt;
 typedef CGAL::Delaunay_triangulation_2<Gt>                      Delaunay;
 typedef K::Point_3                                              Point_3;
+typedef K::Point_2                                              Point_2;
+typedef K::Vector_2                                             Vector_2;
 typedef K::Vector_3                                             Vector_3;
+typedef K::Segment_2                                            Segment_2;
+typedef K::FT                                                   FT ;
 
 //typedef CGAL::Polyhedron_3<K,
 //                           CGAL::Polyhedron_items_3,

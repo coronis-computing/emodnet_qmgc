@@ -11,7 +11,9 @@
 #include<CGAL/Polyhedron_3.h>
 #include <CGAL/Delaunay_triangulation_2.h>
 
-// A modifier creating a Polyhedron_3 structure with the incremental builder from a Delaunay triangulation
+/**
+ * \brief A modifier creating a Polyhedron_3 structure with the incremental builder from a Delaunay triangulation
+ */
 template<class Gt, class HDS>
 class PolyhedronBuilder : public CGAL::Modifier_base<HDS> {
 public:
@@ -55,7 +57,12 @@ public:
 
 
 
-// Exports a 2D Delaunay on a 3D point set (i.e., using the Projection_traits_xy_3) to an OFF file, for debugging purposes
+/// Exports a 2D Delaunay on a 3D point set (i.e., using the Projection_traits_xy_3) to an OFF file, for debugging purposes
 void delaunayToOFF( const std::string &outFilePath, const Delaunay &dt ) ;
+
+
+
+/// Compute if a point \p p falls within the arc defined by the vectors  \p p0 - \p center and \p p1 - \p center
+bool isPointInArc( const Point_2& query, const Point_2& center, const Point_2& p0, const Point_2& p1 ) ;
 
 #endif //EMODNET_TOOLS_CGAL_UTILS_H

@@ -45,11 +45,13 @@ public:
      *
      * Note: the parameters tileEastVertices and tileNorthVertices represent the vertices to maintain from the neighboring tiles on input,
      * but after the function they are output parameters containing the eastern/northen vertices to maintain for the CURRENT tile
+     * Take into account that their 3D coordinates represent (u,v), in tile coordinates [0..QuantizedMesh::MAX_VERTEX_DATA], and height, where
+     * this height is the raster-extracted height in meters.
      *
      */
-//    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord,
-//                                  std::vector<Point_3> &tileWestVertices,
-//                                  std::vector<Point_3> &tileSouthVertices ) const ;
+    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord,
+                                  std::vector<Point_3> &tileWestVertices,
+                                  std::vector<Point_3> &tileSouthVertices ) const ;
 
     QuantizedMeshTile* createTileNoSimp(const ctb::TileCoordinate &coord ) const ;
 
