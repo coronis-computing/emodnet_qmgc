@@ -62,7 +62,7 @@ void delaunayToOFF( const std::string &outFilePath, const Delaunay &dt ) ;
 
 
 
-/// Compute if a point \p p falls within the arc defined by the vectors  \p p0 - \p center and \p p1 - \p center
+/// Computes if a point \p p falls within the arc defined by the vectors  \p p0 - \p center and \p p1 - \p center
 bool isPointInArc( const Point_2& query, const Point_2& center, const Point_2& p0, const Point_2& p1 ) ;
 
 #endif //EMODNET_TOOLS_CGAL_UTILS_H

@@ -21,7 +21,8 @@ int main ( int argc, char **argv)
     // Parse input parameters
     std::string inputFile, outputFile ;
     int x = -1, y = -1, z = -1 ;
-    po::options_description options("Reads a quantized mesh terrain file") ;
+    po::options_description options("Reads a quantized mesh terrain file, writes it to disk, and reads it back.\n"
+                                    "The contents are shown in plain text on the screen for visual comparison") ;
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse" )

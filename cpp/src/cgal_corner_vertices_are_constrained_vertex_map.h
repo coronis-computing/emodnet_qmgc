@@ -2,26 +2,21 @@
 // Created by Ricard Campos (rcampos@eia.udg.edu)
 //
 
-/**
- * \class
- *
- * \brief BGL property map indicating whether a vertex is marked as non-removable
- *
- * For the case of Quantized Meshes, and by the way they are constructed, we just need to mark as non-removable those
- * vertices on the western and southern border of the tile, which corresponds to maintain the edges of previous tiles
- * which connect with the current one in these borders.
- *
- */
-
-#ifndef EMODNET_TOOLS_CORNERVERTEXISCONSTRAINEDMAP_H
-#define EMODNET_TOOLS_CORNERVERTEXISCONSTRAINEDMAP_H
+#ifndef EMODNET_TOOLS_CORNER_VERTICES_ARE_CONSTRAINED_VERTEX_MAP_H
+#define EMODNET_TOOLS_CORNER_VERTICES_ARE_CONSTRAINED_VERTEX_MAP_H
 
 #include "cgal_defines.h"
 #include "cgal_utils.h"
 #include <iostream>
 
 
-
+/**
+ * \class
+ *
+ * \brief BGL property map indicating whether a given vertex is one of the 4 corners of the tile.
+ *
+ * For Quantized Mesh tiles, we need to preserve these corners when simplifying.
+ */
 struct CornerVerticesAreConstrainedVertexMap
 {
     typedef boost::graph_traits<Polyhedron>::vertex_descriptor key_type;
@@ -56,15 +51,8 @@ struct CornerVerticesAreConstrainedVertexMap
                 double diffXNext = fabs( p2.x() - p0.x() ) ;
                 double diffYNext = fabs( p2.y() - p0.y() ) ;
 
-                bool isCorner = ( ( diffX < diffY ) && ( diffXNext > diffYNext ) ) ||
-                                ( ( diffX > diffY ) && ( diffXNext < diffYNext ) ) ;
-
-//                if (isCorner) {
-//                    std::cout << "p0 = " << p0 << std::endl ;
-//                }
-
-                return isCorner ;
-//                return false ;
+                return ( ( diffX < diffY ) && ( diffXNext > diffYNext ) ) ||
+                       ( ( diffX > diffY ) && ( diffXNext < diffYNext ) ) ;
             }
             else {
                 return false ;
@@ -76,4 +64,4 @@ struct CornerVerticesAreConstrainedVertexMap
     }
 };
 
-#endif //EMODNET_TOOLS_CORNERVERTEXISCONSTRAINEDMAP_H
+#endif // EMODNET_TOOLS_CORNER_VERTICES_ARE_CONSTRAINED_VERTEX_MAP_H

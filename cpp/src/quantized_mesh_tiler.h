@@ -10,9 +10,9 @@
 #include "cgal_defines.h"
 #include <ctb.hpp>
 #include <boost/filesystem.hpp>
+#include "ellipsoid.h"
 
 namespace fs = boost::filesystem ;
-
 
 
 
@@ -20,25 +20,44 @@ class QuantizedMeshTiler : public ctb::GDALTiler
 {
 public:
 
-    /// Instantiate a tiler with all required arguments
-    QuantizedMeshTiler(GDALDataset *poDataset, const ctb::Grid &grid, const ctb::TilerOptions &options):
-        GDALTiler(poDataset, grid, options) {}
+    /// Constructor: instantiates a tiler with all required arguments
+    QuantizedMeshTiler(GDALDataset *poDataset,
+                       const ctb::Grid &grid,
+                       const ctb::TilerOptions &options,
+                       const bool& bathymetryFlag = false,
+                       const Ellipsoid& e = WGS84Ellipsoid(),
+                       const double& simpCountRatioStop = 0.05 )
+            : GDALTiler(poDataset, grid, options)
+            , m_isBathymetry(bathymetryFlag)
+            , m_ellipsoid(e)
+            , m_simpCountRatioStop(simpCountRatioStop) {}
 
-    /// Instantiate a tiler with an empty dataset
-    QuantizedMeshTiler():
-        GDALTiler() {}
+    /// Default constructor: instantiates a tiler with an empty dataset and default settings
+    QuantizedMeshTiler()
+            : GDALTiler()
+            , m_isBathymetry(false)
+            , m_ellipsoid(WGS84Ellipsoid())
+            , m_simpCountRatioStop(0.05) {}
 
-    /// Instantiate a tiler with a dataset and grid but no options
-    QuantizedMeshTiler(GDALDataset *poDataset, const ctb::Grid &grid):
-            QuantizedMeshTiler(poDataset, grid, ctb::TilerOptions()) {}
+//    /// Instantiate a tiler with a dataset and grid but no options
+//    QuantizedMeshTiler(GDALDataset *poDataset,
+//                       const ctb::Grid &grid,
+//                       const bool& bathymetryFlag = false,
+//                       const Ellipsoid& e = WGS84Ellipsoid(),
+//                       const double& simpCountRatioStop )
+//            : QuantizedMeshTiler(poDataset, grid, ctb::TilerOptions(), bathymetryFlag, e, simpCountRatioStop ) {}
 
     /// Overload the assignment operator
-    QuantizedMeshTiler & operator=(const QuantizedMeshTiler &other);
+//    QuantizedMeshTiler & operator=(const QuantizedMeshTiler &other);
 
-    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord) const override { return new QuantizedMeshTile(coord) ;} // Dummy
+    // Dummy, we need it because we inherit from ctb::GDALTiler, but we do not use it!
+    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord) const override { return new QuantizedMeshTile(coord) ;}
+
+    /// Set bathymetry mode
+    void setBathymetryFlag( bool isBathymetry ) { m_isBathymetry = isBathymetry ; }
 
     /**
-     * \brief Create the quantized mesh tile.
+     * @brief Create the quantized mesh tile.
      *
      * Create the quantized-mesh tile given the raster enclosed by the coordinates \p coord and the vertices to maintain from previous tiles
      * The original full resolution regular grid extracted from the rasters is decimated to obrain a Triangulated Irregular Network (TIN)
@@ -55,20 +74,18 @@ public:
 
     QuantizedMeshTile* createTileNoSimp(const ctb::TileCoordinate &coord ) const ;
 
-
-
     /**
-     * \brief Create the tile pyramid
+     * @brief Creates the tile pyramid in quantized-mesh format
      *
      * Due to the quantized-mesh format requiring the vertices on the edges to coincide between neighbors, the creation
      * of the tiles' for each zoom is not as simple as in the heightmap format, and it requires a more complex loop taking
-     * into account vertices at borders of the neighbors of the current tile
+     * into account vertices at borders of the neighbors of the current tile being processed
      */
     void createTilePyramid(const int &startZoom, const int &endZoom, const std::string &outDir) ;
 
 private:
 
-    /// Create a `GDALTile` representing the required terrain tile data (copied from ctb::TerrainTiler)
+    /// Create a `GDALTile` representing the required terrain tile data (same as ctb::TerrainTiler)
     virtual ctb::GDALTile *createRasterTile(const ctb::TileCoordinate &coord) const override;
 
     /**
@@ -102,22 +119,19 @@ private:
         return tile;
     }
 
+    /**
+     * @brief Check that the tile folder (zoom/x) exists, and creates it otherwise.
+     *
+     * @return The path of the tile's file.
+     */
     static std::string getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
-                                                 const std::string &mainOutDir )
-    {
-        // Check/create the tile folder (zoom/x)
-        fs::path mainOutDirPath(mainOutDir) ;
-        fs::path tileFolder = mainOutDirPath / fs::path(std::to_string(coord.zoom)) / fs::path(std::to_string(coord.x)) ;
-        if ( !fs::exists( tileFolder ) && !fs::create_directories( tileFolder ) ) {
-            std::cerr << "[ERROR] Cannot create the tile folder" << tileFolder << std::endl ;
-            return std::string() ;
-        }
+                                                 const std::string &mainOutDir ) ;
 
-        fs::path fileNamePath = tileFolder / fs::path(std::to_string(coord.y) + ".terrain") ;
 
-        return fileNamePath.string() ;
-    }
+    // --- Attributes ---
+    bool m_isBathymetry ;
+    Ellipsoid m_ellipsoid ;
+    double m_simpCountRatioStop ;
 };
-
 
 #endif //EMODNET_TOOLS_QUANTIZED_MESH_TILER_H

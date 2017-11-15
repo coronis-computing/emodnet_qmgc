@@ -3,7 +3,7 @@
  * @brief Modification of the example in CGAL (4.9) for simplifying a mesh maintaining border edges, located at:
  * CGAL/examples/Surface_mesh_simplification/edge_collapse_constrained_border_surface_mesh.cpp
  *
- * This version allows more user input.
+ * This version provides more user parameters to tune.
  *
  */
 
@@ -73,7 +73,7 @@ int main( int argc, char** argv )
     double simpRatio ;
     int numOutEdges ;
     bool constrainBorderEdges, constrainVertices ;
-    po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format") ;
+    po::options_description options("Simplifies a mesh using CGAL maintaining the edges on the border") ;
     options.add_options()
         ( "help,h", "Produce help message" )
         ( "input,i", po::value<std::string>(&inputFile), "Input mesh to simplify" )

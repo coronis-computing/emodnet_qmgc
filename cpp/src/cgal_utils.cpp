@@ -43,5 +43,4 @@ bool isPointInArc( const Point_2& query, const Point_2& center, const Point_2& p
     double CxA = c.x()*a.y() - c.y()*a.x() ;
 
     return ( AxB*AxC >= 0. && CxB*CxA >= 0. ) ;
-//    return ( AxB*AxC > 0. && CxB*CxA > 0. ) ;
 }

@@ -1,13 +1,4 @@
-/**
- * \class
- *
- * \brief BGL property map indicating whether an edge is marked as non-removable
- *
- * For the case of Quantized Meshes, and by the way they are constructed, we just need to mark as non-removable those
- * vertices on the western and southern border of the tile, which corresponds to maintain the edges of previous tiles
- * which connect with the current one in these borders.
- *
- */
+
 
 #ifndef EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
 #define EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
@@ -16,7 +7,15 @@
 #include "cgal_utils.h"
 
 
-
+/**
+ * \class WesternAndSouthernBorderEdgesAreConstrainedEdgeMap
+ *
+ * \brief BGL property map indicating whether an edge is marked as non-removable
+ *
+ * For the case of Quantized Meshes, and by the way they are constructed, we just need to mark as non-removable those
+ * edges corresponding to border edges of already processed neighboring tiles.
+ *
+ */
 struct WesternAndSouthernBorderEdgesAreConstrainedEdgeMap
 {
     typedef boost::graph_traits<Polyhedron>::edge_descriptor key_type ;

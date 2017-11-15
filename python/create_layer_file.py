@@ -19,7 +19,7 @@ def get_files(dir):
 # Main function
 if __name__ == '__main__':
     #Parameters
-    parser = argparse.ArgumentParser(description="Create the layer.json file required by Cesium from a TMS in quantized-mesh format")
+    parser = argparse.ArgumentParser(description="Creates the layer.json file required by Cesium from a TMS folder structure (quantized-mesh format assumed)")
     parser.add_argument("tms_dir", action="store", type=str, help="The root of a TMS directory in Cesium''s quantized-mesh format. The generated layer.json file will be created here")
 
     param = parser.parse_args()

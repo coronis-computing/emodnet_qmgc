@@ -7,119 +7,6 @@
 #include "cgal_utils.h"
 #include <fstream>
 
-QuantizedMeshTile::QuantizedMeshTile(const TileCoordinate &coord):
-        QuantizedMesh(),
-        Tile(coord)
-{}
-
-
-
-QuantizedMeshTile::QuantizedMeshTile(const char *fileName, const TileCoordinate &coord):
-        QuantizedMesh(fileName),
-        Tile(coord)
-{}
-
-
-
-QuantizedMeshTile::QuantizedMeshTile(const QuantizedMesh &qm, const TileCoordinate &coord):
-        QuantizedMesh(qm),
-        Tile(coord)
-{}
-
-
-bool QuantizedMeshTile::convertFromHeightMapTile( const std::string &filePath )
-{
-    // Load the heightmap
-    ctb::Terrain hmt(filePath.c_str()) ;
-
-    std::cout << "Terrain readed" << std::endl ;
-
-    // Get the bounds
-    const ctb::GlobalGeodetic profile;
-    const ctb::CRSBounds tileBounds = profile.tileBounds(*this);
-
-    // Create the points
-    std::vector< Point_3 > hMPoints ;
-
-    // Get max/min height values
-    float maxHeight, minHeight ;
-    maxHeight = -99999 ;
-    minHeight = 99999 ;
-    for ( int i = 0; i < TILE_SIZE*TILE_SIZE; i++ ) {
-        if ( hmt.getHeights()[i] > maxHeight )
-            maxHeight = hmt.getHeights()[i] ;
-        if ( hmt.getHeights()[i] < minHeight )
-            minHeight = hmt.getHeights()[i] ;
-    }
-
-    // NED origin
-    for ( int i = 0; i < TILE_SIZE; i++ ) {
-        for ( int j = 0; j < TILE_SIZE; j++ ) {
-            // In heightmap format, heights are encoded as 1/5 meter units above -1000 meters
-            // unsigned short height = hmt.getHeights()[i*TILE_SIZE+j] ;
-            float height = (float) ( (float)hmt.getHeights()[i*TILE_SIZE+j] / 5. ) - 1000. ;
-            // unsigned short height = ( hmt.getHeights()[i*TILE_SIZE+j] + 1000 ) * 5 ;
-            float lon = tileBounds.getMinX() + ( tileBounds.getMaxX() - tileBounds.getMinX() ) * ((float)i/TILE_SIZE) ;
-            float lat = tileBounds.getMinY() + ( tileBounds.getMaxY() - tileBounds.getMinY() ) * ((float)j/TILE_SIZE) ;
-
-            // Scale height values to be in a similar range of values as lon/lat
-            float scaledHeight = ( ( tileBounds.getMaxX() - tileBounds.getMinX() ) * ( height - minHeight ) ) / (maxHeight-minHeight) + tileBounds.getMinX() ;
-
-            hMPoints.push_back( Point_3( lon, lat, scaledHeight ) ) ;
-
-//            GeographicLib::GeoCoords coord( lat, lon ) ;
-//            double utmX = coord.Easting() ;
-//            double utmY = coord.Northing() ;
-//
-//            std::cout << "utmX = " << utmX << ", utmY =" << utmY << std::endl ;
-//
-//            double localX = utmX - enuOrig.Easting() ;
-//            double localY = utmY - enuOrig.Northing() ;
-//
-//            std::cout << "minLat = " << bounds.minLatitude << ", minLon =" << bounds.minLongitude << std::endl ;
-//            std::cout << "OrigUtmX = " << enuOrig.Easting() << ", OrigUtmY =" << enuOrig.Northing() << std::endl ;
-//
-//            hMPoints.push_back( Point_3( localX, localY, height ) ) ;
-//            std::cout << "lat = " << lat << ", lon = " << lon << ", localX = " << localX << ", localY = " << localY << ", height = " << height << std::endl ;
-        }
-    }
-
-    Delaunay dt( hMPoints.begin(), hMPoints.end() );
-    std::cout << dt.number_of_vertices() << std::endl;
-
-    delaunayToOFF( "./HeightMapTerrainDelaunay.off", dt ) ;
-
-    // Translate to Polyhedron
-    Polyhedron surface ;
-    PolyhedronBuilder<Gt, HalfedgeDS> builder(dt);
-    surface.delegate(builder);
-
-    // --- Simplify the mesh ---
-    // This is a stop predicate (defines when the algorithm terminates).
-    // In this example, the simplification stops when the number of undirected edges
-    // left in the surface mesh drops below the specified number (1000)
-    SMS::Count_stop_predicate<Polyhedron> stop(1000);
-
-    // This the actual call to the simplification algorithm.
-    // The surface mesh and stop conditions are mandatory arguments.
-    // The index maps are needed because the vertices and edges
-    // of this surface mesh lack an "id()" field.
-    int r = SMS::edge_collapse
-            ( surface, stop,
-              CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
-                      .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
-                      .get_cost(SimplificationCost())
-                      .get_placement(SimplificationPlacement())
-            ) ;
-
-    // Write the simplified polyhedron to file
-    std::ofstream os("./HeightMapSimplified.off");
-    os << surface;
-    os.close();
-
-    return true ;
-}
-
 
 
 void QuantizedMeshTile::convertUVHToLonLatHeight( const unsigned short &u, const unsigned short &v, const unsigned short &h,
@@ -177,4 +64,57 @@ bool QuantizedMeshTile::exportToOFF( const std::string &outFilePath, const bool&
     }
 
     return true ;
+}
+
+
+
+Point_3 QuantizedMeshTile::horizonOcclusionPoint( const std::vector<Point_3> &pts, const Point_3 &center )
+{
+    // Compute the scaledSpaceDirectionToPoint, a vector passing through the center of the ellipsoid and scaled on it
+    // https://groups.google.com/forum/#!topic/cesium-dev/8NTW1Wl0d8s
+    const double rX = m_ellipsoid.getRadiusX();
+    const double rY = m_ellipsoid.getRadiusY();
+    const double rZ = m_ellipsoid.getRadiusZ();
+
+    Vector_3 scaledSpaceDirectionToPoint = Vector_3( center.x()/rX, center.y()/rY, center.z()/rZ ) ;
+    scaledSpaceDirectionToPoint = scaledSpaceDirectionToPoint / sqrt(scaledSpaceDirectionToPoint.squared_length()) ; // Normalize
+
+    std::vector< Point_3 >::const_iterator it ;
+    double maxMagnitude = 0 ;
+    for ( it = pts.begin(); it != pts.end(); ++it ) {
+        double magnitude = computeHorizonOcclusionPointMagnitude( *it, scaledSpaceDirectionToPoint ) ;
+        if ( magnitude > maxMagnitude )
+            maxMagnitude = magnitude ;
+    }
+
+    Vector_3 hov = scaledSpaceDirectionToPoint * maxMagnitude ;
+
+    return Point_3( hov.x(), hov.y(), hov.z() ) ;
+}
+
+
+
+double QuantizedMeshTile::computeHorizonOcclusionPointMagnitude( const Point_3 &position, const Vector_3 &scaledSpaceDirectionToPoint )
+{
+    const double rX = m_ellipsoid.getRadiusX();
+    const double rY = m_ellipsoid.getRadiusY();
+    const double rZ = m_ellipsoid.getRadiusZ();
+
+    Vector_3 scaledSpaceVector( position.x()/rX, position.y()/rY, position.z()/rZ ) ;
+
+    double magnitudeSquared = scaledSpaceVector.squared_length();
+    double magnitude = sqrt(magnitudeSquared);
+    Vector_3 unitScaledSpaceVector = scaledSpaceVector / magnitude ;
+
+    // For the purpose of this computation, points below the ellipsoid
+    // are considered to be on it instead.
+    magnitudeSquared = std::max(1.0, magnitudeSquared);
+    magnitude = std::max(1.0, magnitude);
+
+    double cosAlpha = unitScaledSpaceVector * scaledSpaceDirectionToPoint ;
+    double sinAlpha = sqrt( CGAL::cross_product( unitScaledSpaceVector, scaledSpaceDirectionToPoint ).squared_length() );
+    double cosBeta = 1.0 / magnitude;
+    double sinBeta = sqrt(magnitudeSquared - 1.0) * cosBeta ;
+
+    return 1.0 / (cosAlpha * cosBeta - sinAlpha * sinBeta);
 }

@@ -25,6 +25,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord);
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
     GDALRasterBand *heightsBand = rasterTile->dataset->GetRasterBand(1);
+    double noDataValue = heightsBand->GetNoDataValue() ;
     double resolution;
     ctb::CRSBounds tileBounds = terrainTileBounds(coord, resolution);
 
@@ -60,11 +61,14 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
             // Height value
             float height = rasterHeights[j * heightsBand->GetXSize() + i];
 
-            // **** Temp workaround for emodnet data (start) ****
-            if ( height < 0 )
+            // When no data is available, we assume ground data
+//            if ( height == noDataValue )
+            if (height < 0) // Workaround for EMODnet data
                 height = 0 ;
-            height = -height ;
-            // **** Temp workaround for emodnet data (end) ****
+
+            // If the input DEM contains bathymetry, consider the data as depth instead of altitude (negative value!)
+            if ( m_isBathymetry )
+                height = -height ;
 
             // Update max/min values
             if (height < minHeight)
@@ -198,7 +202,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     // Explanation of horizonOcclusion in: https://cesium.com/blog/2013/04/25/horizon-culling/
     // and: https://groups.google.com/forum/#!topic/cesium-dev/8NTW1Wl0d8s
     // Note: The test point for occlusion is scaled within the WGS84 ellipsoid
-    Point_3 hop = QuantizedMesh::horizonOcclusionPoint( ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ) ) ;
+    Point_3 hop = qmTile->horizonOcclusionPoint( ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ) ) ;
     header.HorizonOcclusionPointX = hop.x() ;
     header.HorizonOcclusionPointY = hop.y() ;
     header.HorizonOcclusionPointZ = hop.z() ;
@@ -212,19 +216,9 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     // conditioned for simplification
     std::vector< Point_3 > uvhPts ;
     for ( std::vector<Point_3>::iterator it = heightMapPoints.begin(); it != heightMapPoints.end(); ++it ) {
-//        unsigned short u = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->x()), 0, heightsBand->GetXSize()-1) ;
-//        unsigned short v = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->y()), 0, heightsBand->GetYSize()-1) ;
-//        unsigned short h = QuantizedMesh::remapToVertexDataValue( CGAL::to_double(it->z()), minHeight, maxHeight ) ;
-//
-//        uvhPts.push_back( Point_3( static_cast<double>(u),
-//                                   static_cast<double>(v),
-//                                   static_cast<double>(h) ) ) ;
         double u = QuantizedMesh::remap( CGAL::to_double(it->x()), 0.0, heightsBand->GetXSize()-1, 0.0, 1.0 ) ;
         double v = QuantizedMesh::remap( CGAL::to_double(it->y()), 0.0, heightsBand->GetYSize()-1, 0.0, 1.0 ) ;
         double h = QuantizedMesh::remap( CGAL::to_double(it->z()), minHeight, maxHeight, 0.0, 1.0 ) ;
-
-        if (h > 1.0)
-            std::cout << "h0 = " << h << std::endl ;
 
         uvhPts.push_back( Point_3( u, v, h ) ) ;
     }
@@ -251,15 +245,8 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 //    typedef SMS::Constrained_placement<SimplificationPlacement, WesternAndSouthernBorderEdgesAreConstrainedEdgeMap > Placement;
 //    Placement pl(wsbeac) ;
 
-//    std::cout << "Simplifying" << std::endl ;
-//    if (constrainWestVertices)
-//        std::cout << "with west constraints" << std::endl ;
-//    if (constrainSouthVertices)
-//        std::cout << "with south constraints" << std::endl ;
-
-
     int r = SMS::edge_collapse
-            ( surface, SimplificationStopPredicate(0.05),
+            ( surface, SimplificationStopPredicate(m_simpCountRatioStop),
               CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
                       .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
                       .get_cost(SimplificationCost())
@@ -268,8 +255,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                       .get_placement(scp)
                       .edge_is_constrained_map(wsbeac)
             ) ;
-
-//    std::cout << "done" << std::endl ;
 
     // [DEBUG] Write the simplified polyhedron to file
 //    std::ofstream os("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp.off") ;
@@ -282,10 +267,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     int numVertices = surface.size_of_vertices() ;
     vertices.reserve(numVertices*3) ;
     for ( Polyhedron::Point_iterator it = surface.points_begin(); it != surface.points_end(); ++it ) {
-//        unsigned short u = static_cast<unsigned short>( it->x() ) ;
-//        unsigned short v = static_cast<unsigned short>( it->y() ) ;
-//        unsigned short h = static_cast<unsigned short>( it->z() ) ;
-
         double x = CGAL::to_double(it->x()) ;
         double y = CGAL::to_double(it->y()) ;
         double z = CGAL::to_double(it->z()) ;
@@ -301,13 +282,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
         unsigned short u = QuantizedMesh::remapToVertexDataValue( x, 0.0, 1.0 ) ;
         unsigned short v = QuantizedMesh::remapToVertexDataValue( y, 0.0, 1.0 ) ;
         unsigned short h = QuantizedMesh::remapToVertexDataValue( z, 0.0, 1.0 ) ;
-
-        if (u > QuantizedMesh::MAX_VERTEX_DATA )
-            std::cout << "u = " << u << "; x = " << CGAL::to_double(it->x()) << std::endl ;
-        if (v > QuantizedMesh::MAX_VERTEX_DATA )
-            std::cout << "v = " << v << "; y = " << CGAL::to_double(it->y()) << std::endl ;
-        if (h > QuantizedMesh::MAX_VERTEX_DATA )
-            std::cout << "h = " << h << "; z = " << CGAL::to_double(it->z()) << std::endl ;
 
         vertices.push_back(u) ;
         vertices.push_back(v) ;
@@ -369,11 +343,10 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     // non-border edges precede the border edges, and that for each border edge the latter one of the two halfedges is a
     // border halfedge (the first one is a non-border halfedge in conformance with the polyhedral surface definition)"
     // Thus, we move along halfedges with an increment of 2
-    int numCorners = 0 ;
+    int numCorners = 0 ; // Just to check correctness
 
     Polyhedron::Halfedge_iterator e = surface.border_halfedges_begin() ;
     ++e ; // We start at the second halfedge!
-//    for ( ; e != surface.halfedges_end(); std::advance(e,2) )
     while( e->is_border() )
     {
         // Get the vertex index in the surface structure
@@ -402,7 +375,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
         int timesInserted = 0;
         if ( isCorner ) {
-            std::cout << "Corner point = (" << p0.x() << ", " << p0.y() << ")" << std::endl ;
             numCorners++ ;
             if ( p0.x() < 0.5 && p0.y() < 0.5 ) { // Corner (0, 0)
                 edgeIndices.westIndices.push_back(vertInd);
@@ -415,7 +387,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                 edgeIndices.northIndices.push_back(vertInd);
 
                 // Northern vertex turns into a southern vertex to preserve for the next tile
-                // double x = QuantizedMesh::remap(p0.x(), 0.0, 1.0, 0.0, heightsBand->GetXSize() - 1); // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
                 double x = 0.0; // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
                 double y = 0.0; // North to south conversion (y=0)
                 double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight); // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
@@ -435,7 +406,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                 tileWestVertices.push_back(Point_3(x, y, h));
 
                 // Northern vertex turns into a southern vertex to preserve for the next tile
-                //x = QuantizedMesh::remap(p0.x(), 0.0, 1.0, 0.0, heightsBand->GetXSize() - 1); // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
                 x = heightsBand->GetXSize() - 1; // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
                 y = 0.0;
                 h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight); // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
@@ -449,7 +419,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
                 // Eastern vertex turns into a western vertex to preserve for the next tile
                 double x = 0.0; // East to west conversion (x=0)
-                // double y = QuantizedMesh::remap(p0.y(), 0.0, 1.0, 0.0, heightsBand->GetYSize() - 1);
                 double y = 0.0;
                 double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight);
                 tileWestVertices.push_back(Point_3(x, y, h));
@@ -486,36 +455,14 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                     // Northern border edge/vertex
                     edgeIndices.northIndices.push_back(vertInd);
 
-                    //            // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-                    //            double h = QuantizedMesh::remapFromVertexDataValue(p.z(), minHeight, maxHeight);
-                    //            double x = QuantizedMesh::remapFromVertexDataValue(p.x(), 0, heightsBand->GetXSize()-1);
-                    ////                double y = QuantizedMesh::remapFromVertexDataValue(0.0, 0, heightsBand->GetYSize()-1); // North to south conversion (y=0)
-                    //            double y = 0.0 ;
-                    //            tileSouthVertices.push_back(Point_3(x, y, h));
-
+                    // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
                     double x = QuantizedMesh::remap(p0.x(), 0.0, 1.0, 0.0, heightsBand->GetXSize() - 1);
                     double y = 0.0; // North to south conversion
                     double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight);
                     tileSouthVertices.push_back(Point_3(x, y, h));
-
-                    timesInserted++;
                 }
             }
         }
-
-//        if ( timesInserted == 0 ) {
-//            std::cout << "point p = (" << p0.x() << ", " << p0.y() << ") not included in any case!" << std::endl ;
-//        }
-//
-//        if ( timesInserted > 1 ) {
-//            std::cout << "point p = (" << p0.x() << ", " << p0.y() << ") included " << timesInserted << " times" << std::endl ;
-//            std::cout << "point p prev = (" << p1.x() << ", " << p1.y() << ")" << std::endl ;
-//            std::cout << "point p next = (" << p2.x() << ", " << p2.y() << ")" << std::endl ;
-//            std::cout << "diffX = " << diffX << std::endl ;
-//            std::cout << "diffY = " << diffY << std::endl ;
-//            std::cout << "diffXNext = " << diffXNext << std::endl ;
-//            std::cout << "diffYNext = " << diffYNext << std::endl ;
-//        }
 
         // Advance 2 positions (i.e., skip non-border halfedges)
         std::advance(e,2) ;
@@ -535,7 +482,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 //    qmTile->print() ;
 
     // [DEBUG] Export the final tile in OFF format
-    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
+//    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
 
     delete rasterTile;
 
@@ -655,7 +602,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTileNoSimp(const ctb::TileCoordinat
     // Explanation of horizonOcclusion in: https://cesium.com/blog/2013/04/25/horizon-culling/
     // and: https://groups.google.com/forum/#!topic/cesium-dev/8NTW1Wl0d8s
     // Note: The test point for occlusion is scaled within the WGS84 ellipsoid
-    Point_3 hop = QuantizedMesh::horizonOcclusionPoint( ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ) ) ;
+    Point_3 hop = qmTile->horizonOcclusionPoint( ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ) ) ;
     header.HorizonOcclusionPointX = hop.x() ;
     header.HorizonOcclusionPointY = hop.y() ;
     header.HorizonOcclusionPointZ = hop.z() ;
@@ -840,22 +787,16 @@ QuantizedMeshTiler::createRasterTile(const ctb::TileCoordinate &coord) const {
     return tile;
 }
 
+//
+//QuantizedMeshTiler &
+//QuantizedMeshTiler::operator=(const QuantizedMeshTiler &other) {
+//    ctb::GDALTiler::operator=(other);
+//
+//    return *this;
+//}
 
-QuantizedMeshTiler &
-QuantizedMeshTiler::operator=(const QuantizedMeshTiler &other) {
-    ctb::GDALTiler::operator=(other);
-
-    return *this;
-}
 
 
-/**
- * \brief Create the tile pyramid in quantized-mesh format
- *
- * Create the tile pyramid in quantized-mesh format. Ensures that the vertices between neighboring tiles in the same
- * zoom are the the same
- *
- */
 void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZoom, const std::string &outDir)
 {
     for (ctb::i_zoom zoom = endZoom; zoom <= startZoom; ++zoom) {
@@ -869,8 +810,6 @@ void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZ
         std::vector<Point_3 > prevTileWesternVertices(0) ; // Stores the vertices to maintain from the previous tile's eastern border. Since we are creating the tiles from left-right, down-up, just the previous one is required
         std::vector< std::vector<Point_3 > > prevRowTilesSouthernVertices( numStepsX, std::vector<Point_3>(0) ) ; // Stores the vertices to maintain of the previous row of tiles' northern borders. Since we process a row each time, we need to store all the vertices of all the tiles from the previous row.
         int tileColumnInd = 0 ;
-
-
 
         // Processing the tiles row-wise, from
         for ( int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++ ) {
@@ -897,4 +836,22 @@ void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZ
             prevTileWesternVertices.clear() ;
         }
     }
+}
+
+
+
+std::string QuantizedMeshTiler::getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
+                                                          const std::string &mainOutDir )
+{
+    // Check/create the tile folder (zoom/x)
+    fs::path mainOutDirPath(mainOutDir) ;
+    fs::path tileFolder = mainOutDirPath / fs::path(std::to_string(coord.zoom)) / fs::path(std::to_string(coord.x)) ;
+    if ( !fs::exists( tileFolder ) && !fs::create_directories( tileFolder ) ) {
+        std::cerr << "[ERROR] Cannot create the tile folder" << tileFolder << std::endl ;
+        return std::string() ;
+    }
+
+    fs::path fileNamePath = tileFolder / fs::path(std::to_string(coord.y) + ".terrain") ;
+
+    return fileNamePath.string() ;
 }

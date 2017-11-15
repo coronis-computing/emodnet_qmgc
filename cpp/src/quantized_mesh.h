@@ -125,38 +125,28 @@ public:
     /// Get the index data of the quantized mesh structure
     IndexData getIndexData() { return m_indexData ; }
 
-    /**
-     * \brief Compute the horizon occlusion point for the given tile
-     *
-     * \p pts Points are supposed to be in ECEF coordinates
-     */
-    static Point_3 horizonOcclusionPoint( const std::vector<Point_3> &pts, const Point_3 &center ) ;
-
     // --- Constants ---
     const unsigned short int TILE_SIZE = 65;
     static const unsigned short MAX_VERTEX_DATA = 32767;
 
     // --- Convenience static functions ---
+    /**
+     * @brief Remap a value to be between 0 and 32767
+     * @param value Value in the original range
+     * @param minOr Minimum value in the original range
+     * @param maxOr Maximum value in the original range
+     * @return
+     */
     static unsigned short remapToVertexDataValue(const double& value, const double& minOr, const double& maxOr) {
-//        const unsigned short MAX_VERTEX_DATA = 32767;
         double valueRemap = remap(value, minOr, maxOr, 0, MAX_VERTEX_DATA) ;
-//        std::cout << "value = " << value << ", minOr = " << minOr <<", maxOr = " << maxOr << ", valueRemap = " << valueRemap << std::endl ;
         return static_cast<unsigned short>(valueRemap);
     }
 
     static double remapFromVertexDataValue(const double& value, const double& minOr, const double& maxOr) {
-//        const unsigned short MAX_VERTEX_DATA = 32767;
-        double valueRemap = remap(value, 0, MAX_VERTEX_DATA, minOr, maxOr ) ;
-//        std::cout << "value = " << value << ", minOr = " << minOr <<", maxOr = " << maxOr << ", valueRemap = " << valueRemap << std::endl ;
-        return valueRemap;
+        return remap(value, 0, MAX_VERTEX_DATA, minOr, maxOr ) ;
     }
 
     static double remap(const double& value, const double& minOr, const double& maxOr, const double& minDest, const double& maxDest) {
-//        double originalRange = maxOr - minOr ;
-//        double newRange = maxDest - minDest ;
-//        double ratio = newRange / originalRange ;
-//        double newValue = value * ratio ;
-//        return newValue + minDest ;
         if ( maxOr-minOr == 0 ) // Avoid division by zero
             return 0 ;
         else
@@ -183,13 +173,6 @@ private:
     unsigned short zigZagEncode( const short &value ) {
         return (value << 1) ^ (value >> 31) ;
     }
-
-//    void createConnectivityAndSimplify(ctb::GDALTile *rasterTile, GDALRasterBand *heightsBand) ;
-
-    // Function as described in https://cesium.com/blog/2013/05/09/computing-the-horizon-occlusion-point/
-    // We ommit the ellipsoid here for simplicity (hard-coded)
-    static double computeHorizonOcclusionPointMagnitude( const Point_3 &position, const Vector_3 &scaledSpaceDirectionToPoint ) ;
-
 
 };
 
