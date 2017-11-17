@@ -39,17 +39,6 @@ public:
             , m_ellipsoid(WGS84Ellipsoid())
             , m_simpCountRatioStop(0.05) {}
 
-//    /// Instantiate a tiler with a dataset and grid but no options
-//    QuantizedMeshTiler(GDALDataset *poDataset,
-//                       const ctb::Grid &grid,
-//                       const bool& bathymetryFlag = false,
-//                       const Ellipsoid& e = WGS84Ellipsoid(),
-//                       const double& simpCountRatioStop )
-//            : QuantizedMeshTiler(poDataset, grid, ctb::TilerOptions(), bathymetryFlag, e, simpCountRatioStop ) {}
-
-    /// Overload the assignment operator
-//    QuantizedMeshTiler & operator=(const QuantizedMeshTiler &other);
-
     // Dummy, we need it because we inherit from ctb::GDALTiler, but we do not use it!
     QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord) const override { return new QuantizedMeshTile(coord) ;}
 
@@ -69,8 +58,10 @@ public:
      *
      */
     QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord,
+                                  std::vector<Point_3> &tileEastVertices,
                                   std::vector<Point_3> &tileWestVertices,
-                                  std::vector<Point_3> &tileSouthVertices ) const ;
+                                  std::vector<Point_3> &tileNorthVertices,
+                                  std::vector<Point_3> &tileSouthVertices) const ;
 
     QuantizedMeshTile* createTileNoSimp(const ctb::TileCoordinate &coord ) const ;
 

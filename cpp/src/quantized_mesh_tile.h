@@ -62,7 +62,7 @@ public:
 private:
     // Function as described in https://cesium.com/blog/2013/05/09/computing-the-horizon-occlusion-point/
     // We ommit the ellipsoid here for simplicity (hard-coded)
-    static double computeHorizonOcclusionPointMagnitude( const Point_3 &position, const Vector_3 &scaledSpaceDirectionToPoint ) ;
+    double computeHorizonOcclusionPointMagnitude( const Point_3 &position, const Vector_3 &scaledSpaceDirectionToPoint ) ;
 
 
     // --- Attributes ---

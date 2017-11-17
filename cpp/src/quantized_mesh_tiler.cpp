@@ -6,7 +6,7 @@
 #include <GeographicLib/Geocentric.hpp>
 #include <algorithm>
 #include "cgal_defines.h"
-#include "cgal_western_and_southern_border_edges_are_constrained_edge_map.h"
+#include "cgal_border_edges_are_constrained_edge_map.h"
 #include "cgal_corner_vertices_are_constrained_vertex_map.h"
 #include "cgal_further_constrained_placement.h"
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h>
@@ -14,11 +14,13 @@
 #include <cmath>
 #include "forsyth-too/forsythtriangleorderoptimizer.h"
 #include "meshoptimizer/meshoptimizer.h"
-
+#include "zoom_tiles_border_vertices_cache.h"
 
 
 QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord,
+                                                   std::vector<Point_3> &tileEastVertices,
                                                    std::vector<Point_3> &tileWestVertices,
+                                                   std::vector<Point_3> &tileNorthVertices,
                                                    std::vector<Point_3> &tileSouthVertices ) const
 {
     // Get a terrain tile represented by the tile coordinate
@@ -40,20 +42,23 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
     // Create a base triangulation (using Delaunay) with all the raster info available
     std::vector< Point_3 > heightMapPoints ;
-    std::vector< Point_3 > latLonPoints ;
-    float minHeight =  std::numeric_limits<float>::infinity() ;
-    float maxHeight = -std::numeric_limits<float>::infinity() ;
 
     // Check the start of the rasters: if there are constrained vertices from neighboring tiles to maintain,
     // the western and/or the southern vertices are not touched, and thus we should parse the raster starting from index 1
+    bool constrainEastVertices = tileEastVertices.size() > 0 ;
     bool constrainWestVertices = tileWestVertices.size() > 0 ;
+    bool constrainNorthVertices = tileNorthVertices.size() > 0 ;
     bool constrainSouthVertices = tileSouthVertices.size() > 0 ;
 
     int startX = constrainWestVertices? 1: 0 ;
+    int endX = constrainEastVertices? heightsBand->GetXSize()-1: heightsBand->GetXSize() ;
+    int startY = constrainNorthVertices? 1: 0 ;
     int endY = constrainSouthVertices? heightsBand->GetYSize()-1: heightsBand->GetYSize() ;
 
-    for ( int i = startX; i < heightsBand->GetXSize(); i++ ) {
-        for (int j = 0; j < endY; j++) {
+
+    // Add the vertices from the raster
+    for ( int i = startX; i < endX; i++ ) {
+        for (int j = startY; j < endY; j++) {
             int y = heightsBand->GetYSize() - 1 - j; // y coordinate within the tile.
             // Note that the heights in RasterIO have the origin in the upper-left corner,
             // while the tile has it in the lower-left. Obviously, x = i
@@ -70,75 +75,50 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
             if ( m_isBathymetry )
                 height = -height ;
 
-            // Update max/min values
-            if (height < minHeight)
-                minHeight = height;
-            if (height > maxHeight)
-                maxHeight = height;
-
             // In heightmap format
             heightMapPoints.push_back(Point_3(i, y, height));
-
-//            if (constrainSouthVertices)
-//                std::cout << "p = " << i << ", " << y << " added from raster" << std::endl ;
-
-            // In Latitude, Longitude, Height format
-            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)y/((float)heightsBand->GetYSize()-1)));
-            float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)i/((float)heightsBand->GetXSize()-1)));
-            latLonPoints.push_back(Point_3(lat, lon, height));
         }
     }
-
     // Also, add the vertices to preserve from neighboring tiles
+    if ( constrainEastVertices ) {
+        for ( std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it ) {
+            // In heightmap format
+            heightMapPoints.push_back(*it);
+        }
+    }
     if ( constrainWestVertices ) {
-//        std::cout << "Inserting west vertices" << std::endl ;
         for ( std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it ) {
             // In heightmap format
             heightMapPoints.push_back(*it);
-
-            // Update max/min height
-            if (it->z() < minHeight)
-                minHeight = it->z();
-            if (it->z() > maxHeight)
-                maxHeight = it->z();
-
-//            std::cout << it->x() << ", " << it->y() << ", " << it->z() << std::endl ;
-
-            // In Latitude, Longitude, Height format
-            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)it->y()/((float)heightsBand->GetYSize()-1)));
-            float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)it->x()/((float)heightsBand->GetXSize()-1)));
-            latLonPoints.push_back(Point_3(lat, lon, it->z()));
+        }
+    }
+    if ( constrainNorthVertices ) {
+        for ( std::vector<Point_3>::iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it ) {
+            // In heightmap format
+            heightMapPoints.push_back(*it);
         }
     }
     if ( constrainSouthVertices ) {
-//        std::cout << "Inserting south vertices" << std::endl ;
         for ( std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it ) {
-
-            // Skip (0,0) corner if it was already included
-//            if ( constrainWestVertices &&
-//                 it->x() <= std::numeric_limits<double>::epsilon() &&
-//                 it->y() <= std::numeric_limits<double>::epsilon() ) {
-//                //std::cout << "(0, 0) southern corner not included" << std::endl ;
-//            }
-//            else {
-                // In heightmap format
-                heightMapPoints.push_back(*it);
-
-                // Update max/min height
-                if (it->z() < minHeight)
-                    minHeight = it->z();
-                if (it->z() > maxHeight)
-                    maxHeight = it->z();
-
-//                std::cout << it->x() << ", " << it->y() << ", " << it->z() << std::endl ;
-                // In Latitude, Longitude, Height format
-                float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) *
-                                                    ((float) it->y() / ((float) heightsBand->GetYSize() - 1)));
-                float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) *
-                                                    ((float) it->x() / ((float) heightsBand->GetXSize() - 1)));
-                latLonPoints.push_back(Point_3(lat, lon, it->z()));
-//            }
+            heightMapPoints.push_back(*it);
         }
+    }
+
+    // Convert to lat/lon format and compute the min/max height
+    std::vector< Point_3 > latLonPoints ;
+    float minHeight =  std::numeric_limits<float>::infinity() ;
+    float maxHeight = -std::numeric_limits<float>::infinity() ;
+    for ( std::vector<Point_3>::iterator it = heightMapPoints.begin(); it != heightMapPoints.end(); ++it ) {
+        // Update max/min height
+        if (it->z() < minHeight)
+            minHeight = it->z();
+        if (it->z() > maxHeight)
+            maxHeight = it->z();
+
+        // In Latitude, Longitude, Height format
+        float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)it->y()/((float)heightsBand->GetYSize()-1)));
+        float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)it->x()/((float)heightsBand->GetXSize()-1)));
+        latLonPoints.push_back(Point_3(lat, lon, it->z()));
     }
 
     // --- Set all the info in the quantized mesh format ---
@@ -227,7 +207,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     Delaunay dt( uvhPts.begin(), uvhPts.end() );
 
     // --- Debug ---
-//    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
+    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
 
     // Translate to Polyhedron
     Polyhedron surface ;
@@ -236,9 +216,9 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
     // Set up the edge constrainer
     typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
-                                        WesternAndSouthernBorderEdgesAreConstrainedEdgeMap,
+                                        BorderEdgesAreConstrainedEdgeMap,
                                         CornerVerticesAreConstrainedVertexMap > SimplificationConstrainedPlacement ;
-    WesternAndSouthernBorderEdgesAreConstrainedEdgeMap wsbeac(surface, constrainWestVertices, constrainSouthVertices);
+    BorderEdgesAreConstrainedEdgeMap wsbeac(surface, false, constrainWestVertices, false, constrainSouthVertices);
     CornerVerticesAreConstrainedVertexMap cvacvm(surface) ;
     SimplificationConstrainedPlacement scp( wsbeac, cvacvm ) ;
 
@@ -373,57 +353,38 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
         bool isCorner = ( ( diffX < diffY ) && ( diffXNext > diffYNext ) ) ||
                         ( ( diffX > diffY ) && ( diffXNext < diffYNext ) ) ;
 
-        int timesInserted = 0;
+        // The data must be converted back to double before returning it to update the cache
+        // This is because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
+        double x = QuantizedMesh::remap( p0.x(), 0.0, 1.0, 0.0, heightsBand->GetXSize() - 1);
+        double y = QuantizedMesh::remap( p0.y(), 0.0, 1.0, 0.0, heightsBand->GetYSize() - 1);
+        double h = QuantizedMesh::remap( p0.z(), 0.0, 1.0, minHeight, maxHeight);
+        Point_3 phm( x, y, h ) ; // Point in "heightmap" format
+
         if ( isCorner ) {
             numCorners++ ;
             if ( p0.x() < 0.5 && p0.y() < 0.5 ) { // Corner (0, 0)
                 edgeIndices.westIndices.push_back(vertInd);
                 edgeIndices.southIndices.push_back(vertInd);
-
-                timesInserted = 2 ;
+                tileWestVertices.push_back(phm) ;
+                tileSouthVertices.push_back(phm) ;
             }
             else if ( p0.x() < 0.5 && p0.y() > 0.5 ) { // Corner (0, 1)
                 edgeIndices.westIndices.push_back(vertInd);
                 edgeIndices.northIndices.push_back(vertInd);
-
-                // Northern vertex turns into a southern vertex to preserve for the next tile
-                double x = 0.0; // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-                double y = 0.0; // North to south conversion (y=0)
-                double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight); // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-                tileSouthVertices.push_back(Point_3(x, y, h));
-
-                timesInserted = 2 ;
+                tileWestVertices.push_back( phm ) ;
+                tileNorthVertices.push_back( phm ) ;
             }
             else if ( p0.x() > 0.5 && p0.y() > 0.5 ) { // Corner (1, 1)
                 edgeIndices.northIndices.push_back(vertInd);
                 edgeIndices.eastIndices.push_back(vertInd);
-
-                // Eastern vertex turns into a western vertex to preserve for the next tile
-                double x = 0.0; // East to west conversion (x=0)
-                //double y = QuantizedMesh::remap(p0.y(), 0.0, 1.0, 0.0, heightsBand->GetYSize() - 1);
-                double y = heightsBand->GetYSize() - 1;
-                double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight);
-                tileWestVertices.push_back(Point_3(x, y, h));
-
-                // Northern vertex turns into a southern vertex to preserve for the next tile
-                x = heightsBand->GetXSize() - 1; // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-                y = 0.0;
-                h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight); // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-                tileSouthVertices.push_back(Point_3(x, y, h));
-
-                timesInserted = 2 ;
+                tileNorthVertices.push_back( phm ) ;
+                tileEastVertices.push_back( phm ) ;
             }
             else { // p0.x() > 0.5 && p0.y() < 0.5 ) // Corner (1, 0)
                 edgeIndices.eastIndices.push_back(vertInd);
                 edgeIndices.southIndices.push_back(vertInd);
-
-                // Eastern vertex turns into a western vertex to preserve for the next tile
-                double x = 0.0; // East to west conversion (x=0)
-                double y = 0.0;
-                double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight);
-                tileWestVertices.push_back(Point_3(x, y, h));
-
-                timesInserted = 2 ;
+                tileEastVertices.push_back( phm ) ;
+                tileSouthVertices.push_back( phm ) ;
             }
         }
         else {
@@ -432,34 +393,22 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                 if (p0.x() < 0.5) {
                     // Western border edge/vertex
                     edgeIndices.westIndices.push_back(vertInd);
-                    timesInserted++;
+                    tileWestVertices.push_back(phm) ;
                 } else { // p0.x() >= 0.5
                     // Eastern border vertex
                     edgeIndices.eastIndices.push_back(vertInd);
-
-                    // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-                    double x = 0.0; // West to east conversion (x=0)
-                    double y = QuantizedMesh::remap(p0.y(), 0.0, 1.0, 0.0, heightsBand->GetYSize() - 1);
-                    double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight);
-                    tileWestVertices.push_back(Point_3(x, y, h));
-
-                    timesInserted++;
+                    tileEastVertices.push_back(phm) ;
                 }
             } else { // diffX >= diffY
                 // Horizontal edge, can be a northern or southern edge
                 if (p0.y() < 0.5) {
                     // Southern border edge/vertex
                     edgeIndices.southIndices.push_back(vertInd);
-                    timesInserted++;
+                    tileSouthVertices.push_back(phm) ;
                 } else { // p0.y() >= 0.5
                     // Northern border edge/vertex
                     edgeIndices.northIndices.push_back(vertInd);
-
-                    // The data must be converted back to double... because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-                    double x = QuantizedMesh::remap(p0.x(), 0.0, 1.0, 0.0, heightsBand->GetXSize() - 1);
-                    double y = 0.0; // North to south conversion
-                    double h = QuantizedMesh::remap(p0.z(), 0.0, 1.0, minHeight, maxHeight);
-                    tileSouthVertices.push_back(Point_3(x, y, h));
+                    tileNorthVertices.push_back(phm) ;
                 }
             }
         }
@@ -482,7 +431,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 //    qmTile->print() ;
 
     // [DEBUG] Export the final tile in OFF format
-//    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
+    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
 
     delete rasterTile;
 
@@ -787,14 +736,6 @@ QuantizedMeshTiler::createRasterTile(const ctb::TileCoordinate &coord) const {
     return tile;
 }
 
-//
-//QuantizedMeshTiler &
-//QuantizedMeshTiler::operator=(const QuantizedMeshTiler &other) {
-//    ctb::GDALTiler::operator=(other);
-//
-//    return *this;
-//}
-
 
 
 void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZoom, const std::string &outDir)
@@ -807,33 +748,40 @@ void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZ
 
         int numStepsX = (int)zoomBounds.getWidth() + 1 ;
 
-        std::vector<Point_3 > prevTileWesternVertices(0) ; // Stores the vertices to maintain from the previous tile's eastern border. Since we are creating the tiles from left-right, down-up, just the previous one is required
-        std::vector< std::vector<Point_3 > > prevRowTilesSouthernVertices( numStepsX, std::vector<Point_3>(0) ) ; // Stores the vertices to maintain of the previous row of tiles' northern borders. Since we process a row each time, we need to store all the vertices of all the tiles from the previous row.
-        int tileColumnInd = 0 ;
+        int tileMaxCoord = 256 ;
+
+        // Prepare the borders cache
+        ZoomTilesBorderVerticesCache bordersCache( zoomBounds, tileMaxCoord ) ;
 
         // Processing the tiles row-wise, from
         for ( int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++ ) {
-            for ( int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx++, tileColumnInd++ ) {
+            for ( int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx++ ) {
                 std::cout << "Processing tile: zoom = " << zoom << ", x = " << tx << ", y = " << ty << std::endl ;
 
                 ctb::TileCoordinate coord( zoom, tx, ty ) ;
 
-                QuantizedMeshTile *terrainTile = this->createTile(coord, prevTileWesternVertices, prevRowTilesSouthernVertices[tileColumnInd] ) ;
-                //QuantizedMeshTile *terrainTile = this->createTileNoSimp(coord) ;
-//                std::cout << "Num western vertices = " << prevTileWesternVertices.size() << std::endl ;
-//                for (int i = 0; i < prevTileWesternVertices.size(); i++ )
-//                    std::cout << prevTileWesternVertices[i].x() << ", " << prevTileWesternVertices[i].y() << ", " << prevTileWesternVertices[i].z() << std::endl ;
-//                std::cout << "Num southern vertices = " << prevRowTilesSouthernVertices[tileColumnInd].size() << std::endl ;
-//                for (int i = 0; i < prevRowTilesSouthernVertices[tileColumnInd].size(); i++ )
-//                    std::cout << prevRowTilesSouthernVertices[tileColumnInd][i].x() << ", " << prevRowTilesSouthernVertices[tileColumnInd][i].y() << ", " << prevRowTilesSouthernVertices[tileColumnInd][i].z() << std::endl ;
+                // Get the borders to maintain from the cache
+                std::vector<Point_3> tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ;
+                bordersCache.getConstrainedBorderVerticesForTile( tx, ty, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ) ;
 
-                // write the file
+//                std::cout << "Edges to preserve:" << std::endl ;
+//                std::cout << "tileEastVertices.size() = " << tileEastVertices.size() << std::endl ;
+//                std::cout << "tileWestVertices.size() = " << tileWestVertices.size() << std::endl ;
+//                std::cout << "tileNorthVertices.size() = " << tileSouthVertices.size() << std::endl ;
+//                std::cout << "tileSouthVertices.size() = " << tileNorthVertices.size() << std::endl ;
+
+                // Create the tile
+                QuantizedMeshTile *terrainTile = this->createTile(coord, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ) ;
+
+                // Write the file to disk
                 const std::string fileName = getTileFileAndCreateDirs(coord, outDir);
                 terrainTile->writeFile(fileName) ;
+
+                // Update the cache
+                bordersCache.setConstrainedBorderVerticesForTile( tx, ty, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ) ;
+
+                std::cout << "bordersCache.size() = " << bordersCache.size() << std::endl ;
             }
-            tileColumnInd = 0 ;
-            // The first tile on the row does not have to maintain the western edge, clear the list
-            prevTileWesternVertices.clear() ;
         }
     }
 }

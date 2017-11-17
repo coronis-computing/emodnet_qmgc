@@ -1,5 +1,3 @@
-
-
 #ifndef EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
 #define EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
 
@@ -16,7 +14,7 @@
  * edges corresponding to border edges of already processed neighboring tiles.
  *
  */
-struct WesternAndSouthernBorderEdgesAreConstrainedEdgeMap
+struct BorderEdgesAreConstrainedEdgeMap
 {
     typedef boost::graph_traits<Polyhedron>::edge_descriptor key_type ;
     typedef bool value_type ;
@@ -24,18 +22,23 @@ struct WesternAndSouthernBorderEdgesAreConstrainedEdgeMap
     typedef boost::readable_property_map_tag category ;
 
     const Polyhedron* m_pPolyPtr ;
+    const bool m_constrainEastBorder ;
     const bool m_constrainWestBorder ;
+    const bool m_constrainNorthBorder ;
     const bool m_constrainSouthBorder ;
 
-    WesternAndSouthernBorderEdgesAreConstrainedEdgeMap( const Polyhedron& sm,
-                                          const bool& constrainWestBorder = true,
-                                          const bool& constrainSouthBorder = true )
-            : m_pPolyPtr(&sm),
-              m_constrainWestBorder(constrainWestBorder),
-              m_constrainSouthBorder(constrainSouthBorder)
-    {}
+    BorderEdgesAreConstrainedEdgeMap( const Polyhedron& sm,
+                                      const bool& constrainEastBorder = true,
+                                      const bool& constrainWestBorder = true,
+                                      const bool& constrainNorthBorder = true,
+                                      const bool& constrainSouthBorder = true )
+            : m_pPolyPtr(&sm)
+            , m_constrainEastBorder(constrainEastBorder)
+            , m_constrainWestBorder(constrainWestBorder)
+            , m_constrainNorthBorder(constrainNorthBorder)
+            , m_constrainSouthBorder(constrainSouthBorder) {}
 
-    friend bool get(WesternAndSouthernBorderEdgesAreConstrainedEdgeMap m, const key_type& edge)
+    friend bool get(BorderEdgesAreConstrainedEdgeMap m, const key_type& edge)
     {
         bool isBorder = CGAL::is_border(edge, *m.m_pPolyPtr);
         if (isBorder) {
@@ -45,7 +48,9 @@ struct WesternAndSouthernBorderEdgesAreConstrainedEdgeMap
             double diffX = fabs( p1.x() - p0.x() ) ;
             double diffY = fabs( p1.y() - p0.y() ) ;
 
-            return ( m.m_constrainWestBorder && diffX < diffY && p0.x() < 0.5 ) ||
+            return ( m.m_constrainEastBorder && diffX < diffY && p0.x() > 0.5 ) ||
+                   ( m.m_constrainWestBorder && diffX < diffY && p0.x() < 0.5 ) ||
+                   ( m.m_constrainNorthBorder && diffY < diffX && p0.y() > 0.5 ) ||
                    ( m.m_constrainSouthBorder && diffY < diffX && p0.y() < 0.5 ) ;
         }
         else

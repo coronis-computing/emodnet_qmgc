@@ -15,5 +15,5 @@ add_executable(qm_tiler qm_tiler.cpp ../src/quantized_mesh_tile.cpp
                                      ../3rdParty/meshoptimizer/vfetchoptimizer.cpp
                                      ../src/cgal_utils.cpp
                                      ../src/cgal_further_constrained_placement.h
-                                     ../src/cgal_corner_vertices_are_constrained_vertex_map.h ../src/ellipsoid.h)
+                                     ../src/cgal_corner_vertices_are_constrained_vertex_map.h ../src/ellipsoid.h ../src/zoom_tiles_border_vertices_cache.cpp ../src/zoom_tiles_border_vertices_cache.h ../src/tile_border_vertices.h)
 target_link_libraries(qm_tiler ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CTB_LIBRARY} ${CGAL_LIBRARIES} ${GDAL_LIBRARY} ${GeographicLib_LIBRARIES})
