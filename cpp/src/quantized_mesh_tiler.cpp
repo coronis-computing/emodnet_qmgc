@@ -14,7 +14,7 @@
 #include <cmath>
 #include "forsyth-too/forsythtriangleorderoptimizer.h"
 #include "meshoptimizer/meshoptimizer.h"
-#include "zoom_tiles_border_vertices_cache.h"
+
 
 
 QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord,
@@ -24,22 +24,21 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                                                    std::vector<Point_3> &tileSouthVertices ) const
 {
     // Get a terrain tile represented by the tile coordinate
-    QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord);
+    QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord, m_options.ellipsoid );
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
     GDALRasterBand *heightsBand = rasterTile->dataset->GetRasterBand(1);
-    double noDataValue = heightsBand->GetNoDataValue() ;
+    double noDataValue = heightsBand->GetNoDataValue();
     double resolution;
     ctb::CRSBounds tileBounds = terrainTileBounds(coord, resolution);
 
     // Copy the raster data into an array
-    float rasterHeights[heightsBand->GetXSize()*heightsBand->GetYSize()];
+    float rasterHeights[heightsBand->GetXSize() * heightsBand->GetYSize()];
     if (heightsBand->RasterIO(GF_Read, 0, 0, heightsBand->GetXSize(), heightsBand->GetYSize(),
                               (void *) rasterHeights,
                               heightsBand->GetXSize(), heightsBand->GetYSize(),
                               GDT_Float32, 0, 0) != CE_None) {
         throw ctb::CTBException("Could not read heights from raster");
     }
-
     // Create a base triangulation (using Delaunay) with all the raster info available
     std::vector< Point_3 > heightMapPoints ;
 
@@ -72,7 +71,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                 height = 0 ;
 
             // If the input DEM contains bathymetry, consider the data as depth instead of altitude (negative value!)
-            if ( m_isBathymetry )
+            if ( m_options.isBathymetry )
                 height = -height ;
 
             // In heightmap format
@@ -226,7 +225,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 //    Placement pl(wsbeac) ;
 
     int r = SMS::edge_collapse
-            ( surface, SimplificationStopPredicate(m_simpCountRatioStop),
+            ( surface, SimplificationStopPredicate(m_options.simpCountRatioStop),
               CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
                       .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
                       .get_cost(SimplificationCost())
@@ -693,113 +692,8 @@ QuantizedMeshTile* QuantizedMeshTiler::createTileNoSimp(const ctb::TileCoordinat
 }
 
 
-ctb::GDALTile *
-QuantizedMeshTiler::createRasterTile(const ctb::TileCoordinate &coord) const {
-    // Ensure we have some data from which to create a tile
-    if (poDataset && poDataset->GetRasterCount() < 1) {
-        throw ctb::CTBException("At least one band must be present in the GDAL dataset");
-    }
-
-    // Get the bounds and resolution for a tile coordinate which represents the
-    // data overlap requested by the terrain specification.
-    double resolution;
-    ctb::CRSBounds tileBounds = terrainTileBounds(coord, resolution);
-
-    // Convert the tile bounds into a geo transform
-    double adfGeoTransform[6];
-    adfGeoTransform[0] = tileBounds.getMinX(); // min longitude
-    adfGeoTransform[1] = resolution;
-    adfGeoTransform[2] = 0;
-    adfGeoTransform[3] = tileBounds.getMaxY(); // max latitude
-    adfGeoTransform[4] = 0;
-    adfGeoTransform[5] = -resolution;
-
-    ctb::GDALTile *tile = ctb::GDALTiler::createRasterTile(adfGeoTransform);
-
-    // The previous geotransform represented the data with an overlap as required
-    // by the terrain specification.  This now needs to be overwritten so that
-    // the data is shifted to the bounds defined by tile itself.
-    tileBounds = mGrid.tileBounds(coord);
-    resolution = mGrid.resolution(coord.zoom);
-    adfGeoTransform[0] = tileBounds.getMinX(); // min longitude
-    adfGeoTransform[1] = resolution;
-    adfGeoTransform[2] = 0;
-    adfGeoTransform[3] = tileBounds.getMaxY(); // max latitude
-    adfGeoTransform[4] = 0;
-    adfGeoTransform[5] = -resolution;
-
-    // Set the shifted geo transform to the VRT
-    if (GDALSetGeoTransform(tile->dataset, adfGeoTransform) != CE_None) {
-        throw ctb::CTBException("Could not set geo transform on VRT");
-    }
-
-    return tile;
-}
 
 
 
-void QuantizedMeshTiler::createTilePyramid(const int &startZoom, const int &endZoom, const std::string &outDir)
-{
-    for (ctb::i_zoom zoom = endZoom; zoom <= startZoom; ++zoom) {
-        ctb::TileCoordinate ll = this->grid().crsToTile( this->bounds().getLowerLeft(), zoom ) ;
-        ctb::TileCoordinate ur = this->grid().crsToTile( this->bounds().getUpperRight(), zoom ) ;
-
-        ctb::TileBounds zoomBounds(ll, ur);
-
-        int numStepsX = (int)zoomBounds.getWidth() + 1 ;
-
-        int tileMaxCoord = 256 ;
-
-        // Prepare the borders cache
-        ZoomTilesBorderVerticesCache bordersCache( zoomBounds, tileMaxCoord ) ;
-
-        // Processing the tiles row-wise, from
-        for ( int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++ ) {
-            for ( int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx++ ) {
-                std::cout << "Processing tile: zoom = " << zoom << ", x = " << tx << ", y = " << ty << std::endl ;
-
-                ctb::TileCoordinate coord( zoom, tx, ty ) ;
-
-                // Get the borders to maintain from the cache
-                std::vector<Point_3> tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ;
-                bordersCache.getConstrainedBorderVerticesForTile( tx, ty, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ) ;
-
-//                std::cout << "Edges to preserve:" << std::endl ;
-//                std::cout << "tileEastVertices.size() = " << tileEastVertices.size() << std::endl ;
-//                std::cout << "tileWestVertices.size() = " << tileWestVertices.size() << std::endl ;
-//                std::cout << "tileNorthVertices.size() = " << tileSouthVertices.size() << std::endl ;
-//                std::cout << "tileSouthVertices.size() = " << tileNorthVertices.size() << std::endl ;
-
-                // Create the tile
-                QuantizedMeshTile *terrainTile = this->createTile(coord, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ) ;
-
-                // Write the file to disk
-                const std::string fileName = getTileFileAndCreateDirs(coord, outDir);
-                terrainTile->writeFile(fileName) ;
-
-                // Update the cache
-                bordersCache.setConstrainedBorderVerticesForTile( tx, ty, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ) ;
-
-                std::cout << "bordersCache.size() = " << bordersCache.size() << std::endl ;
-            }
-        }
-    }
-}
 
 
-
-std::string QuantizedMeshTiler::getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
-                                                          const std::string &mainOutDir )
-{
-    // Check/create the tile folder (zoom/x)
-    fs::path mainOutDirPath(mainOutDir) ;
-    fs::path tileFolder = mainOutDirPath / fs::path(std::to_string(coord.zoom)) / fs::path(std::to_string(coord.x)) ;
-    if ( !fs::exists( tileFolder ) && !fs::create_directories( tileFolder ) ) {
-        std::cerr << "[ERROR] Cannot create the tile folder" << tileFolder << std::endl ;
-        return std::string() ;
-    }
-
-    fs::path fileNamePath = tileFolder / fs::path(std::to_string(coord.y) + ".terrain") ;
-
-    return fileNamePath.string() ;
-}

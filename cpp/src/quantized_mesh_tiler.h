@@ -16,34 +16,29 @@ namespace fs = boost::filesystem ;
 
 
 
-class QuantizedMeshTiler : public ctb::GDALTiler
+class QuantizedMeshTiler : public ctb::TerrainTiler
 {
 public:
+
+    struct QMTOptions {
+        bool isBathymetry = false ;
+        Ellipsoid ellipsoid = WGS84Ellipsoid() ;
+        int heighMapSamples = 256 ; // Maximum!
+        double simpCountRatioStop = 0.05 ;
+    };
 
     /// Constructor: instantiates a tiler with all required arguments
     QuantizedMeshTiler(GDALDataset *poDataset,
                        const ctb::Grid &grid,
-                       const ctb::TilerOptions &options,
-                       const bool& bathymetryFlag = false,
-                       const Ellipsoid& e = WGS84Ellipsoid(),
-                       const double& simpCountRatioStop = 0.05 )
-            : GDALTiler(poDataset, grid, options)
-            , m_isBathymetry(bathymetryFlag)
-            , m_ellipsoid(e)
-            , m_simpCountRatioStop(simpCountRatioStop) {}
+                       const ctb::TilerOptions &tilerOptions,
+                       const QMTOptions& options )
+            : TerrainTiler(poDataset, grid, tilerOptions)
+            , m_options(options) {checkOptions();}
 
     /// Default constructor: instantiates a tiler with an empty dataset and default settings
     QuantizedMeshTiler()
-            : GDALTiler()
-            , m_isBathymetry(false)
-            , m_ellipsoid(WGS84Ellipsoid())
-            , m_simpCountRatioStop(0.05) {}
-
-    // Dummy, we need it because we inherit from ctb::GDALTiler, but we do not use it!
-    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord) const override { return new QuantizedMeshTile(coord) ;}
-
-    /// Set bathymetry mode
-    void setBathymetryFlag( bool isBathymetry ) { m_isBathymetry = isBathymetry ; }
+            : TerrainTiler()
+            , m_options() {}
 
     /**
      * @brief Create the quantized mesh tile.
@@ -65,64 +60,35 @@ public:
 
     QuantizedMeshTile* createTileNoSimp(const ctb::TileCoordinate &coord ) const ;
 
-    /**
-     * @brief Creates the tile pyramid in quantized-mesh format
-     *
-     * Due to the quantized-mesh format requiring the vertices on the edges to coincide between neighbors, the creation
-     * of the tiles' for each zoom is not as simple as in the heightmap format, and it requires a more complex loop taking
-     * into account vertices at borders of the neighbors of the current tile being processed
-     */
-    void createTilePyramid(const int &startZoom, const int &endZoom, const std::string &outDir) ;
-
 private:
-
-    /// Create a `GDALTile` representing the required terrain tile data (same as ctb::TerrainTiler)
-    virtual ctb::GDALTile *createRasterTile(const ctb::TileCoordinate &coord) const override;
-
-    /**
-     * @brief Get terrain bounds shifted to introduce a pixel overlap
-     *
-     * Given a `TileCoordinate`, this sets the resolution and returns latitude
-     * and longitude bounds for a tile which include a pixel's worth of data
-     * outside the actual tile bounds to both the east and the north.  This is
-     * used to satisfy the quantized mesh specification of terrain tiles
-     * sharing vertices at edges of surrounding tiles.
-     *
-     * @param coord The tile coordinate identifying the tile in question
-     * @param resolution The resolution of the modified extent is set here
-     */
-    inline ctb::CRSBounds
-    terrainTileBounds(const ctb::TileCoordinate &coord,
-                      double &resolution) const {
-        // The actual tile size accounting for a border
-        ctb::i_tile lTileSize = mGrid.tileSize() - 1;
-        ctb::CRSBounds tile = mGrid.tileBounds(coord); // the actual tile bounds
-
-        // Get the resolution for the dataset without a border
-        resolution = (tile.getMaxX() - tile.getMinX()) / lTileSize;
-
-        // extend the easting by one pixel's worth
-        tile.setMinX(tile.getMinX() - resolution);
-
-        // extend the northing by one pixel's worth
-        tile.setMaxY(tile.getMaxY() + resolution);
-
-        return tile;
-    }
-
-    /**
-     * @brief Check that the tile folder (zoom/x) exists, and creates it otherwise.
-     *
-     * @return The path of the tile's file.
-     */
-    static std::string getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
-                                                 const std::string &mainOutDir ) ;
-
-
     // --- Attributes ---
-    bool m_isBathymetry ;
-    Ellipsoid m_ellipsoid ;
-    double m_simpCountRatioStop ;
+    QMTOptions m_options ;
+//    bool m_isBathymetry ;
+//    Ellipsoid m_ellipsoid ;
+//    double m_simpCountRatioStop ;
+
+    // --- Private Functions ---
+    /**
+     * Ensure that the options passed are valid (warning raised and defaults set otherwise)
+     */
+    void checkOptions() {
+        if ( m_options.heighMapSamples < 0 ) {
+            std::cerr << "[WARNING] QuantizedMeshTiler::options heighMapSamples < 0, defaulting to 256" << std::endl;
+            m_options.heighMapSamples = 256 ;
+        }
+        if ( m_options.heighMapSamples > 256 ) {
+            std::cerr << "[WARNING] QuantizedMeshTiler::options heighMapSamples > 256 (maximum), defaulting to 256" << std::endl;
+            m_options.heighMapSamples = 256 ;
+        }
+        if ( m_options.simpCountRatioStop < 0 ) {
+            std::cerr << "[WARNING] QuantizedMeshTiler::options simpCountRatioStop < 0 (should be between 0 and 1), defaulting to 0.05" << std::endl;
+            m_options.simpCountRatioStop = 0.05 ;
+        }
+        if ( m_options.simpCountRatioStop > 1 ) {
+            std::cerr << "[WARNING] QuantizedMeshTiler::options simpCountRatioStop > 1 (should be between 0 and 1), defaulting to 0.05" << std::endl;
+            m_options.simpCountRatioStop = 0.05 ;
+        }
+    }
 };
 
 #endif //EMODNET_TOOLS_QUANTIZED_MESH_TILER_H

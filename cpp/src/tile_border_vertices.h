@@ -41,10 +41,7 @@ public:
             , m_westernVertices(westernVertices)
             , m_northernVertices(northernVertices)
             , m_southernVertices(southernVertices)
-            , m_lifeCounter(lifeCounter) {
-
-        std::cout << "m_easternVertices.size() = " << m_easternVertices.size() << std::endl ;
-    }
+            , m_lifeCounter(lifeCounter) {}
 
     // Each time we consult for a border, we update the number of times it has been consulted by decreasing the lifeCounter.
     // When it gets to zero, the information in this object will not be needed anymore and can be deleted (responsability of the cache object)

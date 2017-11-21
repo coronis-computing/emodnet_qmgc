@@ -17,6 +17,7 @@ class QuantizedMeshTile :
 public QuantizedMesh, public ctb::Tile
 {
     friend class TerrainTiler;
+    friend class QuantizedMeshTiler;
 
 public:
 

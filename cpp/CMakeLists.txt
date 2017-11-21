@@ -66,6 +66,19 @@ if( GEOGRAPHICLIB_FOUND )
     link_directories( ${GeographicLib_LIBRARY_DIRS} )
 endif()
 
+# OpenMP
+if(USE_OPENMP)
+    find_package(OpenMP)
+endif()
+if(USE_OPENMP AND OPENMP_FOUND)
+    message(STATUS "Enabling OpenMP support")
+    add_definitions("-DUSE_OPENMP")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+    message(STATUS "Disabling OpenMP support")
+endif()
+
 # Project-related include dirs
 include_directories("./src")
 include_directories("./apps")
