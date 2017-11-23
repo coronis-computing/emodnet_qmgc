@@ -67,3 +67,17 @@ unsigned short GZipFileReader::readUShort()
 {
     return this->read<unsigned short>() ;
 }
+
+
+
+char GZipFileReader::readChar()
+{
+    return this->read<char>() ;
+}
+
+
+
+unsigned char GZipFileReader::readUChar()
+{
+    return this->read<unsigned char>() ;
+}

@@ -33,10 +33,8 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile( const in
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() ) {
-            std::cout << "Erasing data that should not be used anymore..." << std::endl ;
+        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
             m_mapTileToBorderVertices.erase(tileInd);
-        }
     }
 
     /* Western vertices */
@@ -54,10 +52,8 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile( const in
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() ) {
-            std::cout << "Erasing data that should not be used anymore..." << std::endl ;
+        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
             m_mapTileToBorderVertices.erase(tileInd) ;
-        }
     }
 
     /* Northern vertices */
@@ -76,10 +72,8 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile( const in
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() ) {
-            std::cout << "Erasing data that should not be used anymore..." << std::endl ;
+        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
             m_mapTileToBorderVertices.erase(tileInd);
-        }
     }
 
     /* Southern vertices */
@@ -98,10 +92,8 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile( const in
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() ) {
-            std::cout << "Erasing data that should not be used anymore..." << std::endl ;
+        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
             m_mapTileToBorderVertices.erase(tileInd) ;
-        }
     }
 }
 

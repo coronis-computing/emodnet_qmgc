@@ -15,7 +15,7 @@
 class QuantizedMesh {
 
 public:
-    // Various structs as described in the documentation
+    // --- Various structs as described in the documentation ---
     // (https://cesiumjs.org/data-and-assets/terrain/formats/quantized-mesh-1.0.html)
     struct Header
     {
@@ -76,32 +76,44 @@ public:
         std::vector<unsigned int> northIndices ;
     };
 
-    /* Functions */
+    struct VertexNormals
+    {
+        std::vector<float> nx ;
+        std::vector<float> ny ;
+        std::vector<float> nz ;
+    };
 
-    //! Constructor
+    struct WaterMask {
+        std::vector<unsigned char> mask ; // Can be either a single value or 256x256
+    };
+
+    enum ExtensionIds {OCT_VERTEX_NORMALS = 1, WATER_MASK = 2};
+
+    // --- Functions ---
+    /// Constructor
     QuantizedMesh() {
         m_header = Header() ;
         m_vertexData = VertexData() ;
         m_indexData = IndexData() ;
         m_edgeIndices = EdgeIndices() ;
+        m_vertexNormals = VertexNormals() ;
+        m_waterMask = WaterMask() ;
         m_bytesPerIndex = 0 ;
-//        m_hasBounds = false ;
     }
 
-
-    //! Constructor from file
+    /// Constructor from file
     QuantizedMesh( const std::string &filePath ) { readFile(filePath) ; }
 
-    //! Read the tile from a file
+    /// Read the tile from a file
     bool readFile( const std::string &filePath ) ;
 
-    //! Write the tile to a file
+    /// Write the tile to a file
     bool writeFile( const std::string &filePath ) ;
 
-    //! Show the contents of the tile on screen
+    /// Show the contents of the tile on screen
     void print() ;
 
-    //! Show the contents of the header of the tile on screen
+    /// Show the contents of the header of the tile on screen
     void printHeader() ;
 
     /// Set the header part of the quantized mesh structure
@@ -116,6 +128,9 @@ public:
     /// Set the edge indices data part of the quantized mesh structure
     void setEdgeIndices( const EdgeIndices& ei ) { m_edgeIndices = ei ; }
 
+    /// Set the vertices normal part of the quantized mesh structure
+    void setVertexNormals( const VertexNormals& vn ) { m_vertexNormals = vn ; }
+
     /// Get the header part of the quantized mesh structure
     Header getHeader() { return m_header ; }
 
@@ -124,6 +139,9 @@ public:
 
     /// Get the index data of the quantized mesh structure
     IndexData getIndexData() { return m_indexData ; }
+
+    /// Get the vertex normals of the quantized mesh structure
+    VertexNormals getVertexNormals() { return m_vertexNormals ; }
 
     // --- Constants ---
     const unsigned short int TILE_SIZE = 65;
@@ -161,6 +179,8 @@ private:
     IndexData m_indexData ;
     EdgeIndices m_edgeIndices ;
     int m_bytesPerIndex ; // Number of bytes used per index
+    VertexNormals m_vertexNormals ;
+    WaterMask m_waterMask ;
 
     // --- Functions ---
 
@@ -172,6 +192,63 @@ private:
     /// Encode a value using zig-zag encoding
     unsigned short zigZagEncode( const short &value ) {
         return (value << 1) ^ (value >> 31) ;
+    }
+
+    /// Encode a vector using oct-encoding
+    void octEncode( const float xyz[3], unsigned char octxy[2] ) {
+        const float invL1Norm = (1.0f) / (fabs(xyz[0]) + fabs(xyz[1]) + fabs(xyz[2]));
+
+        if (xyz[2] < 0.0f) {
+            octxy[0] = static_cast<unsigned char>((1.0f - float(fabs(xyz[1] * invL1Norm))) * sign(xyz[0]));
+            octxy[1] = static_cast<unsigned char>((1.0f - float(fabs(xyz[0] * invL1Norm))) * sign(xyz[1]));
+        } else {
+            octxy[0] = static_cast<unsigned char>(xyz[0] * invL1Norm);
+            octxy[1] = static_cast<unsigned char>(xyz[1] * invL1Norm);
+        }
+    }
+
+    /// Decode a vector using oct-encoding
+    void octDecode( const unsigned char octxy[2], float xyz[3] ) {
+
+        xyz[0] = uchar2float(octxy[0]);
+        xyz[1] = uchar2float(octxy[1]);
+        xyz[2] = 1.0f - (fabs(xyz[0]) + fabs(xyz[1]));
+
+        if (xyz[2] < 0.0f) {
+            float oldX = xyz[0];
+            xyz[0] = ((1.0f) - fabs(xyz[1])) * sign(oldX);
+            xyz[1] = ((1.0f) - fabs(oldX))   * sign(xyz[1]);
+        }
+    }
+
+    inline float sign(float v) {
+        return (v < 0.0f) ? -1.0f : 1.0f;
+    }
+
+    ///
+    float uchar2float( unsigned char u ) {
+        return float(clamp(int(8) * (1.0f / float((uint64_t(1) << 7) - 1)), -1.0f, 1.0f));
+    }
+
+    /// Encodes a float with the 8 bits of the char
+    unsigned char float2uchar( float f ) {
+        return (unsigned char)round(clamp(f, -1.0f, 1.0f) * ((uint64_t(1) << 7) - 1));
+    }
+
+    // Clamps a value between low and hi limits
+    inline float clamp(float val, float low, float hi) {
+        if (val <= low) {
+            return low;
+        } else if (val >= hi) {
+            return hi;
+        } else {
+            return val;
+        }
+    }
+
+    // Round a value
+    inline float round(float f) {
+        return floor(f + 0.5f);
     }
 
 };

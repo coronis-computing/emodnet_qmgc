@@ -59,3 +59,17 @@ int GZipFileWriter::writeUShort( const unsigned short &u )
 {
     return this->write<unsigned short>(u) ;
 }
+
+
+
+int GZipFileWriter::writeChar( const char &c )
+{
+    return this->write<char>(c) ;
+}
+
+
+
+int GZipFileWriter::writeUChar( const unsigned char &c )
+{
+    return this->write<unsigned char>(c) ;
+}

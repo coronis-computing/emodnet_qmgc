@@ -45,6 +45,13 @@ public:
     //! Reads an unsigned short
     unsigned short readUShort() ;
 
+    //! Reads a char
+    char readChar() ;
+
+    //! Reads an unsigned char
+    unsigned char readUChar() ;
+
+
     //! Generic templated read function
     template <typename T>
     T read() {
@@ -68,6 +75,8 @@ public:
 
     //! Closes the file
     bool close() { return gzclose(m_file) ; }
+
+    bool eof() { return gzeof(m_file) ; }
 
 private:
     gzFile m_file ; //! The file to read

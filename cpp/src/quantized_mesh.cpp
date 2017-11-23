@@ -17,144 +17,175 @@
 #include <GeographicLib/Geocentric.hpp>
 
 
-bool QuantizedMesh::readFile( const std::string &filePath )
-{
+bool QuantizedMesh::readFile( const std::string &filePath ) {
     // Open the file
-    GZipFileReader reader( filePath ) ;
-    if ( !reader.isFileOpen() ) {
-        return false ;
+    GZipFileReader reader(filePath);
+    if (!reader.isFileOpen()) {
+        return false;
     }
 
     // Header
-    m_header.CenterX = reader.readDouble() ;
-    m_header.CenterY = reader.readDouble() ;
-    m_header.CenterZ = reader.readDouble() ;
-    m_header.MinimumHeight = reader.readFloat() ;
-    m_header.MaximumHeight = reader.readFloat() ;
-    m_header.BoundingSphereCenterX = reader.readDouble() ;
-    m_header.BoundingSphereCenterY = reader.readDouble() ;
-    m_header.BoundingSphereCenterZ = reader.readDouble() ;
-    m_header.BoundingSphereRadius = reader.readDouble() ;
-    m_header.HorizonOcclusionPointX = reader.readDouble() ;
-    m_header.HorizonOcclusionPointY = reader.readDouble() ;
-    m_header.HorizonOcclusionPointZ = reader.readDouble() ;
+    m_header.CenterX = reader.readDouble();
+    m_header.CenterY = reader.readDouble();
+    m_header.CenterZ = reader.readDouble();
+    m_header.MinimumHeight = reader.readFloat();
+    m_header.MaximumHeight = reader.readFloat();
+    m_header.BoundingSphereCenterX = reader.readDouble();
+    m_header.BoundingSphereCenterY = reader.readDouble();
+    m_header.BoundingSphereCenterZ = reader.readDouble();
+    m_header.BoundingSphereRadius = reader.readDouble();
+    m_header.HorizonOcclusionPointX = reader.readDouble();
+    m_header.HorizonOcclusionPointY = reader.readDouble();
+    m_header.HorizonOcclusionPointZ = reader.readDouble();
 
     // Vertex data
-    m_vertexData.vertexCount = reader.readUInt() ;
+    m_vertexData.vertexCount = reader.readUInt();
 
-    m_bytesPerIndex = 2 ;
-    if (m_vertexData.vertexCount  > ( 64 * 1024 ) ) {
+    m_bytesPerIndex = 2;
+    if (m_vertexData.vertexCount > (64 * 1024)) {
         // More than 64k vertices, so indices are 32-bit.
-        m_bytesPerIndex = 4 ;
+        m_bytesPerIndex = 4;
     }
 
-    unsigned short u = 0, v = 0, h = 0 ;
-    m_vertexData.u.reserve( m_vertexData.vertexCount ) ;
-    for ( int i = 0; i < m_vertexData.vertexCount ; i++ ) {
-        u += zigZagDecode( reader.readUShort() ) ;
-        m_vertexData.u.push_back(u) ;
+    unsigned short u = 0, v = 0, h = 0;
+    m_vertexData.u.reserve(m_vertexData.vertexCount);
+    for (int i = 0; i < m_vertexData.vertexCount; i++) {
+        u += zigZagDecode(reader.readUShort());
+        m_vertexData.u.push_back(u);
     }
-    m_vertexData.v.reserve(m_vertexData.vertexCount) ;
-    for ( int i = 0; i < m_vertexData.vertexCount; i++ ) {
-        v += zigZagDecode( reader.readUShort() ) ;
-        m_vertexData.v.push_back(v) ;
+    m_vertexData.v.reserve(m_vertexData.vertexCount);
+    for (int i = 0; i < m_vertexData.vertexCount; i++) {
+        v += zigZagDecode(reader.readUShort());
+        m_vertexData.v.push_back(v);
     }
-    m_vertexData.height.reserve(m_vertexData.vertexCount) ;
-    for ( int i = 0; i < m_vertexData.vertexCount; i++ ) {
-        h += zigZagDecode( reader.readUShort() ) ;
-        m_vertexData.height.push_back(h) ;
+    m_vertexData.height.reserve(m_vertexData.vertexCount);
+    for (int i = 0; i < m_vertexData.vertexCount; i++) {
+        h += zigZagDecode(reader.readUShort());
+        m_vertexData.height.push_back(h);
     }
 
     // Skip over any additional padding that was added for 2/4 byte alignment
-    unsigned int bytesToSkip = 0 ;
+    unsigned int bytesToSkip = 0;
     if (reader.getPos() % m_bytesPerIndex != 0) {
         bytesToSkip = (m_bytesPerIndex - (reader.getPos() % m_bytesPerIndex));
     }
     if (bytesToSkip > 0) {
-        reader.skipBytes( bytesToSkip ) ;
+        reader.skipBytes(bytesToSkip);
     }
 
     // Faces data
-    m_indexData.triangleCount = reader.readUInt() ;
-    m_indexData.indices.reserve(m_indexData.triangleCount*3) ; // 3 indices per triangle
+    m_indexData.triangleCount = reader.readUInt();
+    m_indexData.indices.reserve(m_indexData.triangleCount * 3); // 3 indices per triangle
 
     // High water mark decoding
-    unsigned int highest = 0 ;
-    for ( int i = 0; i < m_indexData.triangleCount*3; i++ ) {
-        unsigned int code ;
+    unsigned int highest = 0;
+    for (int i = 0; i < m_indexData.triangleCount * 3; i++) {
+        unsigned int code;
         if (m_bytesPerIndex == 2) {
-            unsigned short tmp = reader.readUShort() ;
-            code = (unsigned int)tmp ;
-        }
-        else
-            code = reader.readUInt() ;
+            unsigned short tmp = reader.readUShort();
+            code = (unsigned int) tmp;
+        } else
+            code = reader.readUInt();
 
-        m_indexData.indices.push_back( highest-code ) ;
+        m_indexData.indices.push_back(highest - code);
         if (code == 0) {
-            ++highest ;
+            ++highest;
         }
     }
 
     // Edge indices (west)
-    m_edgeIndices.westVertexCount = reader.readUInt() ;
-    m_edgeIndices.westIndices.reserve(m_edgeIndices.westVertexCount) ;
-    for ( int i = 0; i < m_edgeIndices.westVertexCount; i++ ) {
-        unsigned int ind ;
-        if (m_bytesPerIndex == 2 ) {
-            unsigned short tmp = reader.readUShort() ;
-            ind = (unsigned int)tmp ;
-        }
-        else
-            ind = reader.readUInt() ;
-        m_edgeIndices.westIndices.push_back(ind) ;
+    m_edgeIndices.westVertexCount = reader.readUInt();
+    m_edgeIndices.westIndices.reserve(m_edgeIndices.westVertexCount);
+    for (int i = 0; i < m_edgeIndices.westVertexCount; i++) {
+        unsigned int ind;
+        if (m_bytesPerIndex == 2) {
+            unsigned short tmp = reader.readUShort();
+            ind = (unsigned int) tmp;
+        } else
+            ind = reader.readUInt();
+        m_edgeIndices.westIndices.push_back(ind);
     }
 
     // Edge indices (south)
-    m_edgeIndices.southVertexCount = reader.readUInt() ;
-    m_edgeIndices.southIndices.reserve(m_edgeIndices.southVertexCount) ;
-    for ( int i = 0; i < m_edgeIndices.southVertexCount; i++ ) {
-        unsigned int ind ;
-        if (m_bytesPerIndex == 2 ) {
-            unsigned short tmp = reader.readUShort() ;
-            ind = (unsigned int)tmp ;
-        }
-        else
-            ind = reader.readUInt() ;
-        m_edgeIndices.southIndices.push_back(ind) ;
+    m_edgeIndices.southVertexCount = reader.readUInt();
+    m_edgeIndices.southIndices.reserve(m_edgeIndices.southVertexCount);
+    for (int i = 0; i < m_edgeIndices.southVertexCount; i++) {
+        unsigned int ind;
+        if (m_bytesPerIndex == 2) {
+            unsigned short tmp = reader.readUShort();
+            ind = (unsigned int) tmp;
+        } else
+            ind = reader.readUInt();
+        m_edgeIndices.southIndices.push_back(ind);
     }
 
     // Edge indices (east)
-    m_edgeIndices.eastVertexCount = reader.readUInt() ;
-    m_edgeIndices.eastIndices.reserve(m_edgeIndices.eastVertexCount) ;
-    for ( int i = 0; i < m_edgeIndices.eastVertexCount; i++ ) {
-        unsigned int ind ;
-        if (m_bytesPerIndex == 2 ) {
-            unsigned short tmp = reader.readUShort() ;
-            ind = (unsigned int)tmp ;
-        }
-        else
-            ind = reader.readUInt() ;
-        m_edgeIndices.eastIndices.push_back(ind) ;
+    m_edgeIndices.eastVertexCount = reader.readUInt();
+    m_edgeIndices.eastIndices.reserve(m_edgeIndices.eastVertexCount);
+    for (int i = 0; i < m_edgeIndices.eastVertexCount; i++) {
+        unsigned int ind;
+        if (m_bytesPerIndex == 2) {
+            unsigned short tmp = reader.readUShort();
+            ind = (unsigned int) tmp;
+        } else
+            ind = reader.readUInt();
+        m_edgeIndices.eastIndices.push_back(ind);
     }
 
     // Edge indices (north)
-    m_edgeIndices.northVertexCount = reader.readUInt() ;
-    m_edgeIndices.northIndices.reserve(m_edgeIndices.northVertexCount) ;
-    for ( int i = 0; i < m_edgeIndices.northVertexCount; i++ ) {
-        unsigned int ind ;
-        if (m_bytesPerIndex == 2 ) {
-            unsigned short tmp = reader.readUShort() ;
-            ind = (unsigned int)tmp ;
-        }
-        else
-            ind = reader.readUInt() ;
-        m_edgeIndices.northIndices.push_back(ind) ;
+    m_edgeIndices.northVertexCount = reader.readUInt();
+    m_edgeIndices.northIndices.reserve(m_edgeIndices.northVertexCount);
+    for (int i = 0; i < m_edgeIndices.northVertexCount; i++) {
+        unsigned int ind;
+        if (m_bytesPerIndex == 2) {
+            unsigned short tmp = reader.readUShort();
+            ind = (unsigned int) tmp;
+        } else
+            ind = reader.readUInt();
+        m_edgeIndices.northIndices.push_back(ind);
     }
 
-    // TODO: Read extensions!
+    // Read extensions, if available
+    while (!reader.eof()) {
+        // Read extension header
+        unsigned char extensionId = reader.readUChar();
+        unsigned int extensionLength = reader.readUInt();
+
+        if ( (int)extensionId == OCT_VERTEX_NORMALS ) {
+            m_vertexNormals.nx.reserve(m_vertexData.vertexCount) ;
+            m_vertexNormals.ny.reserve(m_vertexData.vertexCount) ;
+            m_vertexNormals.nz.reserve(m_vertexData.vertexCount) ;
+
+            for ( int i = 0; i < m_vertexData.vertexCount; i++ ){
+                // Read the oct-encoded pair
+                unsigned char octxy[2] ;
+                octxy[0] = reader.readUChar() ;
+                octxy[1] = reader.readUChar() ;
+
+                // Decode to get the 3D floating-point
+                float xyz[3] ;
+                octDecode(octxy, xyz) ;
+
+                // Store the normal vector
+                m_vertexNormals.nx.push_back(xyz[0]) ;
+                m_vertexNormals.ny.push_back(xyz[1]) ;
+                m_vertexNormals.nz.push_back(xyz[2]) ;
+            }
+        }
+        else if ( (int)extensionId == WATER_MASK ) {
+            m_waterMask.mask.reserve(extensionLength) ;
+            for ( int i = 0; i < extensionLength; i++ ) {
+                m_waterMask.mask.push_back( reader.readUChar() ) ;
+            }
+        }
+        else {
+            std::cout << "[WARNING] Unknown extension type with ID = " << (int)extensionId << ", aborting reading at this point" << std::endl ;
+            reader.close() ;
+            return true ;
+        }
+    }
 
     reader.close() ;
-
     return true ;
 }
 
@@ -289,12 +320,40 @@ bool QuantizedMesh::writeFile( const std::string &filePath ) {
             writer.writeUInt( m_edgeIndices.northIndices[i] ) ;
     }
 
-    // TODO: Write extensions!
+    // Extensions
+    if ( m_vertexNormals.nx.size() > 0 ) {
+        // --- Oct-Encoded Per-Vertex Normals extension ---
+        // Write extension header
+        writer.writeUChar((int)1) ; // extensionId
+        writer.writeUInt(m_vertexData.vertexCount*2*8) ; // extensionLength
+
+        // Write oct-encoded normals
+        for ( int i = 0; i < m_vertexNormals.nx.size(); i++ ) {
+            float xyz[3] ;
+            xyz[0] = m_vertexNormals.nx[i] ;
+            xyz[1] = m_vertexNormals.ny[i] ;
+            xyz[2] = m_vertexNormals.nz[i] ;
+
+            unsigned char octxy[2] ;
+            octEncode(xyz, octxy) ;
+
+            writer.writeUChar(octxy[0]) ;
+            writer.writeUChar(octxy[1]) ;
+        }
+    }
+    if ( m_waterMask.mask.size() > 0 ) {
+        // --- Water Mask extension ---
+        // Write extension header
+        writer.writeUChar((int)2) ; // extensionId
+        writer.writeUInt(m_waterMask.mask.size()) ; // extensionLength
+        // Write the mask's data
+        for ( int i = 0; i < m_waterMask.mask.size(); i++ ) {
+            writer.writeUChar(m_waterMask.mask[i]) ;
+        }
+    }
 
     writer.close() ;
-
     return true ;
-
 }
 
 
@@ -372,6 +431,28 @@ void QuantizedMesh::print()
         cout << m_edgeIndices.northIndices[i] << " " ;
     cout << endl ;
 
+    if ( m_vertexNormals.nx.size() > 0 ) {
+        cout << "Vertices' Normals:" << endl;
+        cout << "  nx =  ";
+        for (int i = 0; i < m_vertexNormals.nx.size(); i++)
+            cout << m_vertexNormals.nx[i] << " ";
+        cout << endl;
+        cout << "  ny =  ";
+        for (int i = 0; i < m_vertexNormals.ny.size(); i++)
+            cout << m_vertexNormals.ny[i] << " ";
+        cout << endl;
+        cout << "  nz =  ";
+        for (int i = 0; i < m_vertexNormals.nz.size(); i++)
+            cout << m_vertexNormals.nz[i] << " ";
+        cout << endl;
+    }
+
+    if ( m_waterMask.mask.size() > 0 ) {
+        cout << "Water mask = ";
+        for (int i = 0; i < m_waterMask.mask.size(); i++)
+            cout << (int)m_waterMask.mask[i] << " ";
+        cout << endl;
+    }
 }
 
 

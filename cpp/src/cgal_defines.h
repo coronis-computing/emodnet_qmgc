@@ -23,6 +23,7 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_stop_predicate.h> // Stop-condition policy based on a fixed number of desired output edges
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h> // // Stop-condition policy that stops when the number of undirected edges drops below a given % of the initial count
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_cost.h>
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_params.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_placement.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Bounded_normal_change_placement.h>
 
@@ -48,6 +49,13 @@ typedef CGAL::Polyhedron_3<K>                                   Polyhedron ;
 typedef Polyhedron::HalfedgeDS                                  HalfedgeDS;
 typedef Polyhedron::Halfedge_handle                             Halfedge_handle;
 typedef Polyhedron::Vertex_handle                               Vertex_handle ;
+typedef boost::graph_traits<Polyhedron>::vertex_descriptor      VertexDescriptor;
+typedef boost::graph_traits<Polyhedron>::face_descriptor        FaceDescriptor;
+// The BGL makes use of indices associated to the vertices
+// We use a std::map to store the index
+typedef std::map<VertexDescriptor,Vector_3>                     VertexNormalMap;
+// A std::map is not a property map, because it is not lightweight
+typedef boost::associative_property_map<VertexNormalMap>        VertexNormalPropertyMap;
 
 
 typedef K::FT                                                   FT;
@@ -55,8 +63,9 @@ typedef CGAL::Min_sphere_of_points_d_traits_3<K,FT>             MinSphereTraits;
 typedef CGAL::Min_sphere_of_spheres_d<MinSphereTraits>          MinSphere;
 typedef MinSphereTraits::Sphere                                 Sphere;
 typedef SMS::LindstromTurk_cost<Polyhedron>                     SimplificationCost ;
+typedef SMS::LindstromTurk_params                               SimplificationCostParams ;
 typedef SMS::Bounded_normal_change_placement<
              SMS::LindstromTurk_placement<Polyhedron> >         SimplificationPlacement ; // Note: Do not change this to use edge_length cost! While it lowers computational overhead, it will certainly destroy the border edges
-typedef SMS::Count_ratio_stop_predicate<Polyhedron>             SimplificationStopPredicate ;
+typedef SMS::Count_stop_predicate<Polyhedron>                   SimplificationStopPredicate ;
 
 #endif //EMODNET_TOOLS_CGAL_DEFINES_H

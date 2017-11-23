@@ -41,6 +41,12 @@ public:
     //! Writes an unsigned short
     int writeUShort( const unsigned short &u ) ;
 
+    //! Writes a char
+    int writeChar( const char &c ) ;
+
+    //! Writes an unsigned char
+    int writeUChar( const unsigned char &c ) ;
+
     /**
      * @brief Generic templated write function
      *

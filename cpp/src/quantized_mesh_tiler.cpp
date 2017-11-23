@@ -9,8 +9,10 @@
 #include "cgal_border_edges_are_constrained_edge_map.h"
 #include "cgal_corner_vertices_are_constrained_vertex_map.h"
 #include "cgal_further_constrained_placement.h"
+#include "cgal_cost_and_count_stop_predicate.h"
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h>
 #include <CGAL/centroid.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <cmath>
 #include "forsyth-too/forsythtriangleorderoptimizer.h"
 #include "meshoptimizer/meshoptimizer.h"
@@ -24,7 +26,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                                                    std::vector<Point_3> &tileSouthVertices ) const
 {
     // Get a terrain tile represented by the tile coordinate
-    QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord, m_options.ellipsoid );
+    QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord, m_options.RefEllipsoid );
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
     GDALRasterBand *heightsBand = rasterTile->dataset->GetRasterBand(1);
     double noDataValue = heightsBand->GetNoDataValue();
@@ -32,10 +34,10 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     ctb::CRSBounds tileBounds = terrainTileBounds(coord, resolution);
 
     // Copy the raster data into an array
-    float rasterHeights[heightsBand->GetXSize() * heightsBand->GetYSize()];
-    if (heightsBand->RasterIO(GF_Read, 0, 0, heightsBand->GetXSize(), heightsBand->GetYSize(),
+    float rasterHeights[m_options.HeighMapSamplingSteps * m_options.HeighMapSamplingSteps];
+    if (heightsBand->RasterIO(GF_Read, 0, 0, 256, 256,
                               (void *) rasterHeights,
-                              heightsBand->GetXSize(), heightsBand->GetYSize(),
+                              m_options.HeighMapSamplingSteps, m_options.HeighMapSamplingSteps,
                               GDT_Float32, 0, 0) != CE_None) {
         throw ctb::CTBException("Could not read heights from raster");
     }
@@ -50,28 +52,30 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     bool constrainSouthVertices = tileSouthVertices.size() > 0 ;
 
     int startX = constrainWestVertices? 1: 0 ;
-    int endX = constrainEastVertices? heightsBand->GetXSize()-1: heightsBand->GetXSize() ;
+    int endX = constrainEastVertices? m_options.HeighMapSamplingSteps-1: m_options.HeighMapSamplingSteps ;
     int startY = constrainNorthVertices? 1: 0 ;
-    int endY = constrainSouthVertices? heightsBand->GetYSize()-1: heightsBand->GetYSize() ;
+    int endY = constrainSouthVertices? m_options.HeighMapSamplingSteps-1: m_options.HeighMapSamplingSteps ;
 
 
     // Add the vertices from the raster
     for ( int i = startX; i < endX; i++ ) {
         for (int j = startY; j < endY; j++) {
-            int y = heightsBand->GetYSize() - 1 - j; // y coordinate within the tile.
+            int y = m_options.HeighMapSamplingSteps - 1 - j; // y coordinate within the tile.
             // Note that the heights in RasterIO have the origin in the upper-left corner,
             // while the tile has it in the lower-left. Obviously, x = i
 
             // Height value
-            float height = rasterHeights[j * heightsBand->GetXSize() + i];
+            float height = rasterHeights[j * m_options.HeighMapSamplingSteps + i];
+
+            // Clipping
+            height = clip( height, m_options.ClippingLowValue, m_options.ClippingHighValue ) ;
 
             // When no data is available, we assume ground data
-//            if ( height == noDataValue )
-            if (height < 0) // Workaround for EMODnet data
+            if ( height == noDataValue )
                 height = 0 ;
 
             // If the input DEM contains bathymetry, consider the data as depth instead of altitude (negative value!)
-            if ( m_options.isBathymetry )
+            if ( m_options.IsBathymetry )
                 height = -height ;
 
             // In heightmap format
@@ -115,8 +119,8 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
             maxHeight = it->z();
 
         // In Latitude, Longitude, Height format
-        float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)it->y()/((float)heightsBand->GetYSize()-1)));
-        float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)it->x()/((float)heightsBand->GetXSize()-1)));
+        float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)it->y()/((float)m_options.HeighMapSamplingSteps-1)));
+        float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * ((float)it->x()/((float)m_options.HeighMapSamplingSteps-1)));
         latLonPoints.push_back(Point_3(lat, lon, it->z()));
     }
 
@@ -195,8 +199,8 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     // conditioned for simplification
     std::vector< Point_3 > uvhPts ;
     for ( std::vector<Point_3>::iterator it = heightMapPoints.begin(); it != heightMapPoints.end(); ++it ) {
-        double u = QuantizedMesh::remap( CGAL::to_double(it->x()), 0.0, heightsBand->GetXSize()-1, 0.0, 1.0 ) ;
-        double v = QuantizedMesh::remap( CGAL::to_double(it->y()), 0.0, heightsBand->GetYSize()-1, 0.0, 1.0 ) ;
+        double u = QuantizedMesh::remap( CGAL::to_double(it->x()), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double v = QuantizedMesh::remap( CGAL::to_double(it->y()), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
         double h = QuantizedMesh::remap( CGAL::to_double(it->z()), minHeight, maxHeight, 0.0, 1.0 ) ;
 
         uvhPts.push_back( Point_3( u, v, h ) ) ;
@@ -206,7 +210,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     Delaunay dt( uvhPts.begin(), uvhPts.end() );
 
     // --- Debug ---
-    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
+//    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
 
     // Translate to Polyhedron
     Polyhedron surface ;
@@ -220,15 +224,24 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     BorderEdgesAreConstrainedEdgeMap wsbeac(surface, false, constrainWestVertices, false, constrainSouthVertices);
     CornerVerticesAreConstrainedVertexMap cvacvm(surface) ;
     SimplificationConstrainedPlacement scp( wsbeac, cvacvm ) ;
+    SimplificationCost sc( SimplificationCostParams( m_options.SimpWeightVolume,
+                                                     m_options.SimpWeightBoundary,
+                                                     m_options.SimpWeightShape ) ) ;
+
+    // TODO: Find a way to provide an intuitive stop predicate based on cost...
+//    SMS::Cost_and_count_stop_predicate<Polyhedron> cacsp(m_options.SimpStopCost,
+//                                                         m_options.SimpStopEdgesCount) ;
 
 //    typedef SMS::Constrained_placement<SimplificationPlacement, WesternAndSouthernBorderEdgesAreConstrainedEdgeMap > Placement;
 //    Placement pl(wsbeac) ;
 
     int r = SMS::edge_collapse
-            ( surface, SimplificationStopPredicate(m_options.simpCountRatioStop),
+            ( surface,
+              SimplificationStopPredicate(m_options.SimpStopEdgesCount),
+//              cacsp,
               CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
                       .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
-                      .get_cost(SimplificationCost())
+                      .get_cost(sc)
 //                      .get_placement(pl)
 //                      .get_placement(SimplificationPlacement())
                       .get_placement(scp)
@@ -246,9 +259,9 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     int numVertices = surface.size_of_vertices() ;
     vertices.reserve(numVertices*3) ;
     for ( Polyhedron::Point_iterator it = surface.points_begin(); it != surface.points_end(); ++it ) {
-        double x = CGAL::to_double(it->x()) ;
-        double y = CGAL::to_double(it->y()) ;
-        double z = CGAL::to_double(it->z()) ;
+        double x = it->x() ;
+        double y = it->y() ;
+        double z = it->z() ;
 
         // Truncate values (after simplification, values might be smaller than 0.0 or larger than 1.0
         x = x < 0.0? 0.0 : x ;
@@ -354,8 +367,8 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
         // The data must be converted back to double before returning it to update the cache
         // This is because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-        double x = QuantizedMesh::remap( p0.x(), 0.0, 1.0, 0.0, heightsBand->GetXSize() - 1);
-        double y = QuantizedMesh::remap( p0.y(), 0.0, 1.0, 0.0, heightsBand->GetYSize() - 1);
+        double x = QuantizedMesh::remap( p0.x(), 0.0, 1.0, 0.0, m_options.HeighMapSamplingSteps - 1);
+        double y = QuantizedMesh::remap( p0.y(), 0.0, 1.0, 0.0, m_options.HeighMapSamplingSteps - 1);
         double h = QuantizedMesh::remap( p0.z(), 0.0, 1.0, minHeight, maxHeight);
         Point_3 phm( x, y, h ) ; // Point in "heightmap" format
 
@@ -426,11 +439,25 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
     qmTile->setEdgeIndices(edgeIndices) ;
 
+    // Compute normals
+    namespace PMP=CGAL::Polygon_mesh_processing;
+    QuantizedMesh::VertexNormals vertexNormals ;
+    for ( Polyhedron::Vertex_iterator vit = surface.vertices_begin(); vit != surface.vertices_end(); ++vit ) {
+        Vector_3 vn = PMP::compute_vertex_normal(vit, surface) ;
+
+        vertexNormals.nx.push_back((float)vn.x()) ;
+        vertexNormals.ny.push_back((float)vn.y()) ;
+        vertexNormals.nz.push_back((float)vn.z()) ;
+    }
+
+    // Write normals to tile
+    qmTile->setVertexNormals(vertexNormals) ;
+
 //    qmTile->printHeader() ;
 //    qmTile->print() ;
 
     // [DEBUG] Export the final tile in OFF format
-    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
+//    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
 
     delete rasterTile;
 

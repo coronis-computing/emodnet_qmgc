@@ -71,7 +71,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
     int endZ = (endZoom < 0) ? 0 : endZoom;
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
-    for (ctb::i_zoom zoom = endZ; zoom <= startZ; ++zoom) {
+    for (int zoom = startZ; zoom >= endZ; --zoom) {
         ctb::TileCoordinate ll = m_tilers[0]->grid().crsToTile( m_tilers[0]->bounds().getLowerLeft(), zoom ) ;
         ctb::TileCoordinate ur = m_tilers[0]->grid().crsToTile( m_tilers[0]->bounds().getUpperRight(), zoom ) ;
 

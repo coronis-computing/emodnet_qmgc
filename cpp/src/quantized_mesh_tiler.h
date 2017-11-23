@@ -21,10 +21,15 @@ class QuantizedMeshTiler : public ctb::TerrainTiler
 public:
 
     struct QMTOptions {
-        bool isBathymetry = false ;
-        Ellipsoid ellipsoid = WGS84Ellipsoid() ;
-        int heighMapSamples = 256 ; // Maximum!
-        double simpCountRatioStop = 0.05 ;
+        bool IsBathymetry = false ;
+        Ellipsoid RefEllipsoid = WGS84Ellipsoid() ;
+        int HeighMapSamplingSteps = 256 ; // Maximum!
+        int SimpStopEdgesCount = 128 ;
+        double SimpWeightVolume = 0.5 ;
+        double SimpWeightBoundary = 0.5 ;
+        double SimpWeightShape = 0.0 ;
+        float ClippingHighValue = std::numeric_limits<float>::infinity() ;
+        float ClippingLowValue = -std::numeric_limits<float>::infinity() ;
     };
 
     /// Constructor: instantiates a tiler with all required arguments
@@ -72,22 +77,28 @@ private:
      * Ensure that the options passed are valid (warning raised and defaults set otherwise)
      */
     void checkOptions() {
-        if ( m_options.heighMapSamples < 0 ) {
-            std::cerr << "[WARNING] QuantizedMeshTiler::options heighMapSamples < 0, defaulting to 256" << std::endl;
-            m_options.heighMapSamples = 256 ;
+        if ( m_options.HeighMapSamplingSteps < 0 ) {
+            std::cerr << "[WARNING] QuantizedMeshTiler::options HeighMapSamplingSteps < 0, defaulting to 256" << std::endl;
+            m_options.HeighMapSamplingSteps = 256 ;
         }
-        if ( m_options.heighMapSamples > 256 ) {
-            std::cerr << "[WARNING] QuantizedMeshTiler::options heighMapSamples > 256 (maximum), defaulting to 256" << std::endl;
-            m_options.heighMapSamples = 256 ;
+        if ( m_options.HeighMapSamplingSteps > 256 ) {
+            std::cerr << "[WARNING] QuantizedMeshTiler::options HeighMapSamplingSteps > 256 (maximum), defaulting to 256" << std::endl;
+            m_options.HeighMapSamplingSteps = 256 ;
         }
-        if ( m_options.simpCountRatioStop < 0 ) {
-            std::cerr << "[WARNING] QuantizedMeshTiler::options simpCountRatioStop < 0 (should be between 0 and 1), defaulting to 0.05" << std::endl;
-            m_options.simpCountRatioStop = 0.05 ;
-        }
-        if ( m_options.simpCountRatioStop > 1 ) {
-            std::cerr << "[WARNING] QuantizedMeshTiler::options simpCountRatioStop > 1 (should be between 0 and 1), defaulting to 0.05" << std::endl;
-            m_options.simpCountRatioStop = 0.05 ;
-        }
+//        if ( m_options.SimpCountRatioStop < 0 ) {
+//            std::cerr << "[WARNING] QuantizedMeshTiler::options SimpCountRatioStop < 0 (should be between 0 and 1), defaulting to 0.05" << std::endl;
+//            m_options.SimpCountRatioStop = 0.05 ;
+//        }
+//        if ( m_options.SimpCountRatioStop > 1 ) {
+//            std::cerr << "[WARNING] QuantizedMeshTiler::options SimpCountRatioStop > 1 (should be between 0 and 1), defaulting to 0.05" << std::endl;
+//            m_options.SimpCountRatioStop = 0.05 ;
+//        }
+//        if ( (m_options.SimpVolumeWeight + m_options.SimpBoundaryWeight + m_options.SimpShapeWeight) > 1 )
+
+    }
+
+    float clip(const float& n, const float& lower, const float& upper) const {
+        return std::max(lower, std::min(n, upper));
     }
 };
 
