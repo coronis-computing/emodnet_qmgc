@@ -26,12 +26,46 @@ typedef CGAL::Mesh_complex_3_in_triangulation_3<
 // Criteria
 typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
 
+typedef K::Point_3              Point_3;
+typedef std::vector<Point_3>    Polyline;
+typedef std::vector<Polyline>   Polylines;
+
 // Boost
 #include <boost/program_options.hpp>
 
 using namespace CGAL::parameters; // To avoid verbose function and named parameters call
 namespace po = boost::program_options ;
 using namespace std ;
+
+
+
+Polylines myDetectBorders(Polyhedron& surface) {
+    surface.normalize_border() ;
+
+    Polylines polylines ;
+
+    Polyhedron::Halfedge_iterator e = surface.border_halfedges_begin() ;
+    ++e ; // We start at the second halfedge!
+    while( e->is_border() )
+    {
+        // Relevant geometric info of the current edge
+        Point_3 p0 = e->vertex()->point() ; // This is the point we will take care of now
+        Point_3 p1 = e->prev()->vertex()->point() ; // This is the previous vertex, with which p0 forms an edge
+
+        // Single edge polyline
+        Polyline pl;
+        pl.push_back(p0);
+        pl.push_back(p1);
+
+        // Add to the list of polylines
+        polylines.push_back(pl);
+
+        std::advance(e,2) ;
+    }
+
+    return polylines ;
+}
+
 
 
 int main( int argc, char** argv )
@@ -86,8 +120,12 @@ int main( int argc, char** argv )
     Mesh_domain domain(poly_ptrs_vector.begin(), poly_ptrs_vector.end());
 
     // Detect the border edges and mark them as features of the domain to preserve
-    domain.detect_borders();
+//    domain.detect_borders();
     //domain.detect_features(); // Includes the detection of borders
+
+    // My version
+    Polylines polylines = myDetectBorders(poly) ;
+    domain.add_features(polylines.begin(), polylines.end());
 
     // Mesh criteria
     Mesh_criteria criteria(edge_size = edgeSize,
