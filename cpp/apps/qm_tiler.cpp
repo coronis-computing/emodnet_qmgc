@@ -27,7 +27,7 @@ int main ( int argc, char **argv)
     std::string inputFile, outDir ;
     int startZoom, endZoom ;
     po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format") ;
-    bool bathymetryFlag = false;
+    bool bathymetryFlag, noSimplify;
     double simpStopCost, simpWeightVolume, simpWeightBoundary, simpWeightShape ;
     float clippingHighValue, clippingLowValue ;
     int simpStopEdgesCount ;
@@ -40,6 +40,7 @@ int main ( int argc, char **argv)
             ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level (i.e., the TMS pyramid is constructed from bottom to top). If smaller than zero, defaults to the maximum zoom possible according to DEM resolution.")
             ( "end-zoom,e", po::value<int>(&endZoom)->default_value(0), "The zoom level to end at. This should be less than the start zoom level (i.e., the TMS pyramid is constructed from bottom to top).")
             ( "bathymetry,b", po::bool_switch(&bathymetryFlag), "Switch to consider the input DEM as containing depths instead of elevations")
+            ( "no-simp", po::bool_switch(&noSimplify), "Flag disabling simplification. The terrain will be represented with a regular grid extracted from the rasters (similar to the old heightmap format)")
             ( "samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify.")
             ( "simp-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value.")
             ( "simp-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference).")
@@ -90,6 +91,7 @@ int main ( int argc, char **argv)
     qmtOptions.IsBathymetry = bathymetryFlag ;
     qmtOptions.RefEllipsoid = e ;
     qmtOptions.HeighMapSamplingSteps = heighMapSamplingSteps ;
+    qmtOptions.Simplify = !noSimplify ;
     qmtOptions.SimpStopEdgesCount = simpStopEdgesCount ;
     qmtOptions.SimpWeightVolume = simpWeightVolume ;
     qmtOptions.SimpWeightBoundary = simpWeightBoundary ;

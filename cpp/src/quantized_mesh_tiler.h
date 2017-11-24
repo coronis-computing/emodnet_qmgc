@@ -21,15 +21,16 @@ class QuantizedMeshTiler : public ctb::TerrainTiler
 public:
 
     struct QMTOptions {
-        bool IsBathymetry = false ;
-        Ellipsoid RefEllipsoid = WGS84Ellipsoid() ;
-        int HeighMapSamplingSteps = 256 ; // Maximum!
-        int SimpStopEdgesCount = 128 ;
-        double SimpWeightVolume = 0.5 ;
-        double SimpWeightBoundary = 0.5 ;
-        double SimpWeightShape = 0.0 ;
-        float ClippingHighValue = std::numeric_limits<float>::infinity() ;
-        float ClippingLowValue = -std::numeric_limits<float>::infinity() ;
+        bool IsBathymetry = false ;                     // Flag indicating wether the values on the raster must be considered as elevations (false) or depths (true)
+        Ellipsoid RefEllipsoid = WGS84Ellipsoid() ;     // The reference ellipsoid of the tile (needed to compute horizon occlusion point)
+        int HeighMapSamplingSteps = 256 ;               // Maximum!
+        bool Simplify = true ;                          // Simplification flag, indicates wether we need to perform simplification or not after constructing the regular grid from the GDAL raster
+        int SimpStopEdgesCount = 128 ;                  // Simplification edges count stop condition. If the number of edges in the surface being simplified drops below this threshold the process finishes
+        double SimpWeightVolume = 0.5 ;                 // Weight for the volume part of Lindstrom-Turk's cost function
+        double SimpWeightBoundary = 0.5 ;               // Weight for the boundary part of Lindstrom-Turk's cost function
+        double SimpWeightShape = 0.0 ;                  // Weight for the shape part of Lindstrom-Turk's cost function
+        float ClippingHighValue = std::numeric_limits<float>::infinity() ; // Maximum value allowed on the raster, clip values if larger
+        float ClippingLowValue = -std::numeric_limits<float>::infinity() ; // Minimum value allowed on the raster, clip values if smaller
     };
 
     /// Constructor: instantiates a tiler with all required arguments
@@ -63,14 +64,9 @@ public:
                                   std::vector<Point_3> &tileNorthVertices,
                                   std::vector<Point_3> &tileSouthVertices) const ;
 
-    QuantizedMeshTile* createTileNoSimp(const ctb::TileCoordinate &coord ) const ;
-
 private:
     // --- Attributes ---
     QMTOptions m_options ;
-//    bool m_isBathymetry ;
-//    Ellipsoid m_ellipsoid ;
-//    double m_simpCountRatioStop ;
 
     // --- Private Functions ---
     /**
@@ -85,21 +81,81 @@ private:
             std::cerr << "[WARNING] QuantizedMeshTiler::options HeighMapSamplingSteps > 256 (maximum), defaulting to 256" << std::endl;
             m_options.HeighMapSamplingSteps = 256 ;
         }
-//        if ( m_options.SimpCountRatioStop < 0 ) {
-//            std::cerr << "[WARNING] QuantizedMeshTiler::options SimpCountRatioStop < 0 (should be between 0 and 1), defaulting to 0.05" << std::endl;
-//            m_options.SimpCountRatioStop = 0.05 ;
-//        }
-//        if ( m_options.SimpCountRatioStop > 1 ) {
-//            std::cerr << "[WARNING] QuantizedMeshTiler::options SimpCountRatioStop > 1 (should be between 0 and 1), defaulting to 0.05" << std::endl;
-//            m_options.SimpCountRatioStop = 0.05 ;
-//        }
-//        if ( (m_options.SimpVolumeWeight + m_options.SimpBoundaryWeight + m_options.SimpShapeWeight) > 1 )
-
     }
 
     float clip(const float& n, const float& lower, const float& upper) const {
         return std::max(lower, std::min(n, upper));
     }
+
+    // --- The following private functions split the processing required to generate the tiles for better readability ---
+
+    /**
+     * Get the heightmap values from the GDAL raster in normalized coordinates
+     *
+     * @param coord
+     * @param tileEastVertices
+     * @param tileWestVertices
+     * @param tileNorthVertices
+     * @param tileSouthVertices
+     * @param[out] minHeight Min height on the tile from raster
+     * @param[out] maxHeight Max height on the tile from raster
+     * @param[out] tileBounds Output variable containing the tile bounds
+     * @return vector of points in the heightmap
+     */
+    std::vector<Point_3> getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
+                                                const std::vector<Point_3> &tileEastVertices,
+                                                const std::vector<Point_3> &tileWestVertices,
+                                                const std::vector<Point_3> &tileNorthVertices,
+                                                const std::vector<Point_3> &tileSouthVertices,
+                                                float& minHeight, float& maxHeight,
+                                                ctb::CRSBounds& tileBounds) const ;
+
+    /**
+     * Simplifies the surface using Lindstrom-Turk algorithm [1][2]
+     * [1] Peter Lindstrom and Greg Turk. Fast and memory efficient polygonal simplification. In IEEE Visualization, pages 279–286, 1998.
+     * [2] P. Lindstrom and G. Turk. Evaluation of memoryless simplification. IEEE Transactions on Visualization and Computer Graphics, 5(2):98–115, slash 1999.
+     *
+     * @param surface
+     */
+    void simplifySurface( Polyhedron& surface,
+                          const bool& constrainEasternVertices,
+                          const bool& constrainWesternVertices,
+                          const bool& constrainNorthernVertices,
+                          const bool& constrainSouthernVertices ) const ;
+
+    /**
+     * Compute the values of the header from the points in the simplified TIN
+     *
+     * @param qmTile The tile where the header will be written
+     * @param surface The triangle mesh containing the geometry of the tile (only its vertices will be used here)
+     * @param tileBounds The tile bounds (in the geographic reference system coordinates)
+     */
+    void computeQuantizedMeshHeader(QuantizedMeshTile *qmTile,
+                                    const Polyhedron& surface,
+                                    const float& minHeight, float& maxHeight,
+                                    const ctb::CRSBounds& tileBounds) const ;
+
+
+    /**
+     * Compute and store all the parts of the Quantized Mesh format related to the geometry of the TIN
+     * While computing this information, we also store the vertices in the borders of the tile
+     *
+     * @param qmTile
+     * @param surface
+     * @param minHeight
+     * @param maxHeight
+     * @param tileEastVertices Eastern vertices of the tile
+     * @param tileWestVertices Western vertices of the tile
+     * @param tileNorthVertices Northern vertices of the tile
+     * @param tileSouthVertices Southern vertices of the tile
+     */
+    void computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
+                                      const Polyhedron& surface,
+                                      const float& minHeight, const float& maxHeight,
+                                      std::vector<Point_3> &tileEastVertices,
+                                      std::vector<Point_3> &tileWestVertices,
+                                      std::vector<Point_3> &tileNorthVertices,
+                                      std::vector<Point_3> &tileSouthVertices ) const ;
 };
 
 #endif //EMODNET_TOOLS_QUANTIZED_MESH_TILER_H
