@@ -22,8 +22,8 @@
 class QuantizedMeshTilesPyramidBuilder {
 public:
     QuantizedMeshTilesPyramidBuilder( const std::string& inputFile,
-                                      const ctb::TilerOptions &options,
-                                      const QuantizedMeshTiler::QMTOptions &qmtOptions,
+                                      const ctb::TilerOptions& options,
+                                      const QuantizedMeshTiler::QMTOptions& qmtOptions, // Note: we pass the options of the tiler and not the tiler itself because the pyramid builder may create more than one instance of a tiler
                                       const ZoomTilesProcessingSchedulerBase* scheduler,
                                       const int& numThreads ) ;
 

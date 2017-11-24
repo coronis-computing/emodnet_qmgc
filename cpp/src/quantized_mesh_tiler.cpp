@@ -457,7 +457,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 //    qmTile->print() ;
 
     // [DEBUG] Export the final tile in OFF format
-//    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
+    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
 
     delete rasterTile;
 
