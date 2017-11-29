@@ -10,6 +10,7 @@
 #include "tile_border_vertices.h"
 
 
+
 class ZoomTilesBorderVerticesCache
 {
 public:
@@ -24,10 +25,24 @@ public:
             , m_zoomBounds(zoomBounds)
             , m_zoomBoundsStepsX( zoomBounds.getMaxX()-zoomBounds.getMinX()+1 )
             , m_tileMaxCoord( tileMaxCoord )
-            , m_useSteinerVertices( useSteinerVertices ) {
+            , m_numProcessedTiles(0)
+    {
         m_numTiles = (zoomBounds.getMaxY()-zoomBounds.getMinY()+1)*(zoomBounds.getMaxX()-zoomBounds.getMinX()+1) ;
         m_tilesVisited = std::vector<bool>( m_numTiles, false ) ;
+        m_tilesBeingProcessed = std::vector<bool>( m_numTiles, false ) ;
     }
+
+    /**
+     * Default Constructor
+     */
+    ZoomTilesBorderVerticesCache()
+            : m_mapTileToBorderVertices()
+            , m_zoomBounds()
+            , m_zoomBoundsStepsX(0)
+            , m_tileMaxCoord(0)
+            , m_numProcessedTiles(0)
+            , m_numTiles(0)
+            , m_tilesVisited() {}
 
     /**
      * Given a tile, it gets the border edges to preserve from already constructed tiles
@@ -69,19 +84,50 @@ public:
      */
     int size() {return m_mapTileToBorderVertices.size() ;}
 
+    bool isTileVisited( const int& tileX, const int& tileY ) const {
+        int tileInd = linearInd(tileX, tileY) ;
+        return isTileVisited(tileInd) ;
+    }
+
+    bool isTileVisited( const int& tileInd ) const {
+        return tileInd >= 0 && tileInd < m_numTiles && m_tilesVisited[tileInd] ;
+    }
+
+    bool isTileBeingProcessed( const int& tileX, const int& tileY ) const {
+        int tileInd = linearInd(tileX, tileY) ;
+        return isTileBeingProcessed(tileInd) ;
+    }
+
+    bool isTileBeingProcessed( const int& tileInd ) const {
+        return tileInd >= 0 && tileInd < m_numTiles && m_tilesBeingProcessed[tileInd] ;
+    }
+
+    bool canTileStartProcessing( const int& tileX, const int& tileY ) const ;
+
+    bool allTilesProcessed() const { return m_numProcessedTiles >= m_numTiles ; }
+
+    int getNumProcessed() const { return m_numProcessedTiles ; }
+
+    int getNumTiles() const { return m_numTiles ; }
+
 private:
     // --- Attributes ---
     ctb::TileBounds m_zoomBounds ;
     int m_zoomBoundsStepsX ; // For sub2ind transform of tile coordinates within the zoom
     int m_tileMaxCoord ;
     int m_numTiles ;
-    bool m_useSteinerVertices ;
+    int m_numProcessedTiles ;
     std::unordered_map<unsigned int, TileBorderVertices> m_mapTileToBorderVertices ;
     std::vector<bool> m_tilesVisited ; // Linearly indexed tiles, to check if they were already visited
+    std::vector<bool> m_tilesBeingProcessed ; // Linearly indexed tiles, to check if they are processing at the moment
 
     // --- Private Functions ---
-    int linearInd( const int& tileX, const int& tileY ) {
-        return (tileY-m_zoomBounds.getMinY())* m_zoomBoundsStepsX + (tileX-m_zoomBounds.getMinX()) ;
+    int linearInd( const int& tileX, const int& tileY ) const {
+        int tileInd = (tileY-m_zoomBounds.getMinY())* m_zoomBoundsStepsX + (tileX-m_zoomBounds.getMinX()) ;
+        if (tileInd < 0 || tileInd >= m_numTiles)
+            return -1 ;
+        else
+            return tileInd ;
     }
 };
 

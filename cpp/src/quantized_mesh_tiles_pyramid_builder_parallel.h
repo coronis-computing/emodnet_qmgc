@@ -7,8 +7,10 @@
 
 #include <ctb.hpp>
 #include "quantized_mesh_tiler.h"
-#include "zoom_tiles_processing_scheduler.h"
+#include "zoom_tiles_scheduler.h"
+#include "zoom_tiles_border_vertices_cache.h"
 #include <iostream>
+#include <vector>
 
 
 
@@ -19,15 +21,22 @@
  * Since the quantized mesh format requires coherence between neighboring tiles, this class is the responsible
  * of maintaining this coherence and build the tiles by taking into account already built tiles.
  */
-class QuantizedMeshTilesPyramidBuilder {
+class QuantizedMeshTilesPyramidBuilderParallel {
 public:
-    QuantizedMeshTilesPyramidBuilder( const std::string& inputFile,
+    struct BordersData {
+        std::vector<Point_3> tileEastVertices ;
+        std::vector<Point_3> tileWestVertices ;
+        std::vector<Point_3> tileNorthVertices ;
+        std::vector<Point_3> tileSouthVertices ;
+    };
+
+    QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
                                       const ctb::TilerOptions& options,
                                       const QuantizedMeshTiler::QMTOptions& qmtOptions, // Note: we pass the options of the tiler and not the tiler itself because the pyramid builder may create more than one instance of a tiler
-                                      const ZoomTilesProcessingSchedulerBase* scheduler,
+                                      const ZoomTilesScheduler& scheduler,
                                       const int& numThreads ) ;
 
-    ~QuantizedMeshTilesPyramidBuilder() ;
+    ~QuantizedMeshTilesPyramidBuilderParallel() ;
 
     /**
      * @brief Creates the tile pyramid in quantized-mesh format
@@ -47,6 +56,18 @@ public:
                                                  const std::string &mainOutDir ) ;
 
 
+    BordersData createTile( const ctb::TileCoordinate& coord,
+                            const int& numThread,
+                            const std::string& outDir ) ;
+
+    /**
+     * Get the next tile to process in the current zoom
+     * @param tileXY
+     * @return
+     */
+    bool getNextTileToProcess(ctb::TilePoint& tileXY) ;
+
+
 
 private:
     // --- Attributes ---
@@ -54,10 +75,10 @@ private:
     QuantizedMeshTiler m_qmTiler ;
     int m_numThreads ;
     QuantizedMeshTiler **m_tilers ;
-    const ZoomTilesProcessingSchedulerBase* m_scheduler ;
+    ZoomTilesScheduler m_scheduler ;
+    std::vector<ctb::TilePoint> m_tilesWaitingToProcess ;
+    ZoomTilesBorderVerticesCache m_bordersCache ;
 
-    // --- Functions ---
-    std::vector<ctb::TilePoint> tilePointsToProcess( const int& zoomLevel, const ctb::TileBounds& zoomBounds ) ;
 };
 
 

@@ -20,7 +20,7 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile( const in
 
     /* Eastern vertices */
     // They come from tile tileX+1, tileY, if exists...
-    unsigned int tileInd = linearInd( tileX+1, tileY ) ;
+    int tileInd = linearInd( tileX+1, tileY ) ;
     if ( m_mapTileToBorderVertices.count(tileInd) ) {
         // ... and from the western border of the previously-computed tile
         std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[tileInd].getWesternVertices() ;
@@ -95,6 +95,10 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile( const in
         if( !m_mapTileToBorderVertices[tileInd].isAlive() )
             m_mapTileToBorderVertices.erase(tileInd) ;
     }
+
+    // Mark it as being processed
+    tileInd = linearInd( tileX, tileY ) ;
+    m_tilesBeingProcessed[tileInd] = true ;
 }
 
 
@@ -170,4 +174,37 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile( const in
 
     // Mark as visited
     m_tilesVisited[tileInd] = true ;
+
+    // Update the number of processed tiles
+    m_numProcessedTiles++ ;
+
+    // Remove from the list of tiles being processed
+    m_tilesBeingProcessed[tileInd] = false ;
+}
+
+
+
+bool ZoomTilesBorderVerticesCache::canTileStartProcessing( const int& tileX, const int& tileY ) const
+{
+    // Check that the 4 neighbors are either visited or not being processed
+    int tileInd = linearInd(tileX-1, tileY) ;
+    if (tileInd < 0 || isTileVisited(tileInd) || !isTileBeingProcessed(tileInd)) {
+        tileInd = linearInd(tileX+1, tileY) ;
+        if (tileInd < 0 || isTileVisited(tileInd) || !isTileBeingProcessed(tileInd)) {
+            tileInd = linearInd(tileX, tileY-1) ;
+            if (tileInd < 0 || isTileVisited(tileInd) || !isTileBeingProcessed(tileInd)) {
+                tileInd = linearInd(tileX, tileY+1) ;
+                if (tileInd < 0 || isTileVisited(tileInd) || !isTileBeingProcessed(tileInd))
+                    return true ;
+                else
+                    return false;
+            }
+            else
+                return false;
+        }
+        else
+            return false ;
+    }
+    else
+        return false;
 }

@@ -8,12 +8,14 @@
 // Std
 #include <iostream>
 #include <string>
-#include <zoom_tiles_processing_scheduler.h>
+#include <zoom_tiles_scheduler.h>
+#include <quantized_mesh_tiles_pyramid_builder_parallel.h>
+#include <chrono>
 // Project-specific
 //#include "quantized_mesh_tile.h"
 //#include "quantized_mesh_tiler.h"
-#include "quantized_mesh_tiles_pyramid_builder.h"
-#include "zoom_tiles_processing_scheduler.h"
+#include "quantized_mesh_tiles_pyramid_builder_parallel.h"
+#include "zoom_tiles_scheduler.h"
 #include "ellipsoid.h"
 
 using namespace std ;
@@ -48,9 +50,7 @@ int main ( int argc, char **argv)
             ( "simp-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference).")
             ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold.")
             ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold.")
-#ifdef USE_OPENMP
-            ("num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)")
-#endif
+            ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)")
     ;
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
@@ -100,8 +100,8 @@ int main ( int argc, char **argv)
     qmtOptions.ClippingLowValue = clippingLowValue ;
 
     // The tiles' processing scheduler
-    ZoomTilesProcessingSchedulerBase* scheduler ;
-    scheduler = new ZoomTilesProcessingSchedulerRowwise() ;
+    ZoomTilesSchedulerRowwise concreteScheduler = ZoomTilesSchedulerRowwise() ;
+    ZoomTilesScheduler scheduler(&concreteScheduler) ;
 
     // Create the tiler object
 //    QuantizedMeshTiler tiler(poDataset, grid, to, bathymetryFlag, e, simpCountRatioStop, numThreads, inputFile);
@@ -114,14 +114,19 @@ int main ( int argc, char **argv)
         return -1 ;
     }
 
-
-//
 //    // Create the tiles
 //    tiler.createTilePyramid(startZoom, endZoom, outDir) ;
-    QuantizedMeshTilesPyramidBuilder qmtpb( inputFile, gdalTilerOptions, qmtOptions, scheduler, numThreads ) ;
-    qmtpb.createTmsPyramid( startZoom, endZoom, outDir ) ;
+//    QuantizedMeshTilesPyramidBuilder qmtpb( inputFile, gdalTilerOptions, qmtOptions, scheduler, numThreads ) ;
 
-    std::cout << "TMS pyramid created." << std::endl << "Remember to create a layer.json file in the root folder! (see ""create_layer_json.py script"")" << std::endl ;
+    QuantizedMeshTilesPyramidBuilderParallel qmtpb( inputFile, gdalTilerOptions, qmtOptions, scheduler, numThreads ) ;
+    auto start = std::chrono::high_resolution_clock::now();
+    qmtpb.createTmsPyramid( startZoom, endZoom, outDir ) ;
+    auto finish = std::chrono::high_resolution_clock::now();
+
+    std::chrono::duration<double> elapsed = finish - start;
+    std::cout << "Requested tiles created in " << elapsed.count() << " seconds" << std::endl
+              << "Remember to create a layer.json file in the root folder! (see ""create_layer_json.py script"")"
+              << std::endl ;
 
     return 0 ;
 }
