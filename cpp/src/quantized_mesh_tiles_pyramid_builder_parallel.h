@@ -30,11 +30,15 @@ public:
         std::vector<Point_3> tileSouthVertices ;
     };
 
-    QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
-                                      const ctb::TilerOptions& options,
-                                      const QuantizedMeshTiler::QMTOptions& qmtOptions, // Note: we pass the options of the tiler and not the tiler itself because the pyramid builder may create more than one instance of a tiler
-                                      const ZoomTilesScheduler& scheduler,
-                                      const int& numThreads ) ;
+//    QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
+//                                      const ctb::TilerOptions& options,
+//                                      const QuantizedMeshTiler::QMTOptions& qmtOptions, // Note: we pass the options of the tiler and not the tiler itself because the pyramid builder may create more than one instance of a tiler
+//                                      const ZoomTilesScheduler& scheduler,
+//                                      const int& numThreads ) ;
+
+    QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
+                                             const ZoomTilesScheduler& scheduler,
+                                             const int& numThreads ) ;
 
     ~QuantizedMeshTilesPyramidBuilderParallel() ;
 
@@ -71,10 +75,11 @@ public:
 
 private:
     // --- Attributes ---
-    ctb::Grid m_grid ;
-    QuantizedMeshTiler m_qmTiler ;
+//    ctb::Grid m_grid ;
+//    QuantizedMeshTiler m_qmTiler ;
     int m_numThreads ;
-    QuantizedMeshTiler **m_tilers ;
+//    QuantizedMeshTiler **m_tilers ;
+    QuantizedMeshTiler m_tiler ;
     ZoomTilesScheduler m_scheduler ;
     std::vector<ctb::TilePoint> m_tilesWaitingToProcess ;
     ZoomTilesBorderVerticesCache m_bordersCache ;

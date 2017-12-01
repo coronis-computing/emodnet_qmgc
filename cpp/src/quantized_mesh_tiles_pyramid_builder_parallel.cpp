@@ -10,46 +10,60 @@
 
 
 
-QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
-                                  const ctb::TilerOptions &gdalTilerOptions,
-                                  const QuantizedMeshTiler::QMTOptions &qmtOptions,
-                                  const ZoomTilesScheduler& scheduler,
-                                  const int& numThreads )
-        : m_scheduler(scheduler)
-        , m_numThreads(numThreads)
-        , m_tilesWaitingToProcess()
-        , m_bordersCache()
-{
-    int tileSize = 256 ; // TODO: Check if this is ok...
-    ctb::Grid m_grid = ctb::GlobalGeodetic(tileSize);
+//QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
+//                                  const ctb::TilerOptions &gdalTilerOptions,
+//                                  const QuantizedMeshTiler::QMTOptions &qmtOptions,
+//                                  const ZoomTilesScheduler& scheduler,
+//                                  const int& numThreads )
+//        : m_scheduler(scheduler)
+//        , m_numThreads(numThreads)
+//        , m_tilesWaitingToProcess()
+//        , m_bordersCache()
+//{
+////    int tileSize = 256 ; // TODO: Check if this is ok...
+////    ctb::Grid m_grid = ctb::GlobalGeodetic(tileSize);
+//
+//    const unsigned int numMaxThreads = std::thread::hardware_concurrency();
+//    if ( m_numThreads <= 0 )
+//        m_numThreads = numMaxThreads ;
+//
+//    // Create a tiler with its own pointer to the dataset for each thread
+////    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
+////    for ( int i = 0; i < m_numThreads; i++ ) {
+////        GDALDataset  *poDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
+////        if (poDataset == NULL) {
+////            std::cerr << "Error: could not open GDAL dataset" << std::endl;
+////            return;
+////        }
+////
+////        m_tilers[i] = new QuantizedMeshTiler(poDataset, m_grid, gdalTilerOptions, qmtOptions, ) ;
+////    }
+//}
 
+
+QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
+                                                                                   const ZoomTilesScheduler& scheduler,
+                                                                                   const int& numThreads )
+        : m_scheduler(scheduler), m_numThreads(numThreads), m_tiler(qmTiler)
+{
     const unsigned int numMaxThreads = std::thread::hardware_concurrency();
     if ( m_numThreads <= 0 )
         m_numThreads = numMaxThreads ;
 
-    std::cout << "Num threads = " << m_numThreads << std::endl ;
-
     // Create a tiler with its own pointer to the dataset for each thread
-    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
-    for ( int i = 0; i < m_numThreads; i++ ) {
-        GDALDataset  *poDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
-        if (poDataset == NULL) {
-            std::cerr << "Error: could not open GDAL dataset" << std::endl;
-            return;
-        }
-
-        m_tilers[i] = new QuantizedMeshTiler(poDataset, m_grid, gdalTilerOptions, qmtOptions) ;
-    }
+//    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
+//    for ( int i = 0; i < m_numThreads; i++ ) {
+//        m_tilers[i] = new QuantizedMeshTiler(qmTiler) ;
+//    }
 }
-
 
 
 QuantizedMeshTilesPyramidBuilderParallel::~QuantizedMeshTilesPyramidBuilderParallel()
 {
-    for ( int i = 0; i < m_numThreads; i++ )
-    {
-        delete m_tilers[i] ;
-    }
+//    for ( int i = 0; i < m_numThreads; i++ )
+//    {
+//        delete m_tilers[i] ;
+//    }
 }
 
 
@@ -57,13 +71,13 @@ QuantizedMeshTilesPyramidBuilderParallel::~QuantizedMeshTilesPyramidBuilderParal
 void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir)
 {
     // Set the desired zoom levels to process
-    int startZ = (startZoom < 0) ? m_tilers[0]->maxZoomLevel() : startZoom ;
+    int startZ = (startZoom < 0) ? m_tiler.maxZoomLevel() : startZoom ;
     int endZ = (endZoom < 0) ? 0 : endZoom;
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        ctb::TileCoordinate ll = m_tilers[0]->grid().crsToTile(m_tilers[0]->bounds().getLowerLeft(), zoom);
-        ctb::TileCoordinate ur = m_tilers[0]->grid().crsToTile(m_tilers[0]->bounds().getUpperRight(), zoom);
+        ctb::TileCoordinate ll = m_tiler.grid().crsToTile(m_tiler.bounds().getLowerLeft(), zoom);
+        ctb::TileCoordinate ur = m_tiler.grid().crsToTile(m_tiler.bounds().getUpperRight(), zoom);
 
         ctb::TileBounds zoomBounds(ll, ur);
 
@@ -91,7 +105,11 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
             while (numThread < m_numThreads && getNextTileToProcess(tp)) {
                 numLaunchedProcesses++ ;
 
-                std::cout << "Processing tile " << numLaunchedProcesses << "/" << m_scheduler.numTiles() << ": x = " << tp.x << ", y = " << tp.y << " (thread " << numThread << ")" << std::endl ;
+                std::cout << "Processing tile " << numLaunchedProcesses << "/" << m_scheduler.numTiles()
+                          << ": x = " << tp.x << ", y = " << tp.y
+                          << " (thread " << numThread << ")"
+                          << "(num. cache entries = " << m_bordersCache.numCacheEntries() << ")"
+                          << std::endl ;
 
                 ctb::TileCoordinate coord(zoom, tp.x, tp.y);
                 coords.push_back(coord) ;
@@ -172,7 +190,7 @@ QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate&
                                                       const std::string& outDir )
 {
     BordersData bd ;
-    QuantizedMeshTile *terrainTile = m_tilers[numThread]->createTile( coord, bd.tileEastVertices, bd.tileWestVertices,
+    QuantizedMeshTile *terrainTile = m_tiler.createTile( coord, bd.tileEastVertices, bd.tileWestVertices,
                                                                       bd.tileNorthVertices, bd.tileSouthVertices ) ;
 
     // Write the file to disk (should be thread safe, as every thread will write to a different file)

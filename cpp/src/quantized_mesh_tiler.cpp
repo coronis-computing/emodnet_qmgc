@@ -16,6 +16,7 @@
 #include <cmath>
 #include "forsyth-too/forsythtriangleorderoptimizer.h"
 #include "meshoptimizer/meshoptimizer.h"
+#include <mutex>
 
 
 
@@ -35,7 +36,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                                                           tileNorthVertices, tileSouthVertices,
                                                           minHeight, maxHeight, tileBounds );
 
-
     // --> Create connectivity
 
     // Delaunay triangulation
@@ -50,8 +50,8 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     surface.delegate(builder);
 
     // Simplify the surface
-    if (m_options.Simplify)
-        simplifySurface(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
+    //simplifySurface(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
+    m_simplifier.simplify(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
     // Needed for the next steps to work properly
@@ -94,6 +94,7 @@ std::vector<Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileC
                                                                 float& minHeight, float& maxHeight,
                                                                 ctb::CRSBounds& tileBounds ) const
 {
+    m_mutex.lock() ;
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
     GDALRasterBand *heightsBand = rasterTile->dataset->GetRasterBand(1);
     double noDataValue = heightsBand->GetNoDataValue();
@@ -108,6 +109,8 @@ std::vector<Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileC
                               GDT_Float32, 0, 0) != CE_None) {
         throw ctb::CTBException("Could not read heights from raster");
     }
+    m_mutex.unlock() ;
+
     // Create a base triangulation (using Delaunay) with all the raster info available
     std::vector< Point_3 > heightMapPoints ;
 
@@ -203,53 +206,53 @@ std::vector<Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileC
 
 
 
-void QuantizedMeshTiler::simplifySurface( Polyhedron& surface,
-                                          const bool& constrainEasternVertices,
-                                          const bool& constrainWesternVertices,
-                                          const bool& constrainNorthernVertices,
-                                          const bool& constrainSouthernVertices ) const
-{
-    // Set up the edge constrainer
-    typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
-                                            BorderEdgesAreConstrainedEdgeMap,
-                                            CornerVerticesAreConstrainedVertexMap > SimplificationConstrainedPlacement ;
-    BorderEdgesAreConstrainedEdgeMap wsbeac( surface,
-                                             constrainEasternVertices,
-                                             constrainWesternVertices,
-                                             constrainNorthernVertices,
-                                             constrainSouthernVertices ) ;
-    CornerVerticesAreConstrainedVertexMap cvacvm(surface) ;
-    SimplificationConstrainedPlacement scp( wsbeac, cvacvm ) ;
-    SimplificationCost sc( SimplificationCostParams( m_options.SimpWeightVolume,
-                                                     m_options.SimpWeightBoundary,
-                                                     m_options.SimpWeightShape ) ) ;
-
-    // TODO: Find a way to provide an intuitive stop predicate based on cost...
-    //    SMS::Cost_and_count_stop_predicate<Polyhedron> cacsp(m_options.SimpStopCost,
-    //                                                         m_options.SimpStopEdgesCount) ;
-
-    //    typedef SMS::Constrained_placement<SimplificationPlacement, WesternAndSouthernBorderEdgesAreConstrainedEdgeMap > Placement;
-    //    Placement pl(wsbeac) ;
-
-    int r = SMS::edge_collapse
-            ( surface,
-              SimplificationStopPredicate(m_options.SimpStopEdgesCount),
-    //              cacsp,
-              CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
-                      .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
-                      .get_cost(sc)
-    //                      .get_placement(pl)
-    //                      .get_placement(SimplificationPlacement())
-                      .get_placement(scp)
-                      .edge_is_constrained_map(wsbeac)
-    ) ;
-
-    // [DEBUG] Write the simplified polyhedron to file
-    //    std::ofstream os("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp.off") ;
-    //    os << surface;
-    //    os.close();
-
-}
+//void QuantizedMeshTiler::simplifySurface( Polyhedron& surface,
+//                                          const bool& constrainEasternVertices,
+//                                          const bool& constrainWesternVertices,
+//                                          const bool& constrainNorthernVertices,
+//                                          const bool& constrainSouthernVertices ) const
+//{
+//    // Set up the edge constrainer
+//    typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
+//                                            BorderEdgesAreConstrainedEdgeMap,
+//                                            CornerVerticesAreConstrainedVertexMap > SimplificationConstrainedPlacement ;
+//    BorderEdgesAreConstrainedEdgeMap wsbeac( surface,
+//                                             constrainEasternVertices,
+//                                             constrainWesternVertices,
+//                                             constrainNorthernVertices,
+//                                             constrainSouthernVertices ) ;
+//    CornerVerticesAreConstrainedVertexMap cvacvm(surface) ;
+//    SimplificationConstrainedPlacement scp( wsbeac, cvacvm ) ;
+//    SimplificationCost sc( SimplificationCostParams( m_options.SimpWeightVolume,
+//                                                     m_options.SimpWeightBoundary,
+//                                                     m_options.SimpWeightShape ) ) ;
+//
+//    // TODO: Find a way to provide an intuitive stop predicate based on cost...
+//    //    SMS::Cost_and_count_stop_predicate<Polyhedron> cacsp(m_options.SimpStopCost,
+//    //                                                         m_options.SimpStopEdgesCount) ;
+//
+//    //    typedef SMS::Constrained_placement<SimplificationPlacement, WesternAndSouthernBorderEdgesAreConstrainedEdgeMap > Placement;
+//    //    Placement pl(wsbeac) ;
+//
+//    int r = SMS::edge_collapse
+//            ( surface,
+//              SimplificationStopPredicate(m_options.SimpStopEdgesCount),
+//    //              cacsp,
+//              CGAL::parameters::vertex_index_map( get( CGAL::vertex_external_index,surface ) )
+//                      .halfedge_index_map(get(CGAL::halfedge_external_index, surface))
+//                      .get_cost(sc)
+//    //                      .get_placement(pl)
+//    //                      .get_placement(SimplificationPlacement())
+//                      .get_placement(scp)
+//                      .edge_is_constrained_map(wsbeac)
+//    ) ;
+//
+//    // [DEBUG] Write the simplified polyhedron to file
+//    //    std::ofstream os("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp.off") ;
+//    //    os << surface;
+//    //    os.close();
+//
+//}
 
 
 void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile *qmTile,
@@ -344,7 +347,7 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
                                                       std::vector<Point_3> &tileSouthVertices) const
 {
     // --> VertexData part
-    std::vector<unsigned short> vertices ;
+        std::vector<unsigned short> vertices ;
     int numVertices = surface.size_of_vertices() ;
     vertices.reserve(numVertices*3) ;
     for ( Polyhedron::Point_const_iterator it = surface.points_begin(); it != surface.points_end(); ++it ) {

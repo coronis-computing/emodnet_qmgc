@@ -17,6 +17,12 @@
 #include "quantized_mesh_tiles_pyramid_builder_parallel.h"
 #include "zoom_tiles_scheduler.h"
 #include "ellipsoid.h"
+#include "surface_simplifier.h"
+#include "surface_simplification_void_strategy.h"
+#include "surface_simplification_lindstrom_turk_strategy.h"
+//#include "surface_simplifier_remeshing_strategy.h"
+
+
 
 using namespace std ;
 namespace po = boost::program_options ;
@@ -30,11 +36,12 @@ int main ( int argc, char **argv)
     int startZoom, endZoom ;
     po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format") ;
     bool bathymetryFlag, noSimplify;
-    double simpStopCost, simpWeightVolume, simpWeightBoundary, simpWeightShape ;
+    double simpWeightVolume, simpWeightBoundary, simpWeightShape ;
     float clippingHighValue, clippingLowValue ;
     int simpStopEdgesCount ;
     int numThreads = 0 ;
     int heighMapSamplingSteps ;
+    std::string schedulerType ;
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse" )
@@ -51,6 +58,7 @@ int main ( int argc, char **argv)
             ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold.")
             ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold.")
             ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)")
+            ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)")
     ;
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
@@ -69,15 +77,15 @@ int main ( int argc, char **argv)
     GDALAllRegister();
 
     // Open the input dataset
-//    GDALDataset  *poDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
-//    if (poDataset == NULL) {
-//        cerr << "Error: could not open GDAL dataset" << endl;
-//        return 1;
-//    }
+    GDALDataset* gdalDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
+    if (gdalDataset == NULL) {
+        cerr << "Error: could not open GDAL dataset" << endl;
+        return 1;
+    }
 
     // Define the grid we are going to use
-//    int tileSize = 256 ; // TODO: Check if this is ok...
-//    ctb::Grid grid = ctb::GlobalGeodetic(tileSize);
+    int tileSize = 256 ;
+    ctb::Grid grid = ctb::GlobalGeodetic(tileSize);
 
     // And the ellipsoid of reference
     Ellipsoid e ;
@@ -91,21 +99,44 @@ int main ( int argc, char **argv)
     qmtOptions.IsBathymetry = bathymetryFlag ;
     qmtOptions.RefEllipsoid = e ;
     qmtOptions.HeighMapSamplingSteps = heighMapSamplingSteps ;
-    qmtOptions.Simplify = !noSimplify ;
-    qmtOptions.SimpStopEdgesCount = simpStopEdgesCount ;
-    qmtOptions.SimpWeightVolume = simpWeightVolume ;
-    qmtOptions.SimpWeightBoundary = simpWeightBoundary ;
-    qmtOptions.SimpWeightShape = simpWeightShape ;
     qmtOptions.ClippingHighValue = clippingHighValue ;
     qmtOptions.ClippingLowValue = clippingLowValue ;
 
-    // The tiles' processing scheduler
-    ZoomTilesSchedulerRowwise concreteScheduler = ZoomTilesSchedulerRowwise() ;
-    ZoomTilesScheduler scheduler(&concreteScheduler) ;
+    // The surface simplifier
+    SurfaceSimplificationLindstromTurkStrategy simpLT = SurfaceSimplificationLindstromTurkStrategy( simpStopEdgesCount,
+                                                                                                    simpWeightVolume,
+                                                                                                    simpWeightBoundary,
+                                                                                                    simpWeightShape ) ;
+    SurfaceSimplificationVoidStrategy simpVoid = SurfaceSimplificationVoidStrategy() ;
+    SurfaceSimplifier simplifier ;
+    if (noSimplify)
+        simplifier.setSimplifier(&simpVoid) ;
+    else
+        simplifier.setSimplifier(&simpLT) ;
 
     // Create the tiler object
-//    QuantizedMeshTiler tiler(poDataset, grid, to, bathymetryFlag, e, simpCountRatioStop, numThreads, inputFile);
-//    QuantizedMeshTiler tiler(poDataset, grid, to, bathymetryFlag, e, simpCountRatioStop);
+    QuantizedMeshTiler tiler(gdalDataset, grid, gdalTilerOptions, qmtOptions, simplifier);
+
+    // The tiles' processing scheduler
+    ZoomTilesSchedulerRowwiseStrategy rowwiseScheduler = ZoomTilesSchedulerRowwiseStrategy() ;
+    ZoomTilesSchedulerColumnwiseStrategy colwiseScheduler = ZoomTilesSchedulerColumnwiseStrategy() ;
+    ZoomTilesSchedulerChessboardStrategy chessboardScheduler = ZoomTilesSchedulerChessboardStrategy() ;
+//    ZoomTilesSchedulerRecursiveFourConnectedStrategy fourConnectedStrategy = ZoomTilesSchedulerRecursiveFourConnectedStrategy() ;
+    ZoomTilesSchedulerFourConnectedStrategy fourConnectedStrategy = ZoomTilesSchedulerFourConnectedStrategy() ;
+    ZoomTilesScheduler scheduler ;
+    std::transform( schedulerType.begin(),schedulerType.end(),schedulerType.begin(), ::tolower ) ;
+    if (schedulerType.compare("rowwise") == 0)
+        scheduler.setScheduler(&rowwiseScheduler) ;
+    else if (schedulerType.compare("columnwise") == 0)
+        scheduler.setScheduler(&colwiseScheduler) ;
+    else if (schedulerType.compare("4connected") == 0)
+        scheduler.setScheduler(&fourConnectedStrategy) ;
+    else if (schedulerType.compare("chessboard") == 0)
+        scheduler.setScheduler(&chessboardScheduler);
+    else {
+        std::cerr << "[ERROR] Unknown scheduler type" << std::endl;
+        return -1;
+    }
 
     // Create the output directory, if needed
     fs::path outDirPath( outDir ) ;
@@ -114,11 +145,8 @@ int main ( int argc, char **argv)
         return -1 ;
     }
 
-//    // Create the tiles
-//    tiler.createTilePyramid(startZoom, endZoom, outDir) ;
-//    QuantizedMeshTilesPyramidBuilder qmtpb( inputFile, gdalTilerOptions, qmtOptions, scheduler, numThreads ) ;
-
-    QuantizedMeshTilesPyramidBuilderParallel qmtpb( inputFile, gdalTilerOptions, qmtOptions, scheduler, numThreads ) ;
+    // Create the tiles
+    QuantizedMeshTilesPyramidBuilderParallel qmtpb( tiler, scheduler, numThreads ) ;
     auto start = std::chrono::high_resolution_clock::now();
     qmtpb.createTmsPyramid( startZoom, endZoom, outDir ) ;
     auto finish = std::chrono::high_resolution_clock::now();

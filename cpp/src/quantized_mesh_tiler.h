@@ -11,6 +11,8 @@
 #include <ctb.hpp>
 #include <boost/filesystem.hpp>
 #include "ellipsoid.h"
+#include "surface_simplifier.h"
+#include <mutex>
 
 namespace fs = boost::filesystem ;
 
@@ -24,27 +26,28 @@ public:
         bool IsBathymetry = false ;                     // Flag indicating wether the values on the raster must be considered as elevations (false) or depths (true)
         Ellipsoid RefEllipsoid = WGS84Ellipsoid() ;     // The reference ellipsoid of the tile (needed to compute horizon occlusion point)
         int HeighMapSamplingSteps = 256 ;               // Maximum!
-        bool Simplify = true ;                          // Simplification flag, indicates wether we need to perform simplification or not after constructing the regular grid from the GDAL raster
-        int SimpStopEdgesCount = 128 ;                  // Simplification edges count stop condition. If the number of edges in the surface being simplified drops below this threshold the process finishes
-        double SimpWeightVolume = 0.5 ;                 // Weight for the volume part of Lindstrom-Turk's cost function
-        double SimpWeightBoundary = 0.5 ;               // Weight for the boundary part of Lindstrom-Turk's cost function
-        double SimpWeightShape = 0.0 ;                  // Weight for the shape part of Lindstrom-Turk's cost function
         float ClippingHighValue = std::numeric_limits<float>::infinity() ; // Maximum value allowed on the raster, clip values if larger
         float ClippingLowValue = -std::numeric_limits<float>::infinity() ; // Minimum value allowed on the raster, clip values if smaller
     };
 
     /// Constructor: instantiates a tiler with all required arguments
-    QuantizedMeshTiler(GDALDataset *poDataset,
+    // Note: We use a string instead of a GDALDataset*, as in ctb, because we want a new GDALDataset* to be opened for each tiler (they are not threadsafe!)
+    QuantizedMeshTiler(GDALDataset *dataset,
                        const ctb::Grid &grid,
                        const ctb::TilerOptions &tilerOptions,
-                       const QMTOptions& options )
-            : TerrainTiler(poDataset, grid, tilerOptions)
-            , m_options(options) {checkOptions();}
+                       const QMTOptions& options,
+                       const SurfaceSimplifier& simplifier )
+            : TerrainTiler(dataset, grid, tilerOptions)
+            , m_options(options)
+            , m_simplifier(simplifier)
+            {checkOptions();}
 
-    /// Default constructor: instantiates a tiler with an empty dataset and default settings
-    QuantizedMeshTiler()
-            : TerrainTiler()
-            , m_options() {}
+    /// A copy constructor that does not try to copy the mutex (needed because mutex are non-copyable)
+    QuantizedMeshTiler(const QuantizedMeshTiler& tiler )
+            : TerrainTiler(tiler.poDataset, tiler.mGrid, tiler.options)
+            , m_options(tiler.m_options)
+            , m_simplifier(tiler.m_simplifier)
+    {}
 
     /**
      * @brief Create the quantized mesh tile.
@@ -67,6 +70,8 @@ public:
 private:
     // --- Attributes ---
     QMTOptions m_options ;
+    SurfaceSimplifier m_simplifier ;
+    mutable std::mutex m_mutex; // Mark mutex as mutable because it doesn't represent the object's real state
 
     // --- Private Functions ---
     /**
@@ -117,11 +122,11 @@ private:
      *
      * @param surface
      */
-    void simplifySurface( Polyhedron& surface,
-                          const bool& constrainEasternVertices,
-                          const bool& constrainWesternVertices,
-                          const bool& constrainNorthernVertices,
-                          const bool& constrainSouthernVertices ) const ;
+//    void simplifySurface( Polyhedron& surface,
+//                          const bool& constrainEasternVertices,
+//                          const bool& constrainWesternVertices,
+//                          const bool& constrainNorthernVertices,
+//                          const bool& constrainSouthernVertices ) const ;
 
     /**
      * Compute the values of the header from the points in the simplified TIN

@@ -82,7 +82,7 @@ public:
      *
      * @return Number of cache entries
      */
-    int size() {return m_mapTileToBorderVertices.size() ;}
+    int numCacheEntries() {return m_mapTileToBorderVertices.size() ;}
 
     bool isTileVisited( const int& tileX, const int& tileY ) const {
         int tileInd = linearInd(tileX, tileY) ;

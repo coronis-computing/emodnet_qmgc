@@ -10,7 +10,13 @@
  */
 
 // CGAL includes
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+//#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+// Remeshing (add these before, otherwise we get a
+#include <CGAL/Mesh_triangulation_3.h>
+#include <CGAL/Mesh_complex_3_in_triangulation_3.h>
+#include <CGAL/Mesh_criteria_3.h>
+#include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
+
 #include <CGAL/Projection_traits_xy_3.h>
 #include <CGAL/Delaunay_triangulation_2.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
@@ -18,6 +24,7 @@
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/Min_sphere_of_spheres_d.h>
 #include <CGAL/Min_sphere_of_points_d_traits_3.h>
+
 // Simplification
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_stop_predicate.h> // Stop-condition policy based on a fixed number of desired output edges
@@ -26,13 +33,16 @@
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_params.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_placement.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Bounded_normal_change_placement.h>
+// STD
+#include <vector>
 
 // CGAL easy-to-use renaming of namespaces
 namespace SMS = CGAL::Surface_mesh_simplification ;
 
 // CGAL types
-// typedef CGAL::Exact_predicates_inexact_constructions_kernel     K;
+//typedef CGAL::Exact_predicates_inexact_constructions_kernel     K;
 typedef CGAL::Simple_cartesian<double>                          K;
+typedef K::FT                                                   FT ;
 typedef CGAL::Projection_traits_xy_3<K>                         Gt;
 typedef CGAL::Delaunay_triangulation_2<Gt>                      Delaunay;
 typedef K::Point_3                                              Point_3;
@@ -40,11 +50,9 @@ typedef K::Point_2                                              Point_2;
 typedef K::Vector_2                                             Vector_2;
 typedef K::Vector_3                                             Vector_3;
 typedef K::Segment_2                                            Segment_2;
-typedef K::FT                                                   FT ;
+typedef std::vector<Point_3>                                    Polyline;
+typedef std::vector<Polyline>                                   Polylines;
 
-//typedef CGAL::Polyhedron_3<K,
-//                           CGAL::Polyhedron_items_3,
-//                           CGAL::HalfedgeDS_vector>             Polyhedron;
 typedef CGAL::Polyhedron_3<K>                                   Polyhedron ;
 typedef Polyhedron::HalfedgeDS                                  HalfedgeDS;
 typedef Polyhedron::Halfedge_handle                             Halfedge_handle;
@@ -57,8 +65,7 @@ typedef std::map<VertexDescriptor,Vector_3>                     VertexNormalMap;
 // A std::map is not a property map, because it is not lightweight
 typedef boost::associative_property_map<VertexNormalMap>        VertexNormalPropertyMap;
 
-
-typedef K::FT                                                   FT;
+// Simplification-related
 typedef CGAL::Min_sphere_of_points_d_traits_3<K,FT>             MinSphereTraits;
 typedef CGAL::Min_sphere_of_spheres_d<MinSphereTraits>          MinSphere;
 typedef MinSphereTraits::Sphere                                 Sphere;
@@ -67,5 +74,14 @@ typedef SMS::LindstromTurk_params                               SimplificationCo
 typedef SMS::Bounded_normal_change_placement<
              SMS::LindstromTurk_placement<Polyhedron> >         SimplificationPlacement ; // Note: Do not change this to use edge_length cost! While it lowers computational overhead, it will certainly destroy the border edges
 typedef SMS::Count_stop_predicate<Polyhedron>                   SimplificationStopPredicate ;
+
+// Remeshing-related
+typedef CGAL::Polyhedral_mesh_domain_with_features_3<K>         MeshDomain;
+typedef CGAL::Mesh_triangulation_3<MeshDomain>::type            Tr; // Triangulation
+typedef CGAL::Mesh_complex_3_in_triangulation_3<
+        Tr,
+        MeshDomain::Corner_index,
+        MeshDomain::Curve_segment_index>                        C3t3;
+typedef CGAL::Mesh_criteria_3<Tr>                               MeshCriteria; // Criteria
 
 #endif //EMODNET_TOOLS_CGAL_DEFINES_H
