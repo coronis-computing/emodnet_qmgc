@@ -18,5 +18,5 @@ add_executable(qm_tiler qm_tiler.cpp ../src/quantized_mesh_tile.cpp
                                      ../src/quantized_mesh_tiles_pyramid_builder_parallel.cpp
                                      ../src/surface_simplification_lindstrom_turk_strategy.cpp
 #                                     ../src/surface_simplifier_remeshing_strategy.cpp
-                                     )
+        ../src/crs_conversions.h)
 target_link_libraries(qm_tiler ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CTB_LIBRARY} ${CGAL_LIBRARIES} ${GDAL_LIBRARY} ${GeographicLib_LIBRARIES})

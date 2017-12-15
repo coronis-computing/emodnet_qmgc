@@ -60,12 +60,6 @@ if(NOT GDAL_FOUND)
 endif()
 include_directories(${GDAL_INCLUDE_DIRS})
 
-find_package( GeographicLib )
-if( GEOGRAPHICLIB_FOUND )
-    include_directories ( ${GeographicLib_INCLUDE_DIRS} )
-    link_directories( ${GeographicLib_LIBRARY_DIRS} )
-endif()
-
 # Project-related include dirs
 include_directories("./src")
 include_directories("./apps")

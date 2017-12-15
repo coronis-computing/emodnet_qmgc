@@ -17,7 +17,7 @@
 #include "forsyth-too/forsythtriangleorderoptimizer.h"
 #include "meshoptimizer/meshoptimizer.h"
 #include <mutex>
-
+#include "crs_conversions.h"
 
 
 QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord,
@@ -279,11 +279,15 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile *qmTile,
     double minEcefZ = std::numeric_limits<double>::infinity();
     double maxEcefZ = -std::numeric_limits<double>::infinity();
     for (int i = 0; i < latLonPoints.size(); i++) {
-        GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
         double tmpx, tmpy, tmpz;
-        earth.Forward((float) latLonPoints[i].x(), (float) latLonPoints[i].y(), (float) latLonPoints[i].z(), tmpx, tmpy,
-                      tmpz);
+        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
+                                  tmpx, tmpy, tmpz) ;
+
         ecefPoints.push_back(Point_3(tmpx, tmpy, tmpz));
+
+        double tmpx2, tmpy2, tmpz2;
+        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
+                                  tmpx2, tmpy2, tmpz2) ;
 
         if (tmpx < minEcefX)
             minEcefX = tmpx;
