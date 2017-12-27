@@ -60,14 +60,24 @@ if(NOT GDAL_FOUND)
 endif()
 include_directories(${GDAL_INCLUDE_DIRS})
 
+# Doxygen for documentation
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/doxyfile.cfg ${CMAKE_CURRENT_BINARY_DIR}/doxyfile @ONLY)
+    add_custom_target(doc
+            ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/doxyfile
+            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+            COMMENT "Generating API documentation with Doxygen" VERBATIM
+            )
+endif(DOXYGEN_FOUND)
+
 # Project-related include dirs
-include_directories("./src")
-include_directories("./apps")
-include_directories("./3rdParty")
+include_directories("src")
+include_directories("3rdParty")
 
 # -----------------------------------------------------------------------------
 # Compilation
 # -----------------------------------------------------------------------------
-add_subdirectory("apps")
-add_subdirectory("tests")
+add_subdirectory("src")
+
 

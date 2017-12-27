@@ -5,6 +5,7 @@
  *
  * This version provides more user parameters to tune.
  *
+ * @author Ricard Campos (rcampos@eia.udg.edu)
  */
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>

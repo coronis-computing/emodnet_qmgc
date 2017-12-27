@@ -14,7 +14,6 @@
 #include <CGAL/centroid.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <cmath>
-#include "forsyth-too/forsythtriangleorderoptimizer.h"
 #include "meshoptimizer/meshoptimizer.h"
 #include <mutex>
 #include "crs_conversions.h"
@@ -42,7 +41,8 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
     Delaunay dt( uvhPts.begin(), uvhPts.end() );
 
     // --- Debug ---
-//    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
+    std::cout << "Writing to file" << std::endl ;
+    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
 
     // Translate to Polyhedron
     Polyhedron surface ;
@@ -62,21 +62,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
     // ...and the QuantizedMesh geometry
     computeQuantizedMeshGeometry( qmTile, surface, minHeight, maxHeight, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices) ;
-
-    // Extensions
-    // Compute normals
-    namespace PMP=CGAL::Polygon_mesh_processing;
-    QuantizedMesh::VertexNormals vertexNormals ;
-    for ( Polyhedron::Vertex_iterator vit = surface.vertices_begin(); vit != surface.vertices_end(); ++vit ) {
-        Vector_3 vn = PMP::compute_vertex_normal(vit, surface) ;
-
-        vertexNormals.nx.push_back((float)vn.x()) ;
-        vertexNormals.ny.push_back((float)vn.y()) ;
-        vertexNormals.nz.push_back((float)vn.z()) ;
-    }
-
-    // Write normals to tile
-    qmTile->setVertexNormals(vertexNormals) ;
 
     // [DEBUG] Export the final tile in OFF format
     qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
@@ -343,7 +328,7 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile *qmTile,
 
 
 void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
-                                                      const Polyhedron& surface,
+                                                      Polyhedron& surface,
                                                       const float& minHeight, const float& maxHeight,
                                                       std::vector<Point_3> &tileEastVertices,
                                                       std::vector<Point_3> &tileWestVertices,
@@ -381,8 +366,8 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
 
     indexData.triangleCount = surface.size_of_facets() ;
     indexData.indices.reserve(indexData.triangleCount*3) ;
-    for ( Polyhedron::Facet_const_iterator it = surface.facets_begin(); it != surface.facets_end(); ++it) {
-        Polyhedron::Halfedge_around_facet_const_circulator j = it->facet_begin();
+    for ( Polyhedron::Facet_iterator it = surface.facets_begin(); it != surface.facets_end(); ++it) {
+        Polyhedron::Halfedge_around_facet_circulator j = it->facet_begin();
         // Facets in our polyhedral surface should be triangles
         CGAL_assertion( CGAL::circulator_size(j) == 3);
         // Extract integer indices
@@ -431,7 +416,7 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
     // Thus, we move along halfedges with an increment of 2
     int numCorners = 0 ; // Just to check correctness
 
-    Polyhedron::Halfedge_const_iterator e = surface.border_halfedges_begin() ;
+    Polyhedron::Halfedge_iterator e = surface.border_halfedges_begin() ;
     ++e ; // We start at the second halfedge!
     while( e->is_border() )
     {
@@ -532,6 +517,21 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
     edgeIndices.northVertexCount = edgeIndices.northIndices.size() ;
 
     qmTile->setEdgeIndices(edgeIndices) ;
+
+    // Extensions
+    // Compute normals
+    namespace PMP=CGAL::Polygon_mesh_processing;
+    QuantizedMesh::VertexNormals vertexNormals ;
+    for ( Polyhedron::Vertex_iterator vit = surface.vertices_begin(); vit != surface.vertices_end(); ++vit ) {
+        Vector_3 vn = PMP::compute_vertex_normal(vit, surface) ;
+
+        vertexNormals.nx.push_back((float)vn.x()) ;
+        vertexNormals.ny.push_back((float)vn.y()) ;
+        vertexNormals.nz.push_back((float)vn.z()) ;
+    }
+
+    // Write normals to tile
+    qmTile->setVertexNormals(vertexNormals) ;
 
     //    qmTile->printHeader() ;
 //    qmTile->print() ;

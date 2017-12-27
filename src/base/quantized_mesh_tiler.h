@@ -155,7 +155,7 @@ private:
      * @param tileSouthVertices Southern vertices of the tile
      */
     void computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
-                                      const Polyhedron& surface,
+                                      Polyhedron& surface,
                                       const float& minHeight, const float& maxHeight,
                                       std::vector<Point_3> &tileEastVertices,
                                       std::vector<Point_3> &tileWestVertices,

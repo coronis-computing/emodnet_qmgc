@@ -17,10 +17,6 @@
  * @param constrainWestBorder
  * @param constrainNorthBorder
  * @param constrainSouthBorder
- * @param eastBorderPolylines
- * @param westBorderPolylines
- * @param northBorderPolylines
- * @param southBorderPolylines
  */
 Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
                                            const bool& constrainEastBorder = true,
@@ -32,6 +28,8 @@ Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
 
     Polyhedron::Halfedge_const_iterator e = surface.border_halfedges_begin() ;
     ++e ; // We start at the second halfedge!
+    Polyline plU; // Polyline for unconstrained border edges. This should be entered as a sequential polyline, not individual edges!
+    bool prevIsRegularBorder = false ; // Checks wether the previously visited edge is a "regular" border edge, or it is a "constrained" border edge. When this is false, we should start a new polyline
     while( e->is_border() )
     {
         // Relevant geometric info of the current edge
@@ -41,28 +39,41 @@ Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
         double diffX = fabs( p1.x() - p0.x() ) ;
         double diffY = fabs( p1.y() - p0.y() ) ;
 
-        Polyline pl;
-        pl.push_back(p0);
-        pl.push_back(p1);
+        if ( ( constrainEastBorder && diffX < diffY && p0.x() > 0.5 ) ||
+             ( constrainWestBorder && diffX < diffY && p0.x() < 0.5 ) ||
+             ( constrainNorthBorder && diffY < diffX && p0.y() > 0.5 ) ||
+             ( constrainSouthBorder && diffY < diffX && p0.y() < 0.5 ) ) {
+            // We add this edge as a polyline, since polylines' endpoints are preserved by the meshing algorithm
+            Polyline pl;
+            pl.push_back(p0);
+            pl.push_back(p1);
 
-        if ( constrainEastBorder && diffX < diffY && p0.x() > 0.5 )
-            polylines.push_back(pl) ;
-        else if ( constrainWestBorder && diffX < diffY && p0.x() < 0.5 )
-            polylines.push_back(pl) ;
-        else if ( constrainNorthBorder && diffY < diffX && p0.y() > 0.5 )
-            polylines.push_back(pl) ;
-        else if ( constrainSouthBorder && diffY < diffX && p0.y() < 0.5 )
-            polylines.push_back(pl) ;
+            polylines.push_back(pl);
+            prevIsRegularBorder = false;
+            std::cout << "Single polyline" << std::endl ;
+        }
+        else {
+            // The edge is a border edge, so we must constrain it to remain in the mesh, but we don't fix its vertices
+            if (!prevIsRegularBorder) {
+                if (!plU.empty())
+                    polylines.push_back(plU);
+                plU.clear() ;
+                plU.push_back(p1) ;
+                plU.push_back(p0) ;
+                prevIsRegularBorder = true ;
+                std::cout << "p1 = " << p1 << std::endl ;
+                std::cout << "p0 = " << p0 << std::endl ;
+            }
+            else {
+                plU.push_back(p0) ;
+                std::cout << "p0 = " << p0 << std::endl ;
+            }
+        }
 
         std::advance(e,2) ;
     }
-
-//    if (!constrainEastBorder) {
-//        Point_3 ( 0.0, )
-//        Polyline pl;
-//        pl.push_back(p0);
-//        pl.push_back(p1);
-//    }
+    if (!plU.empty())
+        polylines.push_back(plU) ;
 
     return polylines ;
 }

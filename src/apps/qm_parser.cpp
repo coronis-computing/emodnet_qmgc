@@ -1,6 +1,10 @@
-//
-// Created by Ricard Campos
-//
+/**
+ * @file
+ * @brief Reads a quantized mesh terrain file
+ *
+ * @author Ricard Campos (rcampos@eia.udg.edu)
+ *
+ */
 
 // Boost
 #include <boost/program_options.hpp>
