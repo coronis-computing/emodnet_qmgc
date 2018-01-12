@@ -11,7 +11,7 @@
 #include <ctb.hpp>
 #include <boost/filesystem.hpp>
 #include "ellipsoid.h"
-#include "surface_simplifier.h"
+#include "tin_creator.h"
 #include <mutex>
 
 namespace fs = boost::filesystem ;
@@ -36,17 +36,17 @@ public:
                        const ctb::Grid &grid,
                        const ctb::TilerOptions &tilerOptions,
                        const QMTOptions& options,
-                       const SurfaceSimplifier& simplifier )
+                       const TINCreator& tinCreator )
             : TerrainTiler(dataset, grid, tilerOptions)
             , m_options(options)
-            , m_simplifier(simplifier)
+            , m_tinCreator(tinCreator)
             {checkOptions();}
 
     /// A copy constructor that does not try to copy the mutex (needed because mutex are non-copyable)
     QuantizedMeshTiler(const QuantizedMeshTiler& tiler )
             : TerrainTiler(tiler.poDataset, tiler.mGrid, tiler.options)
             , m_options(tiler.m_options)
-            , m_simplifier(tiler.m_simplifier)
+            , m_tinCreator(tiler.m_tinCreator)
     {}
 
     /**
@@ -70,7 +70,7 @@ public:
 private:
     // --- Attributes ---
     QMTOptions m_options ;
-    SurfaceSimplifier m_simplifier ;
+    TINCreator m_tinCreator ;
     mutable std::mutex m_mutex; // Mark mutex as mutable because it doesn't represent the object's real state
 
     // --- Private Functions ---

@@ -1,0 +1,85 @@
+//
+// Created by Ricard Campos (rcampos@eia.udg.edu).
+//
+
+#include <vector>
+#include <fstream>
+#include "../base/cgal_defines.h"
+#include "../base/cgal_utils.h"
+#include <CGAL/hierarchy_simplify_point_set.h>
+#include <CGAL/IO/read_xyz_points.h>
+#include <CGAL/Timer.h>
+#include <CGAL/Memory_sizer.h>
+#include <CGAL/IO/Polyhedron_iostream.h>
+// Boost
+#include <boost/program_options.hpp>
+
+using namespace std ;
+namespace po = boost::program_options ;
+
+
+
+int main(int argc, char*argv[])
+{
+    int maxClusterSize ;
+    double maxSurfaceVariance ;
+    std::string inputFile, outputFile;
+    po::options_description options("Simplifies a mesh using CGAL maintaining the edges on the border") ;
+    options.add_options()
+            ("help,h", "Produce help message")
+            ("input,i", po::value<std::string>(&inputFile), "Data points to create the mesh (they are supposed to be projectible to the XY plane, i.e., be an implicit function of the form f(x,y) = z).")
+            ("output,o", po::value<std::string>(&outputFile)->default_value("out.off"), "The output OFF file with the simplified mesh.")
+            ("max-cluster-size", po::value<int>(&maxClusterSize)->default_value(100), "Maximum cluster size.")
+            ("max-surface-variance", po::value<double>(&maxSurfaceVariance)->default_value(0.01), "Max surface variation.")
+    ;
+
+    po::positional_options_description positionalOptions;
+    positionalOptions.add("input", 1);
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(options).positional(positionalOptions).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        cout << options << "\n";
+        return 1;
+    }
+
+    std::vector<Point_3> points;
+    std::ifstream stream(inputFile);
+    if (!stream ||
+        !CGAL::read_xyz_points(stream, std::back_inserter(points)))
+    {
+        std::cerr << "Error: cannot read file " << inputFile << std::endl;
+        return EXIT_FAILURE;
+    }
+    std::cout << "Read " << points.size () << " point(s)" << std::endl;
+    CGAL::Timer task_timer; task_timer.start();
+
+    // simplification by clustering using erase-remove idiom
+    points.erase (CGAL::hierarchy_simplify_point_set (points.begin (), points.end (),
+                                                      maxClusterSize, // Max cluster size
+                                                      maxSurfaceVariance), // Max surface variation
+                  points.end ());
+    std::size_t memory = CGAL::Memory_sizer().virtual_size();
+
+    std::cout << points.size () << " point(s) kept, computed in "
+              << task_timer.time() << " seconds, "
+              << (memory>>20) << " Mib allocated." << std::endl;
+
+    std::cout << "Triangulating the input points" << std::endl ;
+
+    // Delaunay triangulation
+    Delaunay dt( points.begin(), points.end() );
+
+    // Translate to Polyhedron
+    Polyhedron surface ;
+    PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builder(dt);
+    surface.delegate(builder);
+
+    // Save the results
+    std::ofstream of(outputFile);
+    of << surface;
+
+    return EXIT_SUCCESS;
+}

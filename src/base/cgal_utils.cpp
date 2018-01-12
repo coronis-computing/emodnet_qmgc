@@ -30,6 +30,60 @@ void delaunayToOFF( const std::string &outFilePath, const Delaunay &dt )
 }
 
 
+bool isTileCorner( Polyhedron::Halfedge_const_handle e )
+{
+    if (e->is_border()) {
+        Point_3 p0 = e->vertex()->point() ; // The vertex the halfedge is incident to
+        Point_3 p1 = e->prev()->vertex()->point() ; // This is the previous vertex, with which p0 forms an edge
+
+        // Differences between the points in the edge
+        double diffX = fabs( p1.x() - p0.x() ) ;
+        double diffY = fabs( p1.y() - p0.y() ) ;
+
+        // Next edge on the border (since we are in a border halfedge, the next operator points to the next halfedge around the "hole"
+        Point_3 p2 = e->next()->vertex()->point() ;
+
+        // Differences between the points in the next edge
+        double diffXNext = fabs( p2.x() - p0.x() ) ;
+        double diffYNext = fabs( p2.y() - p0.y() ) ;
+
+        // Compare slopes to see if e is incident to a corner vertex (i.e., if p0 is a corner vertex)
+        return ( ( diffX < diffY ) && ( diffXNext > diffYNext ) ) ||
+               ( ( diffX > diffY ) && ( diffXNext < diffYNext ) ) ;
+    }
+    else {
+        return false ;
+    }
+}
+
+
+
+bool isBorder(Polyhedron::Vertex_handle& v)
+{
+    Polyhedron::Halfedge_around_vertex_const_circulator hv = v->vertex_begin();
+    //move around the vertex and check if there is a halfedge which
+    //is on border
+    for(; hv != v->vertex_begin(); v++){
+        if(hv->is_border())
+            return true;
+    }
+    return false;
+}
+
+
+bool isBorder(Polyhedron::Vertex_const_handle& v)
+{
+    Polyhedron::Halfedge_around_vertex_const_circulator hv = v->vertex_begin();
+    //move around the vertex and check if there is a halfedge which
+    //is on border
+    for(; hv != v->vertex_begin(); v++){
+        if(hv->is_border())
+            return true;
+    }
+    return false;
+}
+
+
 
 bool isPointInArc( const Point_2& query, const Point_2& center, const Point_2& p0, const Point_2& p1 )
 {
@@ -44,3 +98,5 @@ bool isPointInArc( const Point_2& query, const Point_2& center, const Point_2& p
 
     return ( AxB*AxC >= 0. && CxB*CxA >= 0. ) ;
 }
+
+

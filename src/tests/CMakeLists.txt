@@ -17,3 +17,8 @@ target_link_libraries(simplify_maintaining_border_edges ${Boost_LIBRARIES} ${CGA
 add_executable(remesh_preserving_borders remesh_preserving_borders.cpp)
 target_link_libraries(remesh_preserving_borders ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
 
+add_executable(hierarchy_simplification hierarchy_simplification.cpp )
+target_link_libraries(hierarchy_simplification ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
+
+add_executable(wlop_simplification wlop_simplification.cpp)
+target_link_libraries(wlop_simplification ${Boost_LIBRARIES} ${CGAL_LIBRARIES})

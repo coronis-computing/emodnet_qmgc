@@ -6,6 +6,7 @@
 #define EMODNET_TOOLS_GENERATE_BORDER_FEATURES_POLYLINES_H
 
 #include "cgal_defines.h"
+#include "cgal_utils.h"
 
 /**
  * Gets the polylines corresponding to the edges on each of the 4 borders the tile if the corresponding flag
@@ -26,12 +27,19 @@ Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
 {
     Polylines polylines ;
 
-    Polyhedron::Halfedge_const_iterator e = surface.border_halfedges_begin() ;
-    ++e ; // We start at the second halfedge!
+//    Polyhedron::Halfedge_const_iterator e = surface.border_halfedges_begin() ;
+
+    // NOTE: The naming of the functions is a bit misleading in CGAL's documentation...
+    // The docs always refer to border halfedges as those halfedges incident to the "hole". However, the range [border_halfedges_begin(), halfedges_end()) includes ALL halfedges in the border, those who are incident to the hole AND ALSO their opposites, incident on a face.
+    // For this reason, we check if this is a real "border halfedge", and take the opposite if it is not
+    Polyhedron::Halfedge_const_handle startHE = surface.border_halfedges_begin() ;
+    if (!startHE->is_border())
+        startHE = startHE->opposite() ;
+    Polyhedron::Halfedge_const_handle e = startHE ;
+
     Polyline plU; // Polyline for unconstrained border edges. This should be entered as a sequential polyline, not individual edges!
     bool prevIsRegularBorder = false ; // Checks wether the previously visited edge is a "regular" border edge, or it is a "constrained" border edge. When this is false, we should start a new polyline
-    while( e->is_border() )
-    {
+    do {
         // Relevant geometric info of the current edge
         Point_3 p0 = e->vertex()->point() ; // This is the point we will take care of now
         Point_3 p1 = e->prev()->vertex()->point() ; // This is the previous vertex, with which p0 forms an edge
@@ -50,7 +58,7 @@ Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
 
             polylines.push_back(pl);
             prevIsRegularBorder = false;
-            std::cout << "Single polyline" << std::endl ;
+//            std::cout << "Single polyline" << std::endl ;
         }
         else {
             // The edge is a border edge, so we must constrain it to remain in the mesh, but we don't fix its vertices
@@ -61,17 +69,25 @@ Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
                 plU.push_back(p1) ;
                 plU.push_back(p0) ;
                 prevIsRegularBorder = true ;
-                std::cout << "p1 = " << p1 << std::endl ;
-                std::cout << "p0 = " << p0 << std::endl ;
+//                std::cout << "Starting polyline: " << std::endl ;
+//                std::cout << "p1 = " << p1 << std::endl ;
+//                std::cout << "p0 = " << p0 << std::endl ;
             }
             else {
-                plU.push_back(p0) ;
-                std::cout << "p0 = " << p0 << std::endl ;
+                plU.push_back(p0);
+//                std::cout << "p0 = " << p0 << std::endl ;
             }
         }
 
-        std::advance(e,2) ;
+        if (prevIsRegularBorder)
+            // If the edge is regular so far, check if it is incident to a corner (they need to be endpoints of the polylines to be maintained during meshing)
+            prevIsRegularBorder = !isTileCorner(e) ;
+
+//        std::advance(e,2) ;
+        e = e->next() ; // Advancing in this way should circulate through the "hole", if we start in a border halfedge
     }
+    while ( e != startHE ); // Finish when we reach the starting point
+
     if (!plU.empty())
         polylines.push_back(plU) ;
 

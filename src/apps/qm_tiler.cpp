@@ -43,10 +43,11 @@
 #include "quantized_mesh_tiles_pyramid_builder_parallel.h"
 #include "zoom_tiles_scheduler.h"
 #include "ellipsoid.h"
-#include "surface_simplifier.h"
-#include "surface_simplification_void_strategy.h"
-#include "surface_simplification_lindstrom_turk_strategy.h"
-#include "surface_simplifier_remeshing_strategy.h"
+#include "tin_creator.h"
+#include "tin_creation_delaunay_strategy.h"
+#include "tin_creation_simplification_lindstrom_turk_strategy.h"
+#include "tin_creation_remeshing_strategy.h"
+#include "tin_creation_simplification_hierarchy_point_set.h"
 
 
 
@@ -61,30 +62,44 @@ int main ( int argc, char **argv)
     std::string inputFile, outDir ;
     int startZoom, endZoom ;
     po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format") ;
-    bool bathymetryFlag, noSimplify;
+    bool bathymetryFlag ;// , noSimplify;
     double simpWeightVolume, simpWeightBoundary, simpWeightShape ;
+    double remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize, simpHierMaxSurfaceVariance, simpHierBorderSimpMaxDist ;
     float clippingHighValue, clippingLowValue ;
-    int simpStopEdgesCount ;
+    int simpStopEdgesCount;
+    unsigned int simpHierMaxClusterSize;
     int numThreads = 0 ;
     int heighMapSamplingSteps ;
-    std::string schedulerType ;
+    std::string tinCreationStrategy, schedulerType ;
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse" )
             ( "output-dir,o", po::value<std::string>(&outDir)->default_value("terrain_tiles_qm"), "The output directory for the tiles" )
-            ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level (i.e., the TMS pyramid is constructed from bottom to top). If smaller than zero, defaults to the maximum zoom possible according to DEM resolution.")
-            ( "end-zoom,e", po::value<int>(&endZoom)->default_value(0), "The zoom level to end at. This should be less than the start zoom level (i.e., the TMS pyramid is constructed from bottom to top).")
-            ( "bathymetry,b", po::bool_switch(&bathymetryFlag), "Switch to consider the input DEM as containing depths instead of elevations")
-            ( "no-simp", po::bool_switch(&noSimplify), "Flag disabling simplification. The terrain will be represented with a regular grid extracted from the rasters (similar to the old heightmap format)")
-            ( "samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify.")
-            ( "simp-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value.")
-            ( "simp-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference).")
-            ( "simp-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference).")
-            ( "simp-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference).")
-            ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold.")
-            ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold.")
-            ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)")
-            ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)")
+            ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level (i.e., the TMS pyramid is constructed from bottom to top). If smaller than zero, defaults to the maximum zoom possible according to DEM resolution." )
+            ( "end-zoom,e", po::value<int>(&endZoom)->default_value(0), "The zoom level to end at. This should be less than the start zoom level (i.e., the TMS pyramid is constructed from bottom to top)." )
+            ( "bathymetry,b", po::bool_switch(&bathymetryFlag), "Switch to consider the input DEM as containing depths instead of elevations" )
+//            ( "no-simp", po::bool_switch(&noSimplify), "Flag disabling simplification. The terrain will be represented with a regular grid extracted from the rasters (similar to the old heightmap format)" )
+            ( "samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify." )
+            ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold." )
+            ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
+            ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)" )
+            ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
+
+            ( "tin-creation-strategy", po::value<string>(&tinCreationStrategy)->default_value("lt"), "TIN creation strategy. OPTIONS: lt (lindstrom/turk simplification), hierarchy, remeshing, delaunay (see documentation for the meaning of each)" )
+
+            ( "simp-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value." )
+            ( "simp-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
+            ( "simp-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
+            ( "simp-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
+
+            ( "remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(0.01), "Remeshing facet distance." )
+            ( "remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
+            ( "remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(0.1), "Remeshing facet size." )
+            ( "remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(0.1), "Remeshing edge size." )
+
+            ( "simp-hier-max-cluster-size", po::value<unsigned int>(&simpHierMaxClusterSize)->default_value(100), "Hierarchy point set simplification maximum cluster size" )
+            ( "simp-hier-max-surface-variance", po::value<double>(&simpHierMaxSurfaceVariance)->default_value(0.01), "Hierarchy point set simplification maximum surface variation" )
+            ( "simp-hier-border-max-error", po::value<double>(&simpHierBorderSimpMaxDist)->default_value(0.01), "Polyline simplification error at borders (in the range [0..1])" )
     ;
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
@@ -129,23 +144,36 @@ int main ( int argc, char **argv)
     qmtOptions.ClippingLowValue = clippingLowValue ;
 
     // The surface simplifier
-    SurfaceSimplificationLindstromTurkStrategy simpLT = SurfaceSimplificationLindstromTurkStrategy( simpStopEdgesCount,
-                                                                                                    simpWeightVolume,
-                                                                                                    simpWeightBoundary,
-                                                                                                    simpWeightShape ) ;
-    SurfaceSimplificationRemeshingStrategy simpR = SurfaceSimplificationRemeshingStrategy( 0.1, 25, 0.5, 5.0 ) ;
-    SurfaceSimplificationVoidStrategy simpVoid = SurfaceSimplificationVoidStrategy() ;
-    SurfaceSimplifier simplifier ;
-    if (noSimplify)
-        simplifier.setSimplifier(&simpVoid) ;
-    else
-//        simplifier.setSimplifier(&simpLT) ;
-        simplifier.setSimplifier(&simpR) ;
+    TINCreationSimplificationLindstromTurkStrategy tcLT = TINCreationSimplificationLindstromTurkStrategy( simpStopEdgesCount,
+                                                                                                          simpWeightVolume,
+                                                                                                          simpWeightBoundary,
+                                                                                                          simpWeightShape ) ;
+    TINCreationRemeshingStrategy tcRemesh = TINCreationRemeshingStrategy( remeshingFacetDistance,
+                                                                          remeshingFacetAngle,
+                                                                          remeshingFacetSize,
+                                                                          remeshingEdgeSize ) ;
+    TinCreationSimplificationHierarchyPointSet tcHier = TinCreationSimplificationHierarchyPointSet( simpHierMaxClusterSize,
+                                                                                                    simpHierMaxSurfaceVariance,
+                                                                                                    simpHierBorderSimpMaxDist ) ;
+    TINCreationDelaunayStrategy tcDel = TINCreationDelaunayStrategy() ;
+    TINCreator tinCreator;
 
-
+    std::transform( tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower ) ;
+    if (tinCreationStrategy.compare("lt") == 0)
+        tinCreator.setCreator(&tcLT) ;
+    else if (tinCreationStrategy.compare("remeshing") == 0)
+        tinCreator.setCreator(&tcRemesh) ;
+    else if (tinCreationStrategy.compare("hierarchy") == 0)
+        tinCreator.setCreator(&tcHier) ;
+    else if (tinCreationStrategy.compare("delaunay") == 0)
+        tinCreator.setCreator(&tcDel) ;
+    else {
+        std::cerr << "[ERROR] Unknown TIN creation strategy \"" << tinCreationStrategy << "\"" << std::endl;
+        return -1;
+    }
 
     // Create the tiler object
-    QuantizedMeshTiler tiler(gdalDataset, grid, gdalTilerOptions, qmtOptions, simplifier);
+    QuantizedMeshTiler tiler(gdalDataset, grid, gdalTilerOptions, qmtOptions, tinCreator);
 
     // The tiles' processing scheduler
     ZoomTilesSchedulerRowwiseStrategy rowwiseScheduler = ZoomTilesSchedulerRowwiseStrategy() ;
@@ -154,6 +182,7 @@ int main ( int argc, char **argv)
 //    ZoomTilesSchedulerRecursiveFourConnectedStrategy fourConnectedStrategy = ZoomTilesSchedulerRecursiveFourConnectedStrategy() ;
     ZoomTilesSchedulerFourConnectedStrategy fourConnectedStrategy = ZoomTilesSchedulerFourConnectedStrategy() ;
     ZoomTilesScheduler scheduler ;
+
     std::transform( schedulerType.begin(),schedulerType.end(),schedulerType.begin(), ::tolower ) ;
     if (schedulerType.compare("rowwise") == 0)
         scheduler.setScheduler(&rowwiseScheduler) ;
@@ -164,7 +193,7 @@ int main ( int argc, char **argv)
     else if (schedulerType.compare("chessboard") == 0)
         scheduler.setScheduler(&chessboardScheduler);
     else {
-        std::cerr << "[ERROR] Unknown scheduler type" << std::endl;
+        std::cerr << "[ERROR] Unknown scheduler type \"" << schedulerType << "\"" << std::endl;
         return -1;
     }
 

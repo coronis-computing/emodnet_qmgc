@@ -5,8 +5,7 @@
 #ifndef EMODNET_TOOLS_SURFACE_SIMPLIFIER_REMESHING_STRATEGY_H
 #define EMODNET_TOOLS_SURFACE_SIMPLIFIER_REMESHING_STRATEGY_H
 
-
-#include "surface_simplifier.h"
+#include "tin_creator.h"
 
 /**
  * Simplifies the surface using Delaunay refinement algorithm
@@ -19,12 +18,11 @@
  * When the simplification takes place, all the coordinates of the vertices are normalized between 0..1
  * Note that this also means that, if the parameters are not set wisely, using this process we can
  * get a mesh of even larger complexity with respect to the original one!
- *
  */
-class SurfaceSimplificationRemeshingStrategy : public SurfaceSimplificationStrategy
+class TINCreationRemeshingStrategy : public TINCreationStrategy
 {
 public:
-    SurfaceSimplificationRemeshingStrategy( double facetDistance,
+    TINCreationRemeshingStrategy( double facetDistance,
                                             double facetAngle,
                                             double facetSize,
                                             double edgeSize)
@@ -33,17 +31,22 @@ public:
             , m_facetSize(facetSize)
             , m_edgeSize(edgeSize) {}
 
-    void simplify( Polyhedron& surface,
-                   const bool& constrainEasternVertices,
-                   const bool& constrainWesternVertices,
-                   const bool& constrainNorthernVertices,
-                   const bool& constrainSouthernVertices ) const ;
+    Polyhedron create( const std::vector<Point_3>& dataPts,
+                         const bool& constrainEasternVertices,
+                         const bool& constrainWesternVertices,
+                         const bool& constrainNorthernVertices,
+                         const bool& constrainSouthernVertices ) const ;
 private:
     // Algorithm parameters
     double m_facetDistance ;
     double m_facetAngle ;
     double m_facetSize ;
     double m_edgeSize ;
+
+    // Internal functions
+    bool dataPtsArePlanar(const std::vector<Point_3>& dataPts) const ;
+
+    std::vector<Point_3> defaultPointsForPlanarTile() const ;
 
 };
 

@@ -21,9 +21,10 @@ add_executable(qm_tiler qm_tiler.cpp
                         ../base/cgal_utils.cpp
                         ../base/zoom_tiles_border_vertices_cache.cpp
                         ../base/quantized_mesh_tiles_pyramid_builder_parallel.cpp
-                        ../base/surface_simplification_lindstrom_turk_strategy.cpp
-                        ../base/surface_simplifier_remeshing_strategy.cpp
-                        ../base/crs_conversions.h ../base/cgal_polyhedron_builder_from_c3t3_boundary.h)
+                        ../base/crs_conversions.h
+                        ../base/tin_creation_delaunay_strategy.cpp
+                        ../base/tin_creation_simplification_lindstrom_turk_strategy.cpp
+                        ../base/tin_creation_remeshing_strategy.cpp ../base/tin_creation_simplification_hierarchy_point_set.cpp ../base/tin_creation_simplification_hierarchy_point_set.h ../base/Projection_traits_3_extended.h)
 target_link_libraries(qm_tiler ${Boost_LIBRARIES}
                                ${ZLIB_LIBRARIES}
                                ${CTB_LIBRARY}

@@ -2,7 +2,7 @@
 // Created by Ricard Campos (rcampos@eia.udg.edu).
 //
 
-#include "surface_simplification_lindstrom_turk_strategy.h"
+#include "tin_creation_simplification_lindstrom_turk_strategy.h"
 #include "cgal_defines.h"
 #include "cgal_border_edges_are_constrained_edge_map.h"
 #include "cgal_corner_vertices_are_constrained_vertex_map.h"
@@ -11,12 +11,20 @@
 
 
 
-void SurfaceSimplificationLindstromTurkStrategy::simplify( Polyhedron& surface,
+Polyhedron TINCreationSimplificationLindstromTurkStrategy::create( const std::vector<Point_3>& dataPts,
                                                            const bool& constrainEasternVertices,
                                                            const bool& constrainWesternVertices,
                                                            const bool& constrainNorthernVertices,
                                                            const bool& constrainSouthernVertices ) const
 {
+    // Delaunay triangulation
+    Delaunay dt( dataPts.begin(), dataPts.end() );
+
+    // Translate to Polyhedron
+    Polyhedron surface ;
+    PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builder(dt);
+    surface.delegate(builder);
+
     // Set up the edge constrainer
     typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
     BorderEdgesAreConstrainedEdgeMap,
@@ -51,4 +59,6 @@ void SurfaceSimplificationLindstromTurkStrategy::simplify( Polyhedron& surface,
                       .get_placement(scp)
                       .edge_is_constrained_map(wsbeac)
             ) ;
+
+    return surface ;
 }

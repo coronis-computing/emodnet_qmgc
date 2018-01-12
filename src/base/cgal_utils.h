@@ -15,13 +15,13 @@
  * \brief A modifier creating a Polyhedron_3 structure with the incremental builder from a Delaunay triangulation
  */
 template<class Gt, class HDS>
-class PolyhedronBuilder : public CGAL::Modifier_base<HDS> {
+class PolyhedronBuilderFromDelaunay : public CGAL::Modifier_base<HDS> {
 public:
     typedef CGAL::Delaunay_triangulation_2<Gt> Delaunay;
 
     Delaunay m_dt ;
 
-    PolyhedronBuilder( const Delaunay &dt ) : m_dt(dt) {}
+    PolyhedronBuilderFromDelaunay( const Delaunay &dt ) : m_dt(dt) {}
 
     void operator()( HDS& hds ) {
         typedef typename HDS::Vertex   Vertex;
@@ -56,11 +56,18 @@ public:
 };
 
 
+/// Checks if a given halfedge is incident to a corner vertex in the tile
+/// Note that this check only works on our specific case...
+bool isTileCorner( Polyhedron::Halfedge_const_handle e ) ;
+
+
 
 /// Exports a 2D Delaunay on a 3D point set (i.e., using the Projection_traits_xy_3) to an OFF file, for debugging purposes
 void delaunayToOFF( const std::string &outFilePath, const Delaunay &dt ) ;
 
-
+/// Check if a vertex in the polyhedron is in the border
+bool isBorder(Polyhedron::Vertex_handle& v) ;
+bool isBorder(Polyhedron::Vertex_const_handle& v) ;
 
 /// Computes if a point \p p falls within the arc defined by the vectors  \p p0 - \p center and \p p1 - \p center
 bool isPointInArc( const Point_2& query, const Point_2& center, const Point_2& p0, const Point_2& p1 ) ;

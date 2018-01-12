@@ -6,11 +6,10 @@
 #include <GeographicLib/Geocentric.hpp>
 #include <algorithm>
 #include "cgal_defines.h"
-#include "cgal_border_edges_are_constrained_edge_map.h"
-#include "cgal_corner_vertices_are_constrained_vertex_map.h"
-#include "cgal_further_constrained_placement.h"
-#include "cgal_cost_and_count_stop_predicate.h"
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h>
+//#include "cgal_border_edges_are_constrained_edge_map.h"
+//#include "cgal_corner_vertices_are_constrained_vertex_map.h"
+//#include "cgal_further_constrained_placement.h"
+//#include "cgal_cost_and_count_stop_predicate.h"
 #include <CGAL/centroid.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <cmath>
@@ -35,23 +34,9 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                                                           tileNorthVertices, tileSouthVertices,
                                                           minHeight, maxHeight, tileBounds );
 
-    // --> Create connectivity
-
-    // Delaunay triangulation
-    Delaunay dt( uvhPts.begin(), uvhPts.end() );
-
-    // --- Debug ---
-    std::cout << "Writing to file" << std::endl ;
-    delaunayToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_dt.off", dt) ;
-
-    // Translate to Polyhedron
-    Polyhedron surface ;
-    PolyhedronBuilder<Gt, HalfedgeDS> builder(dt);
-    surface.delegate(builder);
-
     // Simplify the surface
     //simplifySurface(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
-    m_simplifier.simplify(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
+    Polyhedron surface = m_tinCreator.create(uvhPts, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
     // Needed for the next steps to work properly
