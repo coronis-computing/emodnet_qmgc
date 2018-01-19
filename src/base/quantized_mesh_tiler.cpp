@@ -26,6 +26,7 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 {
     // Get a terrain tile represented by the tile coordinate
     QuantizedMeshTile qmTile(coord, m_options.RefEllipsoid );
+//    QuantizedMeshTile* qmTile = new QuantizedMeshTile(coord, m_options.RefEllipsoid );
 
     float minHeight, maxHeight ;
     ctb::CRSBounds tileBounds ;
