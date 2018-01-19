@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <CGAL/intersections.h>
 #include "cgal_utils.h"
+#include "cgal_extract_tile_borders_from_polyhedron.h"
 
 
 
@@ -17,12 +18,12 @@ Polyhedron TinCreationGreedyInsertionStrategy::create( const std::vector<Point_3
                                                const bool& constrainNorthernVertices,
                                                const bool& constrainSouthernVertices )
 {
-    m_dataPts = dataPts ; // Copy the data points
     m_dt.clear() ; // To clear data from other executions using this same object
     m_heap.clear() ; // To clear data from other executions using this same object
+    m_dataPts = dataPts ; // Copy the data points
 
     // Initialize the data structures
-    initialize() ;
+    initialize(constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices) ;
 
     // Try to perform one step
     while (!m_heap.empty()) {
@@ -41,8 +42,6 @@ Polyhedron TinCreationGreedyInsertionStrategy::create( const std::vector<Point_3
 
     }
 
-//    std::cout << "Greedy insertion finished" << std::endl ;
-
     // Translate to Polyhedron
     Polyhedron surface ;
     PolyhedronBuilderFromProjectedTriangulation<DT, HalfedgeDS> builderDT(m_dt);
@@ -52,29 +51,64 @@ Polyhedron TinCreationGreedyInsertionStrategy::create( const std::vector<Point_3
 }
 
 
-void TinCreationGreedyInsertionStrategy::initialize()
+void TinCreationGreedyInsertionStrategy::initialize(const bool& constrainEasternVertices,
+                                                    const bool& constrainWesternVertices,
+                                                    const bool& constrainNorthernVertices,
+                                                    const bool& constrainSouthernVertices)
 {
-    // Create the base mesh as the two triangles covering the tile
-    std::vector<Point_3> chPts ;
-    CGAL::convex_hull_2( m_dataPts.begin(), m_dataPts.end(), std::back_inserter(chPts), CGAL::Projection_traits_xy_3<K>() );
+    if (!constrainEasternVertices && !constrainWesternVertices && !constrainNorthernVertices && !constrainSouthernVertices) {
+        // Create the base mesh as the two triangles covering the tile
+        std::vector<Point_3> chPts;
+        CGAL::convex_hull_2(m_dataPts.begin(), m_dataPts.end(), std::back_inserter(chPts),
+                            CGAL::Projection_traits_xy_3<K>());
 
-    // Insert them in the triangulation
-    m_dt.insert(chPts.begin(), chPts.end()) ;
+        // Insert them in the triangulation
+        m_dt.insert(chPts.begin(), chPts.end());
 
-    // Remove corner points from the data points to be considered
-    for (std::vector<Point_3>::iterator it = chPts.begin(); it != chPts.end(); ++it) {
-        m_dataPts.erase( std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end() ) ;
+        // Remove corner points from the data points to be considered
+        for (std::vector<Point_3>::iterator it = chPts.begin(); it != chPts.end(); ++it) {
+            m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
+        }
+    }
+    else {
+        // Temporal triangulation with all the points
+        DT tmpDt;
+        tmpDt.insert( m_dataPts.begin(), m_dataPts.end() );
+        // Build the polyhedron
+        Polyhedron poly ;
+        PolyhedronBuilderFromProjectedTriangulation<DT, HalfedgeDS> builderDT(tmpDt);
+        poly.delegate(builderDT);
+        // Extract border vertices
+        std::vector<Point_3> easternBorderPts, westernBorderPts, northernBorderPts, southernBorderPts;
+        Point_3 cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11;
+        extractTileBordersFromPolyhedron<Polyhedron>(poly, easternBorderPts, westernBorderPts, northernBorderPts, southernBorderPts, cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11);
+        // For each constrained border, add the points to the internal triangulation and remove the points from the data points
+        if (constrainEasternVertices) {
+            m_dt.insert(easternBorderPts.begin(), easternBorderPts.end());
+            for (std::vector<Point_3>::iterator it = easternBorderPts.begin(); it != easternBorderPts.end(); ++it) {
+                m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
+            }
+        }
+        if (constrainWesternVertices) {
+            m_dt.insert(westernBorderPts.begin(), westernBorderPts.end());
+            for (std::vector<Point_3>::iterator it = westernBorderPts.begin(); it != westernBorderPts.end(); ++it) {
+                m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
+            }
+        }
+        if (constrainSouthernVertices) {
+            m_dt.insert(southernBorderPts.begin(), southernBorderPts.end());
+            for (std::vector<Point_3>::iterator it = southernBorderPts.begin(); it != southernBorderPts.end(); ++it) {
+                m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
+            }
+        }
+        if (constrainNorthernVertices) {
+            m_dt.insert(northernBorderPts.begin(), northernBorderPts.end());
+            for (std::vector<Point_3>::iterator it = northernBorderPts.begin(); it != northernBorderPts.end(); ++it) {
+                m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
+            }
+        }
     }
     // NOTE: From now on, the vector m_dataPts should not be modified again, as the GIFaceInfo class will maintain a list of pointers to this vector!
-
-//    std::vector<Point_3>::iterator itCorner0, itCorner1, itCorner2, itCorner3 ;
-//    CGAL::ch_nswe_point(m_dataPts.begin(), m_dataPts.end(), itCorner0, itCorner1, itCorner2, itCorner3, CGAL::Projection_traits_xy_3<K>() );
-//
-//    std::cout << "Extremal points" << std::endl;
-//    std::cout << "corner 0 = " << *itCorner0 << std::endl ;
-//    std::cout << "corner 1 = " << *itCorner1 << std::endl ;
-//    std::cout << "corner 2 = " << *itCorner2 << std::endl ;
-//    std::cout << "corner 3 = " << *itCorner3 << std::endl ;
 
     // For all the points in the data set, check in which triangle they fall
     for ( std::vector<Point_3>::iterator it = m_dataPts.begin(); it != m_dataPts.end(); ++it )
@@ -83,10 +117,7 @@ void TinCreationGreedyInsertionStrategy::initialize()
         FaceHandle fh = m_dt.locate(*it) ;
 
         // Add the point to the list of points in this triangle
-//        fh->addPointPtr(std::shared_ptr<Point_3>( &(*it) ));
-        int ind = it - m_dataPts.begin() ;
-
-        fh->addPointInd(ind);
+        fh->info().addPointPtr(std::make_shared<Point_3>(*it));
     }
 
     // Select the best candidate for each face
@@ -142,71 +173,43 @@ insert(const Point_3& p)
 
     // All the faces in the conflict zone will be changed
     // Thus, collect all the points falling in these faces and delete their corresponding entries in the heap
-//    std::vector<std::shared_ptr<Point_3>> ptsInConflictZone ;
-    std::vector<int> ptsIndInConflictZone ;
+    std::vector<std::shared_ptr<Point_3>> ptsInConflictZone ;
     std::vector<FaceHandle>::iterator fit ;
-//    std::cout << "facesInConflict = " << facesInConflict.size() << std::endl ;
     for (fit = facesInConflict.begin(); fit != facesInConflict.end(); fit++) {
-//        std::cout << "Num pts in face = " << (*(*fit)).getNumPtsInFace() << std::endl ;
-
         // Collect points' pointers in this face
-//        std::vector<std::shared_ptr<Point_3>> ptsPtrs = (*(*fit)).getPtsSharedPtrs() ;
-//        std::vector<Point_3*> ptsPtrs = (*(*fit)).getPtsSharedPtrs() ;
-        std::vector<int> ptsInd = (*(*fit)).getPtsInds() ;
-//        std::cout << "Num pts inds in face = " << ptsInd.size() << std::endl ;
-        for (int i = 0; i < ptsInd.size(); i++)
-            ptsIndInConflictZone.push_back(ptsInd[i]);
-
-//        std::cout << "Num pts inds in conflict zone = " << ptsIndInConflictZone.size() << std::endl ;
+        std::vector<std::shared_ptr<Point_3>> ptsPtrs = (*(*fit)).info().getPtsSharedPtrs() ;
+        ptsInConflictZone.insert(ptsInConflictZone.end(), ptsPtrs.begin(), ptsPtrs.end());
 
         // Delete heap entry associated to the face, if any
-//        std::unique_ptr<GIHeapNodeHandle> hh = (*(*fit)).getHeapHandleUniquePtr() ;
-        if ((*fit)->hasHeapNodeHandle()) {
-//            std::cout << "Has node handle" << std::endl ;
-            m_heap.erase((*(*fit)).getHeapNodeHandle());
+        if ((*fit)->info().hasHeapNodeHandle()) {
+            m_heap.erase((*(*fit)).info().getHeapNodeHandle());
         }
 
         // Some face handles may not be erased after insertion, clear info as it will be recalculated for the new face shape in case it is not eliminated by insertion
-        (*(*fit)).clearInfo();
+        (*(*fit)).info().clearInfo();
     }
-//    std::cout << "Num pts on conflict zone = " << ptsIndInConflictZone.size() << std::endl ;
-
-//    std::cout << "Inserting the point and modifying the triangulation" << std::endl ;
 
     // Insert the point and modify the triangulation
     VertexHandle vh = m_dt.insert(p) ; // TODO: Use point location once to get a nearby face and then use this face as guess?
 
-//    std::cout << "Checking point locations" << std::endl ;
-
     // Check in which faces previously collected points fall
     // While there is no check in this regard, they are all supposed to be falling in the newly created faces that are now
     // covering the previous conflict zone.
-//    std::vector<std::shared_ptr<Point_3>>::iterator it ;
+    std::vector<std::shared_ptr<Point_3>>::iterator it ;
     std::vector<int>::iterator itInd ;
-    for (itInd = ptsIndInConflictZone.begin(); itInd != ptsIndInConflictZone.end(); ++itInd) {
-        Point_3 p = m_dataPts[*itInd] ;
-
-//        std::cout << "Locating point = " << p << std::endl ;
+    for (it = ptsInConflictZone.begin(); it != ptsInConflictZone.end(); ++it) {
+        Point_3 p = *(*it);
 
         // Locate the triangle containing the current point
         FaceHandle fh = m_dt.locate(p);
 
-//        std::cout << "Num pts in face = " << fh->getNumPtsInFace() << std::endl ;
-
-//        std::cout << "Adding point" << std::endl ;
-        // Add the point to the
-        // list of points in this triangle
-        fh->addPointInd( *itInd );
+        fh->info().addPointPtr(*it);
     }
-
-//    std::cout << "DONE" << std::endl ;
 
     // Update the internal structure of the new faces with the points falling on them, and also update the heap
     FaceCirculator fc = m_dt.incident_faces(vh), end(fc) ;
     do{
         if (!m_dt.is_infinite(fc)) {
-//            std::cout << "getNumPtsInFace = " << fc->getNumPtsInFace() << std::endl ;
-
             // Compute the maximum error on this face and update the heap
             computeErrorAndUpdateHeap(fc);
         }
@@ -225,15 +228,12 @@ computeErrorAndUpdateHeap( FaceHandle fh )
     Point_3 best;
     FT maxSqError = m_sqApproxTol ;
 
-    //std::vector<std::shared_ptr<Point_3>> ptsPtrs = fh->getPtsSharedPtrs() ;
-//    std::vector<std::shared_ptr<Point_3>>::iterator itPtPtr ;
-    //std::vector<Point_3*> ptsPtrs = fh->getPtsSharedPtrs() ;
-    std::vector<int> ptsInds = fh->getPtsInds() ;
-    std::vector<int>::iterator itPtInd ;
-    for (itPtInd = ptsInds.begin();
-         itPtInd != ptsInds.end(); ++itPtInd)
+    std::vector<std::shared_ptr<Point_3>> ptsPtrs = fh->info().getPtsSharedPtrs() ;
+    std::vector<std::shared_ptr<Point_3>>::iterator itPtPtr ;
+    for (itPtPtr = ptsPtrs.begin();
+         itPtPtr != ptsPtrs.end(); ++itPtPtr)
     {
-        Point_3 p = Point_3(m_dataPts[*itPtInd]);
+        Point_3 p = *(*itPtPtr) ;
         FT e = error3D(p, t) ;
         if (e > maxSqError) {
             best = p ;
@@ -241,14 +241,7 @@ computeErrorAndUpdateHeap( FaceHandle fh )
         }
     }
     if ( maxSqError > m_sqApproxTol ) {
-//        std::cout << "maxSqError = " << maxSqError << std::endl ;
-//        std::cout << "candidate = " << best << std::endl ;
         GIHeapNodeHandle nh = m_heap.push(GIHeapNode(maxSqError, best));
-        fh->setHeapNodeHandle( nh );
+        fh->info().setHeapNodeHandle( nh );
     }
-//    else {
-//        // All the points in this face have an error below the threshold.
-//        // Thus, there is no candidate for this face, and the heap gets no update
-////        std::cout << "NO candidate" << std::endl ;
-//    }
 }

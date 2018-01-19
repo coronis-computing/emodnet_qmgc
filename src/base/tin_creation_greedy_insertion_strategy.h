@@ -8,6 +8,7 @@
 #include "tin_creator.h"
 #include "cgal_defines.h"
 #include <CGAL/Triangulation_face_base_2.h>
+#include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <memory>
 #include <boost/heap/fibonacci_heap.hpp>
 
@@ -36,66 +37,31 @@ typedef typename GIHeap::handle_type GIHeapNodeHandle ;
 
 /// Additional information associated to a face in a Delaunay triangulation required by the Greedy Insertion
 
-/* A face class with an additionnal information required by the Greedy Insertion algorithm */
-template < class Gt, class Fb = CGAL::Triangulation_face_base_2<Gt> >
-class GIFaceBase
-        : public  Fb
-{
-    typedef Fb                              Base;
+
+
+class GIFaceInfo {
 public:
-    // --- Public Typedefs ---
-    typedef typename Fb::Face_handle        Face_handle;
-    typedef typename Fb::Vertex_handle      Vertex_handle;
-    typedef typename Gt::FT                 FT;
-    typedef typename Gt::Rp::Point_3        Point_3;
-
-
-    template < typename TDS2 >
-    struct Rebind_TDS {
-        typedef typename Fb::template Rebind_TDS<TDS2>::Other  Fb2;
-        typedef GIFaceBase<Gt,Fb2>                           Other;
-    };
-
-    // --- Public Methods ---
-    GIFaceBase() : Base(), m_pointsIndInFace(), m_heapNodeHandle(), m_hasHeapNodeHandle(false) {}
-    GIFaceBase(Vertex_handle v0, Vertex_handle v1, Vertex_handle v2)
-            : Base(v0, v1, v2), m_pointsIndInFace(), m_heapNodeHandle(), m_hasHeapNodeHandle(false) {}
-    GIFaceBase(Vertex_handle v0, Vertex_handle v1, Vertex_handle v2,
-                 Face_handle n0, Face_handle n1, Face_handle n2)
-            : Base(v0, v1, v2, n0, n1, n2), m_pointsIndInFace(), m_heapNodeHandle(), m_hasHeapNodeHandle(false) {}
+    GIFaceInfo() : m_pointsInFacePtrs(), m_heapNodeHandle(), m_hasHeapNodeHandle(false) {}
+    ~GIFaceInfo() {}
 
     void setHeapNodeHandle( GIHeapNodeHandle h ) { m_heapNodeHandle = h; m_hasHeapNodeHandle = true ; }
-//    void addPointPtr(std::shared_ptr<Point_3> pp) {m_pointsInFace.push_back(pp);}
-//    void addPointPtr(Point_3* pp) {m_pointsInFace.push_back(pp);}
-    void addPointInd(const int& i) {m_pointsIndInFace.push_back(i);}
-//
-//    void showPts() {
-//        std::cout << "Points on the face" << std::endl ;
-//        for (typename std::vector<Point_3*>::iterator it = m_pointsInFace.begin(); it != m_pointsInFace.end(); ++it )
-//            std::cout << *(*it) << std::endl ;
-//    }
-//    std::vector<std::shared_ptr<Point_3>>& getPtsPtrsRef() { return m_pointsInFace; } ;
-//    std::vector<std::shared_ptr<Point_3>> getPtsSharedPtrs() { return m_pointsInFace; } ;
-    std::vector<int> getPtsInds() { return m_pointsIndInFace; } ;
-    size_t getNumPtsInFace() { return m_pointsIndInFace.size(); }
+    void addPointPtr(std::shared_ptr<Point_3> pp) {m_pointsInFacePtrs.push_back(pp);}
+    std::vector<std::shared_ptr<Point_3>> getPtsSharedPtrs() { return m_pointsInFacePtrs; } ;
+    size_t getNumPtsInFace() { return m_pointsInFacePtrs.size(); }
     bool hasHeapNodeHandle() {return m_hasHeapNodeHandle; }
     GIHeapNodeHandle getHeapNodeHandle() { return m_heapNodeHandle ; }
 
     // Some face handles may not be erased after insertion, apply this to all the faces on the conflict zone prior to insert a point to ensure that all the faces' info are empty
     void clearInfo() {
-        m_pointsIndInFace.clear();
+        m_pointsInFacePtrs.clear();
         m_heapNodeHandle = GIHeapNodeHandle();
         m_hasHeapNodeHandle = false;
     };
-
 private:
-    // --- Attributes ---
-//    std::vector<std::shared_ptr<Point_3>> m_pointsInFace;
-    std::vector<int> m_pointsIndInFace;
+    std::vector<std::shared_ptr<Point_3>> m_pointsInFacePtrs;
     GIHeapNodeHandle m_heapNodeHandle ;
     bool m_hasHeapNodeHandle ;
 };
-
 
 
 class TinCreationGreedyInsertionStrategy : public TINCreationStrategy
@@ -103,7 +69,8 @@ class TinCreationGreedyInsertionStrategy : public TINCreationStrategy
 public:
     // --- Typedefs ---
     typedef CGAL::Triangulation_vertex_base_2<Gt>                       Vb;
-    typedef GIFaceBase<Gt>                                              Fb;
+    typedef CGAL::Triangulation_face_base_with_info_2<GIFaceInfo, Gt>   Fb;
+//    typedef GIFaceBase<Gt>                                              Fb;
     typedef CGAL::Triangulation_data_structure_2<Vb, Fb>                Tds;
     typedef CGAL::Delaunay_triangulation_2<Gt, Tds>                     DT;
     typedef DT::Face_handle                                             FaceHandle;
@@ -134,7 +101,10 @@ private:
 
     // --- Private Methods ---
     /// Initialize the data structures
-    void initialize() ;
+    void initialize(const bool& constrainEasternVertices,
+                    const bool& constrainWesternVertices,
+                    const bool& constrainNorthernVertices,
+                    const bool& constrainSouthernVertices) ;
 
     /// Compute the error given a point/triangle
     /// \pre Point XY projection falls within triangle XY projection
