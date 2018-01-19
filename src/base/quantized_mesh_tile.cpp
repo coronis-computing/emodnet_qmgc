@@ -4,7 +4,7 @@
 
 #include "quantized_mesh_tile.h"
 #include "cgal_defines.h"
-#include "cgal_utils.h"
+#include "cgal/cgal_utils.h"
 #include <fstream>
 
 

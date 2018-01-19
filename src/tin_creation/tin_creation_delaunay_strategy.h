@@ -5,7 +5,7 @@
 #ifndef EMODNET_TOOLS_SURFACE_SIMPLIFICATION_VOID_CONCRETE_STRATEGY_H
 #define EMODNET_TOOLS_SURFACE_SIMPLIFICATION_VOID_CONCRETE_STRATEGY_H
 
-#include "tin_creator.h"
+#include "tin_creation/tin_creator.h"
 
 /**
  * A Delaunay triangulation is created with the input points, no simplification is applied.

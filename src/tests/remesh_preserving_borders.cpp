@@ -14,7 +14,7 @@
 #include <CGAL/Mesh_criteria_3.h>
 #include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
 #include <CGAL/make_mesh_3.h>
-#include "base/cgal_polyhedron_builder_from_c3t3_boundary.h"
+#include "cgal/cgal_polyhedron_builder_from_c3t3_boundary.h"
 
 // Domain
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;

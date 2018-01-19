@@ -5,7 +5,7 @@
 #ifndef EMODNET_TOOLS_SURFACE_SIMPLIFIER_REMESHING_STRATEGY_H
 #define EMODNET_TOOLS_SURFACE_SIMPLIFIER_REMESHING_STRATEGY_H
 
-#include "tin_creator.h"
+#include "tin_creation/tin_creator.h"
 
 /**
  * Simplifies the surface using Delaunay refinement algorithm

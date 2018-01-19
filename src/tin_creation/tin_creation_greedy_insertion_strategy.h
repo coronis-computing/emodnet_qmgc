@@ -5,7 +5,7 @@
 #ifndef EMODNET_TOOLS_TIN_CREATION_GREEDY_INSERTION_H
 #define EMODNET_TOOLS_TIN_CREATION_GREEDY_INSERTION_H
 
-#include "tin_creator.h"
+#include "tin_creation/tin_creator.h"
 #include "cgal_defines.h"
 #include <CGAL/Triangulation_face_base_2.h>
 #include <CGAL/Triangulation_face_base_with_info_2.h>
@@ -84,8 +84,10 @@ public:
     typedef Gt::Rp::Intersect_3                                         Intersect_3;
 
 public:
+    enum ErrorType { ErrorHeight=0, Error3D } ;
+
     // --- Public Methods ---
-    TinCreationGreedyInsertionStrategy( double approxTolerance ) : m_sqApproxTol(approxTolerance*approxTolerance) {}
+    TinCreationGreedyInsertionStrategy( double approxTolerance, int errorType = ErrorHeight ) : m_sqApproxTol(approxTolerance*approxTolerance), m_errorType(errorType) {}
 
     Polyhedron create( const std::vector<Point_3>& dataPts,
                        const bool& constrainEasternVertices,
@@ -98,6 +100,7 @@ private:
     std::vector<Point_3> m_dataPts ;
     DT m_dt ;
     GIHeap m_heap;
+    int m_errorType;
 
     // --- Private Methods ---
     /// Initialize the data structures
@@ -106,13 +109,17 @@ private:
                     const bool& constrainNorthernVertices,
                     const bool& constrainSouthernVertices) ;
 
+    /// Compute the error induced by a point w.r.t. a triangle
+    /// \pre the triangle \param t is the closest to point p in the current approximation
+    FT error(const Point_3& p, const Triangle_3&t ) const ;
+
     /// Compute the error given a point/triangle
     /// \pre Point XY projection falls within triangle XY projection
-    FT error(const Point_3& p, const Triangle_3&t ) ;
+    FT errorHeight(const Point_3& p, const Triangle_3&t ) const ;
 
     /// Compute the error given a point/triangle. Orthogonal distance.
     /// \pre Point XY projection falls within triangle XY projection
-    FT error3D(const Point_3& p, const Triangle_3&t ) ;
+    FT error3D(const Point_3& p, const Triangle_3&t ) const ;
 
     /// Contains all the steps to perform when inserting a new point in the triangulation
     void insert( const Point_3& p ) ;

@@ -43,12 +43,12 @@
 #include "quantized_mesh_tiles_pyramid_builder_parallel.h"
 #include "zoom_tiles_scheduler.h"
 #include "ellipsoid.h"
-#include "tin_creator.h"
-#include "tin_creation_delaunay_strategy.h"
-#include "tin_creation_simplification_lindstrom_turk_strategy.h"
-#include "tin_creation_remeshing_strategy.h"
-#include "tin_creation_simplification_hierarchy_point_set.h"
-#include "tin_creation_greedy_insertion_strategy.h"
+#include "tin_creation/tin_creator.h"
+#include "tin_creation/tin_creation_delaunay_strategy.h"
+#include "tin_creation/tin_creation_simplification_lindstrom_turk_strategy.h"
+#include "tin_creation/tin_creation_remeshing_strategy.h"
+#include "tin_creation/tin_creation_simplification_hierarchy_point_set.h"
+#include "tin_creation/tin_creation_greedy_insertion_strategy.h"
 
 
 

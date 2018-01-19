@@ -9,7 +9,7 @@
 #include <vector>
 #include <fstream>
 #include "../base/cgal_defines.h"
-#include "../base/cgal_utils.h"
+#include "cgal/cgal_utils.h"
 #include <CGAL/wlop_simplify_and_regularize_point_set.h>
 #include <CGAL/IO/read_xyz_points.h>
 #include <CGAL/Timer.h>

@@ -11,7 +11,7 @@
 #include <ctb.hpp>
 #include <boost/filesystem.hpp>
 #include "ellipsoid.h"
-#include "tin_creator.h"
+#include "tin_creation/tin_creator.h"
 #include <mutex>
 
 namespace fs = boost::filesystem ;

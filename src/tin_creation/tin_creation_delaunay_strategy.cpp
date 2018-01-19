@@ -4,7 +4,7 @@
 
 #include "tin_creation_delaunay_strategy.h"
 #include "cgal_defines.h"
-#include "cgal_utils.h"
+#include "cgal/cgal_utils.h"
 
 
 Polyhedron TINCreationDelaunayStrategy::create(const std::vector<Point_3>& dataPts,

@@ -8,7 +8,7 @@
 
 #include <string>
 #include <vector>
-#include "cgal_utils.h"
+#include "cgal/cgal_utils.h"
 #include <ctb.hpp>
 
 

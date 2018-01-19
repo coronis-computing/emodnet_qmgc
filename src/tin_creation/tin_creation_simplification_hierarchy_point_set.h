@@ -5,7 +5,7 @@
 #ifndef EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_HIERARCY_POINT_SET_H
 #define EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_HIERARCY_POINT_SET_H
 
-#include "tin_creator.h"
+#include "tin_creation/tin_creator.h"
 #include "cgal_defines.h"
 
 

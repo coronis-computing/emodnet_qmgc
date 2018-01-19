@@ -5,7 +5,7 @@
 #ifndef EMODNET_TOOLS_SURFACE_SIMPLIFICATION_LINDSTROM_TURK_STRATEGY_H
 #define EMODNET_TOOLS_SURFACE_SIMPLIFICATION_LINDSTROM_TURK_STRATEGY_H
 
-#include "tin_creator.h"
+#include "tin_creation/tin_creator.h"
 
 /**
  * Simplifies the surface using Lindstrom-Turk algorithm [1][2]

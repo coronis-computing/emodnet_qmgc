@@ -6,12 +6,12 @@
 #include <CGAL/hierarchy_simplify_point_set.h>
 #include <CGAL/Projection_traits_xy_3.h>
 #include <CGAL/convex_hull_2.h>
-#include "../base/cgal_utils.h"
+#include "cgal/cgal_utils.h"
 //#include <CGAL/Projection_traits_xz_3.h>
 //#include <CGAL/Projection_traits_yz_3.h>
-#include "Projection_traits_3_extended.h"
-#include "cgal_squared_distance_3_cost.h"
-#include "Polyhedral_mesh_domain_with_features_3_extended.h"
+#include "cgal/Projection_traits_3_extended.h"
+#include "cgal/cgal_squared_distance_3_cost.h"
+#include "cgal/Polyhedral_mesh_domain_with_features_3_extended.h"
 
 
 Polyhedron TinCreationSimplificationHierarchyPointSet::create( const std::vector<Point_3>& dataPts,

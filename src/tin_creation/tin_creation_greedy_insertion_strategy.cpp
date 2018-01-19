@@ -7,8 +7,8 @@
 #include <CGAL/ch_selected_extreme_points_2.h>
 #include <algorithm>
 #include <CGAL/intersections.h>
-#include "cgal_utils.h"
-#include "cgal_extract_tile_borders_from_polyhedron.h"
+#include "cgal/cgal_utils.h"
+#include "cgal/cgal_extract_tile_borders_from_polyhedron.h"
 
 
 
@@ -31,15 +31,8 @@ Polyhedron TinCreationGreedyInsertionStrategy::create( const std::vector<Point_3
         GIHeapNode nh = m_heap.top();
         // WARNING: do NOT pop the heap's top entry here, it will be effectively done in the insert function
 
-//        std::cout << "Points in triangulation: " << std::endl;
-//        for ( DT::Vertex_iterator it = m_dt.finite_vertices_begin(); it != m_dt.finite_vertices_end(); ++it ) {
-//            std::cout << it->point() << std::endl ;
-//        }
-
         // Insert the point and update the internal structures
-//        std::cout << "Processing candidate = " << nh.candidate << std::endl ;
         insert(nh.candidate) ;
-
     }
 
     // Translate to Polyhedron
@@ -49,6 +42,7 @@ Polyhedron TinCreationGreedyInsertionStrategy::create( const std::vector<Point_3
 
     return surface ;
 }
+
 
 
 void TinCreationGreedyInsertionStrategy::initialize(const bool& constrainEasternVertices,
@@ -129,7 +123,8 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool& constrainEastern
 }
 
 
-FT TinCreationGreedyInsertionStrategy::error(const Point_3& p, const Triangle_3&t )
+
+FT TinCreationGreedyInsertionStrategy::errorHeight(const Point_3& p, const Triangle_3&t ) const
 {
     // Construct a line in the Z direction
     Line_3 l( p, Vector_3(0,0,1) );
@@ -156,7 +151,7 @@ FT TinCreationGreedyInsertionStrategy::error(const Point_3& p, const Triangle_3&
 
 
 
-FT TinCreationGreedyInsertionStrategy::error3D(const Point_3& p, const Triangle_3&t )
+FT TinCreationGreedyInsertionStrategy::error3D(const Point_3& p, const Triangle_3&t ) const
 {
     return CGAL::squared_distance(p, t.supporting_plane()) ;
 }
@@ -234,7 +229,7 @@ computeErrorAndUpdateHeap( FaceHandle fh )
          itPtPtr != ptsPtrs.end(); ++itPtPtr)
     {
         Point_3 p = *(*itPtPtr) ;
-        FT e = error3D(p, t) ;
+        FT e = error(p, t);
         if (e > maxSqError) {
             best = p ;
             maxSqError = e ;
@@ -244,4 +239,16 @@ computeErrorAndUpdateHeap( FaceHandle fh )
         GIHeapNodeHandle nh = m_heap.push(GIHeapNode(maxSqError, best));
         fh->info().setHeapNodeHandle( nh );
     }
+}
+
+
+
+FT
+TinCreationGreedyInsertionStrategy::
+error(const Point_3& p, const Triangle_3&t ) const
+{
+    if (m_errorType == ErrorHeight)
+        return errorHeight(p, t) ;
+    else
+        return error3D(p, t) ;
 }
