@@ -89,6 +89,12 @@ namespace internal {
         typedef Segment_2    Segment;
         typedef Triangle_2   Triangle;
 
+        // Add also the 3D versions of this stuff (needed in Squared_distance_3_cost class)
+        typedef typename R::Point_3                                 Point_3;
+        typedef typename R::Segment_3                               Segment_3;
+        typedef typename Rp::Construct_segment_3                    Construct_segment_3;
+        typedef typename Rp::Compute_squared_distance_3             Compute_squared_distance_3;
+
         // The important changes:
         typedef Squared_distance_projected_3_extended<Rp,dim> Compute_squared_distance_2;
 
@@ -96,6 +102,18 @@ namespace internal {
         compute_squared_distance_2_object () const
         {
             return Compute_squared_distance_2();
+        }
+
+        Compute_squared_distance_3
+        compute_squared_distance_3_object () const
+        {
+            return Compute_squared_distance_3();
+        }
+
+        Construct_segment_3
+        construct_segment_3_object () const
+        {
+            return Construct_segment_3();
         }
     };
 

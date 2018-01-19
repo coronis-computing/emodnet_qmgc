@@ -28,7 +28,7 @@ public:
                        const bool& constrainEasternVertices,
                        const bool& constrainWesternVertices,
                        const bool& constrainNorthernVertices,
-                       const bool& constrainSouthernVertices ) const ;
+                       const bool& constrainSouthernVertices ) ;
 private:
     // Algorithm parameters
     int m_stopEdgesCount ;    // Simplification edges count stop condition. If the number of edges in the surface being simplified drops below this threshold the process finishes

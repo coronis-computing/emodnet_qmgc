@@ -38,7 +38,7 @@ public:
 
     QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
                                              const ZoomTilesScheduler& scheduler,
-                                             const int& numThreads ) ;
+                                             const int& numThreads);
 
     ~QuantizedMeshTilesPyramidBuilderParallel() ;
 
@@ -49,7 +49,7 @@ public:
      * of the tiles' for each zoom is not as simple as in the heightmap format, and it requires a more complex loop taking
      * into account vertices at borders of the neighbors of the current tile being processed
      */
-    void createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir) ;
+    void createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir, const std::string &debugDir = std::string("")) ;
 
     /**
      * @brief Check that the tile folder (zoom/x) exists, and creates it otherwise.
@@ -58,7 +58,6 @@ public:
      */
     static std::string getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
                                                  const std::string &mainOutDir ) ;
-
 
     BordersData createTile( const ctb::TileCoordinate& coord,
                             const int& numThread,
@@ -71,8 +70,6 @@ public:
      */
     bool getNextTileToProcess(ctb::TilePoint& tileXY) ;
 
-
-
 private:
     // --- Attributes ---
 //    ctb::Grid m_grid ;
@@ -83,6 +80,15 @@ private:
     ZoomTilesScheduler m_scheduler ;
     std::vector<ctb::TilePoint> m_tilesWaitingToProcess ;
     ZoomTilesBorderVerticesCache m_bordersCache ;
+    bool m_debugMode ;
+    std::string m_debugDir ;
+
+    /**
+    * @brief Check that the DEBUG tile folder (zoom/x) exists, and creates it otherwise.
+    *
+    * @return The path of the debug OFF tile's file.
+    */
+    std::string getDebugTileFileAndCreateDirs( const ctb::TileCoordinate &coord ) ;
 
 };
 

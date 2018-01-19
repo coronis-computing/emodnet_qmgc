@@ -8,6 +8,7 @@
 #include <iostream>
 #include "cgal_polyhedron_builder_from_c3t3_boundary.h"
 #include <CGAL/config.h>
+#include "cgal_defines.h"
 #include <limits>
 
 
@@ -16,7 +17,7 @@ Polyhedron TINCreationRemeshingStrategy::create( const std::vector<Point_3>& dat
                                                  const bool& constrainEasternVertices,
                                                  const bool& constrainWesternVertices,
                                                  const bool& constrainNorthernVertices,
-                                                 const bool& constrainSouthernVertices ) const
+                                                 const bool& constrainSouthernVertices )
 {
     using namespace CGAL::parameters ;
 
@@ -30,7 +31,7 @@ Polyhedron TINCreationRemeshingStrategy::create( const std::vector<Point_3>& dat
 
         // Translate to Polyhedron
         Polyhedron surface ;
-        PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builderDT(dt);
+        PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builderDT(dt);
         surface.delegate(builderDT);
 
         return surface ;
@@ -41,7 +42,7 @@ Polyhedron TINCreationRemeshingStrategy::create( const std::vector<Point_3>& dat
 
     // Translate to Polyhedron
     Polyhedron surface ;
-    PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builderDT(dt);
+    PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builderDT(dt);
     surface.delegate(builderDT);
 
     surface.normalize_border() ; // Needed to detect the borders
@@ -80,24 +81,21 @@ Polyhedron TINCreationRemeshingStrategy::create( const std::vector<Point_3>& dat
 //    }
 
     // Mesh criteria
-//    MeshCriteria criteria( edge_size = m_edgeSize,
-//                           facet_angle = m_facetAngle,
-//                           facet_size = m_facetSize,
-//                           facet_distance = m_facetDistance ) ;
-
+    // WARNING: Manifold criteria in mesh_3 is an undocumented feature as of CGAL 4.9.
+    // In fact, the documented feature FACET_VERTICES_ON_SAME_SURFACE_PATCH_WITH_ADJACENCY_CHECK is not implemented!
+    // See: https://github.com/CGAL/cgal/pull/590, and CGAL/Mesh_facet_topology.h
     MeshCriteria criteria(CGAL::parameters::edge_size = m_edgeSize,
                           CGAL::parameters::facet_angle = m_facetAngle,
                           CGAL::parameters::facet_size = m_facetSize,
                           CGAL::parameters::facet_distance = m_facetDistance,
-                          CGAL::parameters::facet_topology = CGAL::FACET_VERTICES_ON_SAME_SURFACE_PATCH_WITH_ADJACENCY_CHECK ); // Facets' adjacency check (to promote manifold surfaces)
-//                          CGAL::parameters::facet_topology = CGAL::FACET_VERTICES_ON_SAME_SURFACE_PATCH ); // Facets' adjacency check (to promote manifold surfaces)
+                          CGAL::parameters::facet_topology = CGAL::MANIFOLD_WITH_BOUNDARY );
 
 //    std::cout << "Meshing criteria:" << std::endl ;
 //    std::cout << "    - edge_size = " << m_edgeSize << std::endl ;
 //    std::cout << "    - facet_angle = " << m_facetAngle << std::endl ;
 //    std::cout << "    - facet_size = " << m_facetSize << std::endl ;
 //    std::cout << "    - facet_distance = " << m_facetDistance << std::endl ;
-//    std::cout << "    - facet_topology = FACET_VERTICES_ON_SAME_SURFACE_PATCH_WITH_ADJACENCY_CHECK" << std::endl ;
+//    std::cout << "    - facet_topology = CGAL::MANIFOLD_WITH_BOUNDARY" << std::endl ;
 
     // Mesh generation
 //    std::cout << "Meshing... " << std::flush ;

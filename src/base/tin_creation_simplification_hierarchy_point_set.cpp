@@ -10,14 +10,15 @@
 //#include <CGAL/Projection_traits_xz_3.h>
 //#include <CGAL/Projection_traits_yz_3.h>
 #include "Projection_traits_3_extended.h"
-
+#include "cgal_squared_distance_3_cost.h"
+#include "Polyhedral_mesh_domain_with_features_3_extended.h"
 
 
 Polyhedron TinCreationSimplificationHierarchyPointSet::create( const std::vector<Point_3>& dataPts,
                                                               const bool &constrainEasternVertices,
                                                               const bool &constrainWesternVertices,
                                                               const bool &constrainNorthernVertices,
-                                                              const bool &constrainSouthernVertices) const
+                                                              const bool &constrainSouthernVertices)
 {
     PointCloud ptsToMaintain, ptsToSimplify ;
     divideInputPoints(dataPts,
@@ -43,7 +44,7 @@ Polyhedron TinCreationSimplificationHierarchyPointSet::create( const std::vector
 
     // Translate to Polyhedron
     Polyhedron surface ;
-    PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builder(dt);
+    PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builder(dt);
     surface.delegate(builder);
 
     return surface ;
@@ -76,7 +77,7 @@ divideInputPoints(const PointCloud& pts, // Note: points in the borders to maint
 
     // Translate to Polyhedron
     Polyhedron surface ;
-    PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builder(dt);
+    PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builder(dt);
     surface.delegate(builder);
     surface.normalize_border();
 
@@ -97,33 +98,71 @@ divideInputPoints(const PointCloud& pts, // Note: points in the borders to maint
     std::sort(northernBorderVertices.begin(), northernBorderVertices.end(), smallerThanInX) ;
     std::sort(southernBorderVertices.begin(), southernBorderVertices.end(), smallerThanInX) ;
 
-//    std::cout << "Before simplification:" << std::endl ;
-//    std::cout << "easternBorderVertices.size() = " << easternBorderVertices.size() << std::endl ;
-//    std::cout << "westernBorderVertices.size() = " << westernBorderVertices.size() << std::endl ;
-//    std::cout << "northernBorderVertices.size() = " << northernBorderVertices.size() << std::endl ;
-//    std::cout << "southernBorderVertices.size() = " << southernBorderVertices.size() << std::endl ;
+////    std::cout << "Before simplification:" << std::endl ;
+////    std::cout << "easternBorderVertices.size() = " << easternBorderVertices.size() << std::endl ;
+////    std::cout << "westernBorderVertices.size() = " << westernBorderVertices.size() << std::endl ;
+////    std::cout << "northernBorderVertices.size() = " << northernBorderVertices.size() << std::endl ;
+////    std::cout << "southernBorderVertices.size() = " << southernBorderVertices.size() << std::endl ;
+//
+//    // Simplify the polylines, if needed
+//    if (!constrainEasternVertices)
+//        easternBorderVertices = simplifyEastOrWestBorder(easternBorderVertices) ;
+//    if (!constrainWesternVertices)
+//        westernBorderVertices = simplifyEastOrWestBorder(westernBorderVertices) ;
+//    if (!constrainNorthernVertices)
+//        northernBorderVertices = simplifyNorthOrSouthBorder(northernBorderVertices) ;
+//    if (!constrainSouthernVertices)
+//        southernBorderVertices = simplifyNorthOrSouthBorder(southernBorderVertices) ;
+//
+////    std::cout << "After simplification:" << std::endl ;
+////    std::cout << "easternBorderVertices.size() = " << easternBorderVertices.size() << std::endl ;
+////    std::cout << "westernBorderVertices.size() = " << westernBorderVertices.size() << std::endl ;
+////    std::cout << "northernBorderVertices.size() = " << northernBorderVertices.size() << std::endl ;
+////    std::cout << "southernBorderVertices.size() = " << southernBorderVertices.size() << std::endl ;
+//
+//    // Merge all the border points (those to be maintained or those to be simplified)
+//    ptsToMaintain.insert( ptsToMaintain.end(), easternBorderVertices.begin(), easternBorderVertices.end() );
+//    ptsToMaintain.insert( ptsToMaintain.end(), westernBorderVertices.begin(), westernBorderVertices.end() );
+//    ptsToMaintain.insert( ptsToMaintain.end(), northernBorderVertices.begin(), northernBorderVertices.end() );
+//    ptsToMaintain.insert( ptsToMaintain.end(), southernBorderVertices.begin(), southernBorderVertices.end() );
 
-    // Simplify the polylines, if needed
-    if (!constrainEasternVertices)
-        easternBorderVertices = simplifyEastOrWestBorder(easternBorderVertices) ;
-    if (!constrainWesternVertices)
-        westernBorderVertices = simplifyEastOrWestBorder(westernBorderVertices) ;
-    if (!constrainNorthernVertices)
-        northernBorderVertices = simplifyNorthOrSouthBorder(northernBorderVertices) ;
-    if (!constrainSouthernVertices)
-        southernBorderVertices = simplifyNorthOrSouthBorder(southernBorderVertices) ;
+    // Collect the polylines to simplify, or leave them as they are if required to
+    Polylines polylinesToSimplify ;
+    if (!constrainEasternVertices){}
+//        polylinesToSimplify.push_back(easternBorderVertices);
+    else
+        ptsToMaintain.insert( ptsToMaintain.end(), easternBorderVertices.begin(), easternBorderVertices.end() );
+    if (!constrainWesternVertices){}
+//        polylinesToSimplify.push_back(westernBorderVertices );
+    else
+        ptsToMaintain.insert( ptsToMaintain.end(), westernBorderVertices.begin(), westernBorderVertices.end() );
+    if (!constrainNorthernVertices){}
+//        polylinesToSimplify.push_back(northernBorderVertices);
+    else
+        ptsToMaintain.insert( ptsToMaintain.end(), northernBorderVertices.begin(), northernBorderVertices.end() );
+    if (!constrainSouthernVertices){}
+//        polylinesToSimplify.push_back(southernBorderVertices);
+    else
+        ptsToMaintain.insert( ptsToMaintain.end(), southernBorderVertices.begin(), southernBorderVertices.end() );
 
-//    std::cout << "After simplification:" << std::endl ;
-//    std::cout << "easternBorderVertices.size() = " << easternBorderVertices.size() << std::endl ;
-//    std::cout << "westernBorderVertices.size() = " << westernBorderVertices.size() << std::endl ;
-//    std::cout << "northernBorderVertices.size() = " << northernBorderVertices.size() << std::endl ;
-//    std::cout << "southernBorderVertices.size() = " << southernBorderVertices.size() << std::endl ;
+    // Detect non-border feature polylines
+    std::vector<Polyhedron*> polyPtrsVector(1, &surface);
+    typedef CGAL::Polyhedral_mesh_domain_with_features_3_extended<K>         MeshDomainExt;
+    MeshDomainExt domain(polyPtrsVector.begin(), polyPtrsVector.end());
+//    Polylines pls = detect_features_without_border<Polyhedron>(surface, FT(60.0));
+    Polylines featurePolylines = domain.extract_features(60.0, surface);
+    std::cout << "Number of feature Polylines = " << featurePolylines.size() << std::endl ;
 
-    // Merge all the border points (those to be maintained or those to be simplified)
-    ptsToMaintain.insert( ptsToMaintain.end(), easternBorderVertices.begin(), easternBorderVertices.end() );
-    ptsToMaintain.insert( ptsToMaintain.end(), westernBorderVertices.begin(), westernBorderVertices.end() );
-    ptsToMaintain.insert( ptsToMaintain.end(), northernBorderVertices.begin(), northernBorderVertices.end() );
-    ptsToMaintain.insert( ptsToMaintain.end(), southernBorderVertices.begin(), southernBorderVertices.end() );
+    polylinesToSimplify.insert( polylinesToSimplify.end(), featurePolylines.begin(), featurePolylines.end()) ;
+
+    std::cout << "Number of Polylines to simplify = " << polylinesToSimplify.size() << std::endl ;
+
+    // Simplify the polylines
+    Polylines polylinesSimp = simplifyPolylines(polylinesToSimplify) ;
+
+    for ( Polylines::iterator it = polylinesSimp.begin(); it != polylinesSimp.end(); ++it ) {
+        ptsToMaintain.insert( ptsToMaintain.end(), it->begin(), it->end() );
+    }
 
     // Not at borders
     getAllNonBorderVertices(surface, ptsToSimplify);
@@ -337,4 +376,68 @@ simplifyNorthOrSouthBorder(const PointCloud& pts) const
         ptsSimp.push_back((*vit)->point());
 
     return ptsSimp;
+}
+
+
+Polylines
+TinCreationSimplificationHierarchyPointSet::
+simplifyPolylines(const Polylines& polylines) const
+{
+    typedef CGAL::Projection_traits_xy_3_extended<K>                         ProjTraitsXY;
+    typedef PS::Vertex_base_2<ProjTraitsXY>                                  VbXY;
+    typedef CGAL::Constrained_triangulation_face_base_2<ProjTraitsXY>        FbXY;
+    typedef CGAL::Triangulation_data_structure_2<VbXY, FbXY>                 TDSXY;
+    typedef CGAL::Constrained_Delaunay_triangulation_2<ProjTraitsXY,
+            TDSXY, CGAL::Exact_predicates_tag>                               CDTXY;
+    typedef CGAL::Constrained_triangulation_plus_2<CDTXY>                    CTXY;
+    typedef PS::Squared_distance_3_cost                                      PSSqDist3Cost;
+
+//    // Check the degenerate case where all the points are at 0 elevation
+//    int i = 0;
+//    for (; i < pts.size(); i++)
+//        if ( pts[i].z() > std::numeric_limits<double>::epsilon() )
+//            break ;
+//    bool degeneratePolyline = ( i != pts.size() );
+
+
+    CTXY ct;
+    for (Polylines::const_iterator it = polylines.begin(); it != polylines.end(); ++it )
+        ct.insert_constraint(it->begin(), it->end(), false);
+
+//    // --- Debug (start) ---
+//    int i = 1 ;
+//    for (Polylines::const_iterator it = polylines.begin(); it != polylines.end(); ++it, i++ ) {
+//        std::cout << "Polylines{" << i << "} = [ " << std::endl ;
+//        for (Polyline::const_iterator itp = (*it).begin(); itp != (*it).end(); ++itp)
+//            std::cout << *itp << std::endl;
+//        std::cout << "];" << std::endl ;
+//    }
+//    // --- Debug (end) ---
+
+    std::size_t numRemoved = PS::simplify(ct, PSSqDist3Cost(), PSStopCost(m_borderSimpMaxSqDist), true);
+
+    Polylines polylinesSimp ;
+    for(CTXY::Constraint_iterator cit = ct.constraints_begin();
+        cit != ct.constraints_end();
+        ++cit)
+    {
+        Polyline pl ;
+        for(CTXY::Vertices_in_constraint_iterator vit = ct.vertices_in_constraint_begin(*cit);
+            vit != ct.vertices_in_constraint_end(*cit);
+            ++vit)
+            pl.push_back((*vit)->point());
+        polylinesSimp.push_back(pl);
+    }
+
+    // --- Debug (start) ---
+    int i = 1 ;
+    for (Polylines::const_iterator it = polylinesSimp.begin(); it != polylinesSimp.end(); ++it, i++ ) {
+        std::cout << "PolylinesSimp{" << i << "} = [ " << std::endl ;
+        for (Polyline::const_iterator itp = (*it).begin(); itp != (*it).end(); ++itp)
+            std::cout << *itp << std::endl;
+        std::cout << "];" << std::endl ;
+    }
+    // --- Debug (end) ---
+
+    return polylinesSimp;
 }

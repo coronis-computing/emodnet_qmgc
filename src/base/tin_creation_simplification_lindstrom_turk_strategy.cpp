@@ -15,14 +15,14 @@ Polyhedron TINCreationSimplificationLindstromTurkStrategy::create( const std::ve
                                                            const bool& constrainEasternVertices,
                                                            const bool& constrainWesternVertices,
                                                            const bool& constrainNorthernVertices,
-                                                           const bool& constrainSouthernVertices ) const
+                                                           const bool& constrainSouthernVertices )
 {
     // Delaunay triangulation
     Delaunay dt( dataPts.begin(), dataPts.end() );
 
     // Translate to Polyhedron
     Polyhedron surface ;
-    PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builder(dt);
+    PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builder(dt);
     surface.delegate(builder);
 
     // Set up the edge constrainer

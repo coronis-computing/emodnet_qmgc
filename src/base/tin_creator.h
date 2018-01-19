@@ -16,7 +16,7 @@ public:
                                const bool& constrainEasternVertices,
                                const bool& constrainWesternVertices,
                                const bool& constrainNorthernVertices,
-                               const bool& constrainSouthernVertices ) const = 0 ;
+                               const bool& constrainSouthernVertices ) = 0 ;
 };
 
 
@@ -35,7 +35,7 @@ public:
                        const bool& constrainEasternVertices,
                        const bool& constrainWesternVertices,
                        const bool& constrainNorthernVertices,
-                       const bool& constrainSouthernVertices ) const
+                       const bool& constrainSouthernVertices )
     {
         return m_creator->create( dataPts,
                                   constrainEasternVertices,

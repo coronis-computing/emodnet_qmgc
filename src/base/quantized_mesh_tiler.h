@@ -65,7 +65,7 @@ public:
                                   std::vector<Point_3> &tileEastVertices,
                                   std::vector<Point_3> &tileWestVertices,
                                   std::vector<Point_3> &tileNorthVertices,
-                                  std::vector<Point_3> &tileSouthVertices) const ;
+                                  std::vector<Point_3> &tileSouthVertices) ;
 
 private:
     // --- Attributes ---

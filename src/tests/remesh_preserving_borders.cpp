@@ -146,6 +146,9 @@ int main( int argc, char** argv )
     }
     cout << "done." << endl ;
 
+    std::cout << "poly.size_of_vertices() = " << poly.size_of_vertices() << std::endl ;
+    std::cout << "poly.size_of_facets() = " << poly.size_of_facets() << std::endl ;
+
     if (poly.size_of_vertices() == 0 ) {
         std::cerr << "[ERROR] Either input geometry is empty or there has been a problem loading the file." << std::endl;
         return EXIT_FAILURE;
@@ -179,7 +182,7 @@ int main( int argc, char** argv )
                            facet_angle = facetAngle,
                            facet_size = facetSize,
                            facet_distance = facetDistance,
-                           facet_topology = CGAL::FACET_VERTICES_ON_SAME_SURFACE_PATCH_WITH_ADJACENCY_CHECK ); // Facets' adjacency check (to promote manifold surfaces)
+                           facet_topology = CGAL::MANIFOLD_WITH_BOUNDARY ); // Undocumented feature as of CGAL 4.9
 
     cout << "Meshing criteria:" << endl ;
     cout << "    - edge_size = " << edgeSize << endl ;

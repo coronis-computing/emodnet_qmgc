@@ -24,7 +24,8 @@ add_executable(qm_tiler qm_tiler.cpp
                         ../base/crs_conversions.h
                         ../base/tin_creation_delaunay_strategy.cpp
                         ../base/tin_creation_simplification_lindstrom_turk_strategy.cpp
-                        ../base/tin_creation_remeshing_strategy.cpp ../base/tin_creation_simplification_hierarchy_point_set.cpp ../base/tin_creation_simplification_hierarchy_point_set.h ../base/Projection_traits_3_extended.h)
+                        ../base/tin_creation_remeshing_strategy.cpp ../base/tin_creation_simplification_hierarchy_point_set.cpp
+        ../base/tin_creation_greedy_insertion_strategy.cpp)
 target_link_libraries(qm_tiler ${Boost_LIBRARIES}
                                ${ZLIB_LIBRARIES}
                                ${CTB_LIBRARY}

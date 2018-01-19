@@ -22,7 +22,7 @@ public:
                       const bool &constrainEasternVertices,
                       const bool &constrainWesternVertices,
                       const bool &constrainNorthernVertices,
-                      const bool &constrainSouthernVertices) const ;
+                      const bool &constrainSouthernVertices) ;
 
 } ;
 

@@ -22,7 +22,7 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
                                                    std::vector<Point_3> &tileEastVertices,
                                                    std::vector<Point_3> &tileWestVertices,
                                                    std::vector<Point_3> &tileNorthVertices,
-                                                   std::vector<Point_3> &tileSouthVertices ) const
+                                                   std::vector<Point_3> &tileSouthVertices )
 {
     // Get a terrain tile represented by the tile coordinate
     QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord, m_options.RefEllipsoid );
@@ -47,9 +47,6 @@ QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &co
 
     // ...and the QuantizedMesh geometry
     computeQuantizedMeshGeometry( qmTile, surface, minHeight, maxHeight, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices) ;
-
-    // [DEBUG] Export the final tile in OFF format
-    qmTile->exportToOFF("./" + std::to_string(coord.zoom) + "_" + std::to_string(coord.x) + "_" + std::to_string(coord.y) + "_simp_qm.off") ;
 
     return qmTile;
 }
@@ -521,3 +518,4 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
     //    qmTile->printHeader() ;
 //    qmTile->print() ;
 }
+

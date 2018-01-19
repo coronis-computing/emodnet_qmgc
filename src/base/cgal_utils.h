@@ -10,18 +10,20 @@
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Polyhedron_3.h>
 #include <CGAL/Delaunay_triangulation_2.h>
+#include <CGAL/Triangulation_2.h>
 
 /**
- * \brief A modifier creating a Polyhedron_3 structure with the incremental builder from a Delaunay triangulation
+ * \brief A modifier creating a Polyhedron_3 structure with the incremental builder from a projected triangulation.
+ * A "projected triangulation" is a Triangulation_2 with projection traits. That is, the triangulation was made on the plane, but the internal points are 3D.
  */
-template<class Gt, class HDS>
-class PolyhedronBuilderFromDelaunay : public CGAL::Modifier_base<HDS> {
+template<class ProjectedTriangulation2, class HDS>
+class PolyhedronBuilderFromProjectedTriangulation : public CGAL::Modifier_base<HDS> {
 public:
-    typedef CGAL::Delaunay_triangulation_2<Gt> Delaunay;
+    typedef ProjectedTriangulation2 Tri;
 
-    Delaunay m_dt ;
+    Tri m_dt ;
 
-    PolyhedronBuilderFromDelaunay( const Delaunay &dt ) : m_dt(dt) {}
+    PolyhedronBuilderFromProjectedTriangulation( const Tri &dt ) : m_dt(dt) {}
 
     void operator()( HDS& hds ) {
         typedef typename HDS::Vertex   Vertex;
@@ -31,16 +33,16 @@ public:
         CGAL::Polyhedron_incremental_builder_3<HDS> B( hds, true);
         B.begin_surface( m_dt.number_of_vertices(), m_dt.number_of_faces() );
 
-        std::map<typename Delaunay::Vertex_handle,int> indices;
+        std::map<typename Tri::Vertex_handle,int> indices;
         int counter = 0 ;
-        for(typename Delaunay::Finite_vertices_iterator it = m_dt.finite_vertices_begin();
+        for(typename Tri::Finite_vertices_iterator it = m_dt.finite_vertices_begin();
             it != m_dt.finite_vertices_end(); ++it)
         {
             B.add_vertex( it->point() );
-            indices.insert(std::pair<typename Delaunay::Vertex_handle,int>(it, counter++));
+            indices.insert(std::pair<typename Tri::Vertex_handle,int>(it, counter++));
         }
 
-        for(typename Delaunay::Finite_faces_iterator it = m_dt.finite_faces_begin();
+        for(typename Tri::Finite_faces_iterator it = m_dt.finite_faces_begin();
             it != m_dt.finite_faces_end(); ++it)
         {
             B.begin_facet();

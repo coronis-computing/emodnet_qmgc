@@ -44,7 +44,7 @@
 QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
                                                                                    const ZoomTilesScheduler& scheduler,
                                                                                    const int& numThreads )
-        : m_scheduler(scheduler), m_numThreads(numThreads), m_tiler(qmTiler)
+        : m_scheduler(scheduler), m_numThreads(numThreads), m_tiler(qmTiler), m_debugMode(false), m_debugDir("")
 {
     const unsigned int numMaxThreads = std::thread::hardware_concurrency();
     if ( m_numThreads <= 0 )
@@ -68,8 +68,14 @@ QuantizedMeshTilesPyramidBuilderParallel::~QuantizedMeshTilesPyramidBuilderParal
 
 
 
-void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir)
+void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir, const std::string& debugDir )
 {
+    // Set debug mode if needed
+    if (!debugDir.empty()) {
+        m_debugMode = true;
+        m_debugDir = debugDir;
+    }
+
     // Set the desired zoom levels to process
     int startZ = (startZoom < 0) ? m_tiler.maxZoomLevel() : startZoom ;
     int endZ = (endZoom < 0) ? 0 : endZoom;
@@ -197,6 +203,12 @@ QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate&
     const std::string fileName = getTileFileAndCreateDirs(coord, outDir);
     terrainTile->writeFile(fileName);
 
+    // [DEBUG] Export the geometry of the tile in OFF format
+    if (m_debugMode) {
+        const std::string fileNameDebug = getDebugTileFileAndCreateDirs(coord);
+        terrainTile->exportToOFF(fileNameDebug);
+    }
+
     // Free memory
     delete terrainTile;
 
@@ -224,3 +236,18 @@ std::string QuantizedMeshTilesPyramidBuilderParallel::getTileFileAndCreateDirs( 
 
 
 
+
+std::string QuantizedMeshTilesPyramidBuilderParallel::getDebugTileFileAndCreateDirs( const ctb::TileCoordinate &coord )
+{
+    // Check/create the tile folder (zoom/x)
+    fs::path mainOutDirPath(m_debugDir) ;
+    fs::path tileFolder = mainOutDirPath / fs::path(std::to_string(coord.zoom)) / fs::path(std::to_string(coord.x)) ;
+    if ( !fs::exists( tileFolder ) && !fs::create_directories( tileFolder ) ) {
+        std::cerr << "[ERROR] Cannot create the tile folder" << tileFolder << std::endl ;
+        return std::string() ;
+    }
+
+    fs::path fileNamePath = tileFolder / fs::path(std::to_string(coord.y) + ".off") ;
+
+    return fileNamePath.string() ;
+}

@@ -24,7 +24,7 @@ public:
                       const bool &constrainEasternVertices,
                       const bool &constrainWesternVertices,
                       const bool &constrainNorthernVertices,
-                      const bool &constrainSouthernVertices) const;
+                      const bool &constrainSouthernVertices) ;
 
 private:
     unsigned int m_maxClusterSize;
@@ -57,6 +57,9 @@ private:
 
     /// Simplify the north or south border points. Points are projected to the XZ plane and simplified there.
     PointCloud simplifyNorthOrSouthBorder(const PointCloud& pts) const ;
+
+    /// Simplify a set of polylines based on their elevation, while preserving the topology in the XY plane
+    Polylines simplifyPolylines(const Polylines& polylines) const ;
 
 };
 
