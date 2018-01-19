@@ -196,21 +196,21 @@ QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate&
                                                       const std::string& outDir )
 {
     BordersData bd ;
-    QuantizedMeshTile *terrainTile = m_tiler.createTile( coord, bd.tileEastVertices, bd.tileWestVertices,
+    QuantizedMeshTile terrainTile = m_tiler.createTile( coord, bd.tileEastVertices, bd.tileWestVertices,
                                                                       bd.tileNorthVertices, bd.tileSouthVertices ) ;
 
     // Write the file to disk (should be thread safe, as every thread will write to a different file)
     const std::string fileName = getTileFileAndCreateDirs(coord, outDir);
-    terrainTile->writeFile(fileName);
+    terrainTile.writeFile(fileName);
 
     // [DEBUG] Export the geometry of the tile in OFF format
     if (m_debugMode) {
         const std::string fileNameDebug = getDebugTileFileAndCreateDirs(coord);
-        terrainTile->exportToOFF(fileNameDebug);
+        terrainTile.exportToOFF(fileNameDebug);
     }
 
     // Free memory
-    delete terrainTile;
+//    delete terrainTile;
 
     // Return borders data
     return bd ;

@@ -18,14 +18,14 @@
 #include "crs_conversions.h"
 
 
-QuantizedMeshTile* QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord,
+QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord,
                                                    std::vector<Point_3> &tileEastVertices,
                                                    std::vector<Point_3> &tileWestVertices,
                                                    std::vector<Point_3> &tileNorthVertices,
                                                    std::vector<Point_3> &tileSouthVertices )
 {
     // Get a terrain tile represented by the tile coordinate
-    QuantizedMeshTile *qmTile = new QuantizedMeshTile(coord, m_options.RefEllipsoid );
+    QuantizedMeshTile qmTile(coord, m_options.RefEllipsoid );
 
     float minHeight, maxHeight ;
     ctb::CRSBounds tileBounds ;
@@ -222,7 +222,7 @@ std::vector<Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileC
 //}
 
 
-void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile *qmTile,
+void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
                                                      const Polyhedron& surface,
                                                      const float& minHeight, float& maxHeight,
                                                      const ctb::CRSBounds& tileBounds ) const
@@ -299,17 +299,17 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile *qmTile,
     // Explanation of horizonOcclusion in: https://cesium.com/blog/2013/04/25/horizon-culling/
     // and: https://groups.google.com/forum/#!topic/cesium-dev/8NTW1Wl0d8s
     // Note: The test point for occlusion is scaled within the WGS84 ellipsoid
-    Point_3 hop = qmTile->horizonOcclusionPoint(ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ));
+    Point_3 hop = qmTile.horizonOcclusionPoint(ecefPoints, Point_3(header.CenterX, header.CenterY, header.CenterZ));
     header.HorizonOcclusionPointX = hop.x();
     header.HorizonOcclusionPointY = hop.y();
     header.HorizonOcclusionPointZ = hop.z();
 
-    qmTile->setHeader(header);
+    qmTile.setHeader(header);
 }
 
 
 
-void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
+void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                                                       Polyhedron& surface,
                                                       const float& minHeight, const float& maxHeight,
                                                       std::vector<Point_3> &tileEastVertices,
@@ -375,8 +375,8 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
         vertexData.v.push_back(vertices[i+1]) ;
         vertexData.height.push_back(vertices[i+2]) ;
     }
-    qmTile->setVertexData(vertexData) ;
-    qmTile->setIndexData(indexData) ;
+    qmTile.setVertexData(vertexData) ;
+    qmTile.setIndexData(indexData) ;
 
     // --> EdgeIndices part (also collect the vertices to maintain for this tile)
     QuantizedMesh::EdgeIndices edgeIndices ;
@@ -498,7 +498,7 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
     edgeIndices.eastVertexCount = edgeIndices.eastIndices.size() ;
     edgeIndices.northVertexCount = edgeIndices.northIndices.size() ;
 
-    qmTile->setEdgeIndices(edgeIndices) ;
+    qmTile.setEdgeIndices(edgeIndices) ;
 
     // Extensions
     // Compute normals
@@ -513,7 +513,7 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
     }
 
     // Write normals to tile
-    qmTile->setVertexNormals(vertexNormals) ;
+    qmTile.setVertexNormals(vertexNormals) ;
 
     //    qmTile->printHeader() ;
 //    qmTile->print() ;

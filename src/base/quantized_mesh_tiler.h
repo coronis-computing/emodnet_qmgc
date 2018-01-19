@@ -61,7 +61,7 @@ public:
      * this height is the raster-extracted height in meters.
      *
      */
-    QuantizedMeshTile* createTile(const ctb::TileCoordinate &coord,
+    QuantizedMeshTile createTile(const ctb::TileCoordinate &coord,
                                   std::vector<Point_3> &tileEastVertices,
                                   std::vector<Point_3> &tileWestVertices,
                                   std::vector<Point_3> &tileNorthVertices,
@@ -135,7 +135,7 @@ private:
      * @param surface The triangle mesh containing the geometry of the tile (only its vertices will be used here)
      * @param tileBounds The tile bounds (in the geographic reference system coordinates)
      */
-    void computeQuantizedMeshHeader(QuantizedMeshTile *qmTile,
+    void computeQuantizedMeshHeader(QuantizedMeshTile& qmTile,
                                     const Polyhedron& surface,
                                     const float& minHeight, float& maxHeight,
                                     const ctb::CRSBounds& tileBounds) const ;
@@ -154,7 +154,7 @@ private:
      * @param tileNorthVertices Northern vertices of the tile
      * @param tileSouthVertices Southern vertices of the tile
      */
-    void computeQuantizedMeshGeometry(QuantizedMeshTile *qmTile,
+    void computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                                       Polyhedron& surface,
                                       const float& minHeight, const float& maxHeight,
                                       std::vector<Point_3> &tileEastVertices,
