@@ -24,8 +24,10 @@ class TinCreationSimplificationPointSet : public TINCreationStrategy
     typedef PS::Squared_distance_3_cost                                      PSSqDist3Cost;
 
 public:
-    TinCreationSimplificationPointSet(double borderSimplificationMaxDistance)
-            : m_borderSimpMaxSqDist(borderSimplificationMaxDistance*borderSimplificationMaxDistance) {} ;
+    TinCreationSimplificationPointSet(double borderSimplificationMaxDistance,
+                                      unsigned int minFeaturePolylineSize)
+            : m_borderSimpMaxSqDist(borderSimplificationMaxDistance*borderSimplificationMaxDistance)
+            , m_minFeaturePolylineSize(minFeaturePolylineSize) {} ;
 
     Polyhedron create(const std::vector<Point_3>& dataPts,
                       const bool &constrainEasternVertices,
@@ -44,6 +46,7 @@ public:
 
 private:
     double m_borderSimpMaxSqDist;
+    unsigned int m_minFeaturePolylineSize ;
     CTXY m_cdt;
 
     /// Imposes the required constraints to the internal CDT structure. Simplified the border/feature polylines when needed

@@ -6,6 +6,8 @@
 #define EMODNET_TOOLS_CGAL_EXTRACT_TILE_BORDERS_FROM_POLYHEDRON_H
 
 #include "cgal_defines.h"
+#include <CGAL/centroid.h>
+
 
 
 /// \pre normalize_borders() has been called before this function and is still valid
@@ -26,6 +28,13 @@ bool extractTileBordersFromPolyhedron(const Polyhedron_& poly,
     southernBorderPts.clear();
 
     int numCorners ;
+
+    std::vector<Point_3 > pts ;
+    for ( typename Polyhedron_::Vertex_const_iterator it = poly.vertices_begin(); it != poly.vertices_end(); ++it )
+        pts.push_back(it->point());
+    Point_3 c3 = CGAL::centroid(pts.begin(), pts.end(),CGAL::Dimension_tag<0>());
+    K::FT midX = c3.x() ;
+    K::FT midY = c3.y() ;
 
     Polyhedron::Halfedge_const_iterator e = poly.border_halfedges_begin() ;
     ++e ; // We start at the second halfedge!
@@ -52,17 +61,17 @@ bool extractTileBordersFromPolyhedron(const Polyhedron_& poly,
 
         if ( isCorner ) {
             numCorners++ ;
-            if ( p0.x() < 0.5 && p0.y() < 0.5 ) { // Corner (0, 0)
+            if ( p0.x() < midX && p0.y() < midY ) { // Corner (0, 0)
                 cornerPoint00 = p0;
                 westernBorderPts.push_back(p0);
                 southernBorderPts.push_back(p0);
             }
-            else if ( p0.x() < 0.5 && p0.y() > 0.5 ) { // Corner (0, 1)
+            else if ( p0.x() < midX && p0.y() > midY ) { // Corner (0, 1)
                 cornerPoint01 = p0;
                 westernBorderPts.push_back(p0);
                 northernBorderPts.push_back(p0);
             }
-            else if ( p0.x() > 0.5 && p0.y() > 0.5 ) { // Corner (1, 1)
+            else if ( p0.x() > midX && p0.y() > midY ) { // Corner (1, 1)
                 cornerPoint11 = p0;
                 easternBorderPts.push_back(p0);
                 northernBorderPts.push_back(p0);
@@ -76,7 +85,7 @@ bool extractTileBordersFromPolyhedron(const Polyhedron_& poly,
         else {
             if (diffX < diffY) {
                 // Vertical edge, can be a western or eastern edge
-                if (p0.x() < 0.5) {
+                if (p0.x() < midX) {
                     // Western border edge/vertex
                     westernBorderPts.push_back(p0);
                 } else { // p0.x() >= 0.5
@@ -85,7 +94,7 @@ bool extractTileBordersFromPolyhedron(const Polyhedron_& poly,
                 }
             } else { // diffX >= diffY
                 // Horizontal edge, can be a northern or southern edge
-                if (p0.y() < 0.5) {
+                if (p0.y() < midY) {
                     // Southern border edge/vertex
                     southernBorderPts.push_back(p0);
                 } else { // p0.y() >= 0.5

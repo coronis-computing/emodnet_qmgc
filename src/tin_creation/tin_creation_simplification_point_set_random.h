@@ -13,8 +13,9 @@ class TinCreationSimplificationPointSetRandom
 {
 public:
     TinCreationSimplificationPointSetRandom(double borderSimplificationMaxDistance,
+                                            unsigned int minFeaturePolylineSize,
                                             double removePercentage)
-            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance)
+            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, minFeaturePolylineSize)
             , m_removePercentage(removePercentage) {}
 
     std::vector<Point_3> simplify(const std::vector<Point_3>& pts);

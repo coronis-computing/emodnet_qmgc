@@ -14,8 +14,9 @@ class TinCreationSimplificationPointSetGrid
 {
 public:
     TinCreationSimplificationPointSetGrid(double borderSimplificationMaxDistance,
+                                          unsigned int minFeaturePolylineSize,
                                           double cellSize)
-            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance)
+            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, minFeaturePolylineSize)
             , m_cellSize(cellSize) {}
 
     std::vector<Point_3> simplify(const std::vector<Point_3>& pts);

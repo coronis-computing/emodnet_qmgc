@@ -31,6 +31,7 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
 
     // Simplification by clustering using erase-remove idiom
     getAllNonBorderVertices(surface, ptsToSimplify);
+
     ptsToSimplify = simplify(ptsToSimplify);
 
     // Impose the constraints based on borders and features in the original mesh
@@ -114,6 +115,11 @@ imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintai
 //    Polylines pls = detect_features_without_border<Polyhedron>(surface, FT(60.0));
     Polylines featurePolylines = domain.extract_features_without_borders(60.0, surface);
 
+    // Filter small polylines (in terms of its number of points)
+    featurePolylines.erase(std::remove_if(featurePolylines.begin(), featurePolylines.end(),
+                                          [this](const Polyline& pl){return pl.size() < this->m_minFeaturePolylineSize;}),
+                           featurePolylines.end()) ;
+
     for ( Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it ) {
         m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
     }
@@ -125,6 +131,8 @@ imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintai
 //            std::cout << *itp << std::endl;
 //        std::cout << "];" << std::endl ;
 //    }
+
+
 
 //    std::cout << "Number of feature Polylines = " << featurePolylines.size() << std::endl ;
 

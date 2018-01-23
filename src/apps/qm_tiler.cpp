@@ -34,14 +34,14 @@ namespace po = boost::program_options ;
 int main ( int argc, char **argv)
 {
     // Command line parser
-    std::string inputFile, outDir, tinCreationStrategy, schedulerType, debugDir;
+    std::string inputFile, outDir, tinCreationStrategy, schedulerType, debugDir, configFile;
     int startZoom, endZoom;
     double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize, psHierMaxSurfaceVariance, psBorderSimpMaxDist, greedyErrorTol, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
     float clippingHighValue, clippingLowValue;
     int simpStopEdgesCount, heighMapSamplingSteps;
-    unsigned int psHierMaxClusterSize, psWlopIterNumber;
+    unsigned int psHierMaxClusterSize, psWlopIterNumber, psMinFeaturePolylineSize;
     int numThreads = 0 ;
-    bool bathymetryFlag = false ;
+    bool bathymetryFlag ;
 
     po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format");
     options.add_options()
@@ -50,41 +50,33 @@ int main ( int argc, char **argv)
             ( "output-dir,o", po::value<std::string>(&outDir)->default_value("terrain_tiles_qm"), "The output directory for the tiles" )
             ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level (i.e., the TMS pyramid is constructed from bottom to top). If smaller than zero, defaults to the maximum zoom possible according to DEM resolution." )
             ( "end-zoom,e", po::value<int>(&endZoom)->default_value(0), "The zoom level to end at. This should be less than the start zoom level (i.e., the TMS pyramid is constructed from bottom to top)." )
-            ( "bathymetry,b", po::bool_switch(&bathymetryFlag), "Switch to consider the input DEM as containing depths instead of elevations" )
+            ( "bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations" )
             ( "samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify." )
             ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold." )
             ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
             ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)" )
             ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
-
             ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random, remeshing, (see documentation for the meaning of each)" )
-
             ( "tc-greedy-error-tol", po::value<double>(&greedyErrorTol)->default_value(0.1), "Error tolerance for a tile to fulfill in the greedy insertion approach")
-
             ( "tc-lt-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value." )
             ( "tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
-
             ( "tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(0.2), "Remeshing facet distance." )
             ( "tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
             ( "tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(0.2), "Remeshing facet size." )
             ( "tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(0.2), "Remeshing edge size." )
-
             ( "tc-ps-border-max-error", po::value<double>(&psBorderSimpMaxDist)->default_value(0.01), "Polyline simplification error at borders" )
-
+            ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered" )
             ( "tc-ps-hierarchy-cluster-size", po::value<unsigned int>(&psHierMaxClusterSize)->default_value(100), "Hierarchy point set simplification maximum cluster size" )
             ( "tc-ps-hierarchy-max-surface-variance", po::value<double>(&psHierMaxSurfaceVariance)->default_value(0.01), "Hierarchy point set simplification maximum surface variation" )
-
             ( "tc-ps-wlop-retain-percent", po::value<double>(&psWlopRetainPercentage)->default_value(5), "Percentage of points to retain, [0..100]" )
             ( "tc-ps-wlop-radius", po::value<double>(&psWlopRadius)->default_value(0.2), "PS WLOP simplification: radius" )
             ( "tc-ps-wlop-iter-number", po::value<unsigned int>(&psWlopIterNumber)->default_value(35), "PS WLOP simplification: number of iterations" )
-
             ( "tc-ps-grid-cell-size", po::value<double>(&psGridCellSize)->default_value(0.1), "PS Grid simplification: Cell size")
-
-            ( "tc-ps-random-percent", po::value<double>(&psRandomRemovePercentage)->default_value(0.8), "PS Random simplification: percentage to remove")
-
+            ( "tc-ps-random-percent", po::value<double>(&psRandomRemovePercentage)->default_value(80), "PS Random simplification: percentage to remove")
             ( "debug-dir", po::value<string>(&debugDir)->default_value(""), "Debug directory where simplified meshes will be stored in OFF format for easing visualization")
+            ( "config,c", po::value<string>(&configFile)->default_value("hola"), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
     ;
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
@@ -92,6 +84,19 @@ int main ( int argc, char **argv)
     po::variables_map vm;
     po::store(po::command_line_parser(argc, argv).
             options(options).positional(positionalOptions).run(), vm);
+
+    // Read the configuration file (if exists)
+    if(vm.count("config") > 0) {
+        configFile = vm["config"].as<std::string>() ;
+        ifstream ifs(configFile);
+        if (ifs.good())
+            po::store(po::parse_config_file(ifs, options), vm);
+        else {
+            cerr << "[Error] Could not open config file " << configFile << endl;
+            return 1;
+        }
+    }
+
     po::notify(vm);
 
     if (vm.count("help")) {
@@ -110,7 +115,7 @@ int main ( int argc, char **argv)
         //GDALDataset *gdalDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
         gdalDatasets.push_back( (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly) );
         if (gdalDatasets[i] == NULL) {
-            cerr << "Error: could not open GDAL dataset" << endl;
+            cerr << "[Error] Could not open GDAL dataset" << endl;
             return 1;
         }
 
@@ -160,6 +165,7 @@ int main ( int argc, char **argv)
         else if (tinCreationStrategy.compare("ps-hierarchy") == 0) {
             std::shared_ptr<TinCreationSimplificationPointSetHierarchy> tcHier
                     = std::make_shared<TinCreationSimplificationPointSetHierarchy>(psBorderSimpMaxDist,
+                                                                                   psMinFeaturePolylineSize,
                                                                                  psHierMaxClusterSize,
                                                                                  psHierMaxSurfaceVariance);
             tinCreator.setCreator(tcHier);
@@ -167,6 +173,7 @@ int main ( int argc, char **argv)
         else if (tinCreationStrategy.compare("ps-wlop") == 0) {
             std::shared_ptr<TinCreationSimplificationPointSetWLOP> tcWlop
                     = std::make_shared<TinCreationSimplificationPointSetWLOP>(psBorderSimpMaxDist,
+                                                                              psMinFeaturePolylineSize,
                                                                               psWlopRetainPercentage,
                                                                               psWlopRadius,
                                                                               psWlopIterNumber);
@@ -175,12 +182,14 @@ int main ( int argc, char **argv)
         else if (tinCreationStrategy.compare("ps-grid") == 0) {
             std::shared_ptr<TinCreationSimplificationPointSetGrid> tcGrid
                     = std::make_shared<TinCreationSimplificationPointSetGrid>(psBorderSimpMaxDist,
+                                                                              psMinFeaturePolylineSize,
                                                                               psGridCellSize);
             tinCreator.setCreator(tcGrid);
         }
         else if (tinCreationStrategy.compare("ps-random") == 0) {
             std::shared_ptr<TinCreationSimplificationPointSetRandom> tcRand
                     = std::make_shared<TinCreationSimplificationPointSetRandom>(psBorderSimpMaxDist,
+                                                                                psMinFeaturePolylineSize,
                                                                                 psRandomRemovePercentage);
             tinCreator.setCreator(tcRand);
         }

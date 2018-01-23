@@ -14,9 +14,10 @@ class TinCreationSimplificationPointSetHierarchy
 {
 public:
     TinCreationSimplificationPointSetHierarchy(double borderSimplificationMaxDistance,
+                                               unsigned int minFeaturePolylineSize,
                                                double maxClusterSize,
                                                double maxSurfaceVariance)
-            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance)
+            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, minFeaturePolylineSize)
             , m_maxClusterSize(maxClusterSize)
             , m_maxSurfaceVariance(maxSurfaceVariance) {}
 
