@@ -3,10 +3,10 @@
 //
 
 #include "tin_creation_remeshing_strategy.h"
-#include "cgal/cgal_generate_border_features_polylines.h"
+#include "cgal/generate_border_features_polylines.h"
 #include <CGAL/make_mesh_3.h>
 #include <iostream>
-#include "cgal/cgal_polyhedron_builder_from_c3t3_boundary.h"
+#include "cgal/polyhedron_builder_from_c3t3_boundary.h"
 #include <CGAL/config.h>
 #include "cgal_defines.h"
 #include <limits>

@@ -72,6 +72,7 @@ private:
     QMTOptions m_options ;
     TINCreator m_tinCreator ;
     mutable std::mutex m_mutex; // Mark mutex as mutable because it doesn't represent the object's real state
+                                // Note that we don't need the mutex if we create multiple instances of tilers, as done in qm_tiler right now. We leave it here in case it is needed for other implementations
 
     // --- Private Functions ---
     /**

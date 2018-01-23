@@ -23,6 +23,7 @@
  */
 class QuantizedMeshTilesPyramidBuilderParallel {
 public:
+
     struct BordersData {
         std::vector<Point_3> tileEastVertices ;
         std::vector<Point_3> tileWestVertices ;
@@ -36,11 +37,16 @@ public:
 //                                      const ZoomTilesScheduler& scheduler,
 //                                      const int& numThreads ) ;
 
-    QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
-                                             const ZoomTilesScheduler& scheduler,
-                                             const int& numThreads);
+//    /// Constructor with a single tiler
+//    QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
+//                                             const ZoomTilesScheduler& scheduler,
+//                                             const int& numThreads);
 
-    ~QuantizedMeshTilesPyramidBuilderParallel() ;
+    QuantizedMeshTilesPyramidBuilderParallel(const std::vector<QuantizedMeshTiler>& qmTilers,
+                                             const ZoomTilesScheduler& scheduler);
+
+//
+//    ~QuantizedMeshTilesPyramidBuilderParallel() ;
 
     /**
      * @brief Creates the tile pyramid in quantized-mesh format
@@ -76,7 +82,8 @@ private:
 //    QuantizedMeshTiler m_qmTiler ;
     int m_numThreads ;
 //    QuantizedMeshTiler **m_tilers ;
-    QuantizedMeshTiler m_tiler ;
+//    QuantizedMeshTiler m_tiler ;
+    std::vector<QuantizedMeshTiler> m_tilers ;
     ZoomTilesScheduler m_scheduler ;
     std::vector<ctb::TilePoint> m_tilesWaitingToProcess ;
     ZoomTilesBorderVerticesCache m_bordersCache ;

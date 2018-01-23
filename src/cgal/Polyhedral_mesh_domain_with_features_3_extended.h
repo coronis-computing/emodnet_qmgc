@@ -9,6 +9,7 @@
 #include <CGAL/Polyhedral_mesh_domain_3.h>
 #include <CGAL/Mesh_domain_with_polyline_features_3.h>
 #include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
+#include "polyhedron_detect_sharp_features.h"
 
 namespace CGAL {
 
@@ -58,13 +59,14 @@ namespace CGAL {
                                                         CGAL::Random* p_rng = NULL)
                 : Base(begin, end, p_rng) {}
 
-        Polylines extract_features(FT angle_in_degree, Polyhedron&p) {
+        Polylines extract_features_without_borders(FT angle_in_degree, Polyhedron&p) {
 //            for (std::size_t i = 0; i < polys.size(); ++i) {
 //                Polyhedron &p = polys[i];
                 this->initialize_ts(p);
 
                 // Get sharp features
-                Mesh_3::detect_features(p, angle_in_degree);
+//                Mesh_3::detect_features(p, angle_in_degree);
+                detect_sharp_edges(p, angle_in_degree);
 
                 // Get polylines
                 typedef Mesh_3::Polyline_with_context<Surface_patch_index, Curve_segment_index,

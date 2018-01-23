@@ -4,10 +4,10 @@
 
 #include "tin_creation_simplification_lindstrom_turk_strategy.h"
 #include "cgal_defines.h"
-#include "cgal/cgal_border_edges_are_constrained_edge_map.h"
-#include "cgal/cgal_corner_vertices_are_constrained_vertex_map.h"
-#include "cgal/cgal_further_constrained_placement.h"
-#include "cgal/cgal_cost_and_count_stop_predicate.h"
+#include "cgal/border_edges_are_constrained_edge_map.h"
+#include "cgal/corner_vertices_are_constrained_vertex_map.h"
+#include "cgal/further_constrained_placement.h"
+#include "cgal/cost_and_count_stop_predicate.h"
 
 
 

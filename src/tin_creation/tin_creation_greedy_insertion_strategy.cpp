@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <CGAL/intersections.h>
 #include "cgal/cgal_utils.h"
-#include "cgal/cgal_extract_tile_borders_from_polyhedron.h"
+#include "cgal/extract_tile_borders_from_polyhedron.h"
 
 
 

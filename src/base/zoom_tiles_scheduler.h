@@ -50,10 +50,10 @@ public:
     ZoomTilesScheduler(){}
 
     /// Constructor from an scheduler strategy
-    ZoomTilesScheduler( ZoomTilesSchedulerStrategy* scheduler ) { m_scheduler = scheduler ;}
+    ZoomTilesScheduler( std::shared_ptr<ZoomTilesSchedulerStrategy> scheduler ) { m_scheduler = scheduler ;}
 
     /// Allows to change the scheduler algorithm at runtime
-    void setScheduler(ZoomTilesSchedulerStrategy* scheduler ) { m_scheduler = scheduler ;}
+    void setScheduler(std::shared_ptr<ZoomTilesSchedulerStrategy> scheduler ) { m_scheduler = scheduler ;}
 
     // Replication of the ZoomTilesSchedulerBase interphase
     void initSchedule(const ctb::TileBounds& zoomBounds) { m_scheduler->initSchedule(zoomBounds) ; }
@@ -63,7 +63,7 @@ public:
     int currentIndex() { return m_scheduler->currentIndex() ; }
 
 private:
-    ZoomTilesSchedulerStrategy* m_scheduler ;
+    std::shared_ptr<ZoomTilesSchedulerStrategy> m_scheduler ;
 };
 
 // --- Concrete strategies ---

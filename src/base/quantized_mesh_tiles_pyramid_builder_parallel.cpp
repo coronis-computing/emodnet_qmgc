@@ -41,14 +41,33 @@
 //}
 
 
-QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
-                                                                                   const ZoomTilesScheduler& scheduler,
-                                                                                   const int& numThreads )
-        : m_scheduler(scheduler), m_numThreads(numThreads), m_tiler(qmTiler), m_debugMode(false), m_debugDir("")
+//QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
+//                                                                                   const ZoomTilesScheduler& scheduler,
+//                                                                                   const int& numThreads )
+//        : m_scheduler(scheduler), m_numThreads(numThreads), m_tiler(qmTiler), m_debugMode(false), m_debugDir("")
+//{
+//    const unsigned int numMaxThreads = std::thread::hardware_concurrency();
+//    if ( m_numThreads <= 0 )
+//        m_numThreads = numMaxThreads ;
+//
+//    // Create a tiler with its own pointer to the dataset for each thread
+////    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
+////    for ( int i = 0; i < m_numThreads; i++ ) {
+////        m_tilers[i] = new QuantizedMeshTiler(qmTiler) ;
+////    }
+//}
+
+
+QuantizedMeshTilesPyramidBuilderParallel::
+QuantizedMeshTilesPyramidBuilderParallel(const std::vector<QuantizedMeshTiler>& qmTilers,
+                                         const ZoomTilesScheduler& scheduler)
+    : m_scheduler(scheduler), m_numThreads(qmTilers.size()), m_tilers(qmTilers), m_debugMode(false), m_debugDir("")
 {
     const unsigned int numMaxThreads = std::thread::hardware_concurrency();
     if ( m_numThreads <= 0 )
         m_numThreads = numMaxThreads ;
+
+    std::cout << "m_tilers.size() = " << m_tilers.size() << std::endl ;
 
     // Create a tiler with its own pointer to the dataset for each thread
 //    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
@@ -58,13 +77,15 @@ QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParall
 }
 
 
-QuantizedMeshTilesPyramidBuilderParallel::~QuantizedMeshTilesPyramidBuilderParallel()
-{
-//    for ( int i = 0; i < m_numThreads; i++ )
-//    {
-//        delete m_tilers[i] ;
-//    }
-}
+//
+//
+//QuantizedMeshTilesPyramidBuilderParallel::~QuantizedMeshTilesPyramidBuilderParallel()
+//{
+////    for ( int i = 0; i < m_numThreads; i++ )
+////    {
+////        delete m_tilers[i] ;
+////    }
+//}
 
 
 
@@ -77,13 +98,13 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
     }
 
     // Set the desired zoom levels to process
-    int startZ = (startZoom < 0) ? m_tiler.maxZoomLevel() : startZoom ;
+    int startZ = (startZoom < 0) ? m_tilers[0].maxZoomLevel() : startZoom ;
     int endZ = (endZoom < 0) ? 0 : endZoom;
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        ctb::TileCoordinate ll = m_tiler.grid().crsToTile(m_tiler.bounds().getLowerLeft(), zoom);
-        ctb::TileCoordinate ur = m_tiler.grid().crsToTile(m_tiler.bounds().getUpperRight(), zoom);
+        ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
+        ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
 
         ctb::TileBounds zoomBounds(ll, ur);
 
@@ -196,8 +217,8 @@ QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate&
                                                       const std::string& outDir )
 {
     BordersData bd ;
-    QuantizedMeshTile terrainTile = m_tiler.createTile( coord, bd.tileEastVertices, bd.tileWestVertices,
-                                                                      bd.tileNorthVertices, bd.tileSouthVertices ) ;
+    QuantizedMeshTile terrainTile = m_tilers[numThread].createTile( coord, bd.tileEastVertices, bd.tileWestVertices,
+                                                               bd.tileNorthVertices, bd.tileSouthVertices ) ;
 
     // Write the file to disk (should be thread safe, as every thread will write to a different file)
     const std::string fileName = getTileFileAndCreateDirs(coord, outDir);

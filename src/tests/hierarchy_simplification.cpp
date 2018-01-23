@@ -74,7 +74,7 @@ int main(int argc, char*argv[])
 
     // Translate to Polyhedron
     Polyhedron surface ;
-    PolyhedronBuilderFromDelaunay<Gt, HalfedgeDS> builder(dt);
+    PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builder(dt);
     surface.delegate(builder);
 
     // Save the results
