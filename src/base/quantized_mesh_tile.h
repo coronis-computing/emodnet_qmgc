@@ -7,6 +7,7 @@
 
 #include "quantized_mesh.h"
 #include "ellipsoid.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 
 
 /**
@@ -20,6 +21,9 @@ public QuantizedMesh, public ctb::Tile
     friend class QuantizedMeshTiler;
 
 public:
+    // --- Typedefs ---
+    typedef TinCreation::Point_3   Point_3 ;
+    typedef TinCreation::Vector_3  Vector_3 ;
 
     /// Create a quantized mesh tile from a tile coordinate
     QuantizedMeshTile(const ctb::TileCoordinate &coord,

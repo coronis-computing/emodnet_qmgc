@@ -26,8 +26,9 @@
 #include "tin_creation/tin_creation_simplification_point_set_grid.h"
 #include "tin_creation/tin_creation_simplification_point_set_random.h"
 
-using namespace std ;
-namespace po = boost::program_options ;
+using namespace std;
+using namespace TinCreation;
+namespace po = boost::program_options;
 
 
 
@@ -56,16 +57,16 @@ int main ( int argc, char **argv)
             ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
             ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)" )
             ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
-            ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random, remeshing, (see documentation for the meaning of each)" )
+            ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random (see documentation for further information)" )
             ( "tc-greedy-error-tol", po::value<double>(&greedyErrorTol)->default_value(0.1), "Error tolerance for a tile to fulfill in the greedy insertion approach")
             ( "tc-lt-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value." )
             ( "tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
-            ( "tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(0.2), "Remeshing facet distance." )
-            ( "tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
-            ( "tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(0.2), "Remeshing facet size." )
-            ( "tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(0.2), "Remeshing edge size." )
+//            ( "tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(0.2), "Remeshing facet distance." )
+//            ( "tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
+//            ( "tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(0.2), "Remeshing facet size." )
+//            ( "tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(0.2), "Remeshing edge size." )
             ( "tc-ps-border-max-error", po::value<double>(&psBorderSimpMaxDist)->default_value(0.01), "Polyline simplification error at borders" )
             ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered" )
             ( "tc-ps-hierarchy-cluster-size", po::value<unsigned int>(&psHierMaxClusterSize)->default_value(100), "Hierarchy point set simplification maximum cluster size" )
@@ -86,7 +87,7 @@ int main ( int argc, char **argv)
             options(options).positional(positionalOptions).run(), vm);
 
     // Read the configuration file (if exists)
-    if(vm.count("config") > 0) {
+    if(vm.count("config") > 0 && !vm["config"].as<std::string>().empty()) {
         configFile = vm["config"].as<std::string>() ;
         ifstream ifs(configFile);
         if (ifs.good())
@@ -139,11 +140,11 @@ int main ( int argc, char **argv)
         qmtOptions.ClippingLowValue = clippingLowValue;
 
         // Setup the TIN creator
-        TINCreator tinCreator;
+        TinCreator tinCreator;
         std::transform(tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower);
         if (tinCreationStrategy.compare("lt") == 0) {
-            std::shared_ptr<TINCreationSimplificationLindstromTurkStrategy> tcLT
-                    = std::make_shared<TINCreationSimplificationLindstromTurkStrategy>(simpStopEdgesCount,
+            std::shared_ptr<TinCreationSimplificationLindstromTurkStrategy> tcLT
+                    = std::make_shared<TinCreationSimplificationLindstromTurkStrategy>(simpStopEdgesCount,
                                                                                        simpWeightVolume,
                                                                                        simpWeightBoundary,
                                                                                        simpWeightShape);
@@ -154,14 +155,14 @@ int main ( int argc, char **argv)
                     = std::make_shared<TinCreationGreedyInsertionStrategy>(greedyErrorTol);
             tinCreator.setCreator(tcGreedy);
         }
-        else if (tinCreationStrategy.compare("remeshing") == 0) {
-            std::shared_ptr<TINCreationRemeshingStrategy> tcRemesh
-                    = std::make_shared<TINCreationRemeshingStrategy>(remeshingFacetDistance,
-                                                                   remeshingFacetAngle,
-                                                                   remeshingFacetSize,
-                                                                   remeshingEdgeSize);
-            tinCreator.setCreator(tcRemesh);
-        }
+//        else if (tinCreationStrategy.compare("remeshing") == 0) {
+//            std::shared_ptr<TinCreationRemeshingStrategy> tcRemesh
+//                    = std::make_shared<TinCreationRemeshingStrategy>(remeshingFacetDistance,
+//                                                                   remeshingFacetAngle,
+//                                                                   remeshingFacetSize,
+//                                                                   remeshingEdgeSize);
+//            tinCreator.setCreator(tcRemesh);
+//        }
         else if (tinCreationStrategy.compare("ps-hierarchy") == 0) {
             std::shared_ptr<TinCreationSimplificationPointSetHierarchy> tcHier
                     = std::make_shared<TinCreationSimplificationPointSetHierarchy>(psBorderSimpMaxDist,
@@ -194,8 +195,8 @@ int main ( int argc, char **argv)
             tinCreator.setCreator(tcRand);
         }
         else if (tinCreationStrategy.compare("delaunay") == 0) {
-            std::shared_ptr<TINCreationDelaunayStrategy> tcDel =
-                    std::make_shared<TINCreationDelaunayStrategy>();
+            std::shared_ptr<TinCreationDelaunayStrategy> tcDel =
+                    std::make_shared<TinCreationDelaunayStrategy>();
             tinCreator.setCreator(tcDel);
         }
         else {

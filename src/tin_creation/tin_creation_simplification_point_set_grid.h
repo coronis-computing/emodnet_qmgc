@@ -7,7 +7,7 @@
 
 #include "tin_creation_simplification_point_set.h"
 
-
+namespace TinCreation {
 
 class TinCreationSimplificationPointSetGrid
         : public TinCreationSimplificationPointSet
@@ -25,5 +25,6 @@ private:
     double m_cellSize ;
 };
 
+} // End namespace TinCreation
 
 #endif //EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_GRID_H

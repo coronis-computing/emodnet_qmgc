@@ -4,13 +4,12 @@
 
 #include "tin_creation_simplification_point_set.h"
 #include <CGAL/convex_hull_2.h>
-#include "cgal/cgal_utils.h"
-//#include <CGAL/Projection_traits_xz_3.h>
-//#include <CGAL/Projection_traits_yz_3.h>
-
+#include "cgal/polyhedron_builder_from_projected_triangulation.h"
 #include "cgal/Polyhedral_mesh_domain_with_features_3_extended.h"
 #include "cgal/extract_tile_borders_from_polyhedron.h"
+#include "cgal/cgal_utils.h"
 
+namespace TinCreation {
 
 Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>& dataPts,
                                                               const bool &constrainEasternVertices,
@@ -252,7 +251,7 @@ getAllNonBorderVertices(const Polyhedron& poly, PointCloud& nonBorderPts) const
 {
     Polyhedron::Vertex_const_iterator vi = poly.vertices_begin() ;
     for (; vi != poly.vertices_end(); ++vi ) {
-        if (!isBorder(vi))
+        if (!isBorder<Polyhedron>(vi))
             nonBorderPts.push_back(vi->point());
     }
 }
@@ -428,3 +427,6 @@ simplifyPolylines(const Polylines& polylines) const
 
     return polylinesSimp;
 }
+
+
+} // End namespace TinCreation

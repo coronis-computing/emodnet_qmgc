@@ -5,7 +5,7 @@
 #ifndef EMODNET_TOOLS_CGAL_POLYHEDRON_DETECT_SHARP_EDGES_H
 #define EMODNET_TOOLS_CGAL_POLYHEDRON_DETECT_SHARP_EDGES_H
 
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include <CGAL/Mesh_3/Detect_features_in_polyhedra.h>
 
 // We need the sharp edges to be detected independently of the border edges, which need to be treated differently
@@ -135,46 +135,47 @@ template <typename Polyhedron_>
 void detect_sharp_edges(Polyhedron_& p,
                         typename Polyhedron_::Traits::FT angle_in_deg)
 {
-    Detect_sharp_features_in_polyhedra<Polyhedron> go;
+    Detect_sharp_features_in_polyhedra<Polyhedron_> go;
     go.detect_sharp_features_only(p,angle_in_deg);
     go.detect_surface_patches(p);
     go.detect_vertices_incident_patches(p);
 }
 
-
-/**
- * @brief Modification of the detect_features function in the
- */
-
-template <typename Polyhedron_>
-Polylines detect_features_without_border(Polyhedron_& p, typename Polyhedron_::Traits::FT angleInDegree)
-{
-    // Get sharp features
-    detect_sharp_edges(p, angleInDegree);
-
-//    // Get polylines
-//    Polylines polys;
 //
+///**
+// * @brief Modification of the detect_features function in the
+// */
+//
+//template <typename Polyhedron_>
+//std::vector<typename Polyhedron_::Point_3>
+//detect_features_without_border(Polyhedron_& p, typename Polyhedron_::Traits::FT angleInDegree)
+//{
+//    // Get sharp features
+//    detect_sharp_edges(p, angleInDegree);
+//
+////    // Get polylines
+////    Polylines polys;
+////
+////    typedef std::back_insert_iterator<std::vector<Polyline> > Output_iterator;
+////
+//////    CGAL::Mesh_3::detect_polylines<Polyhedron,Polyline,Output_iterator>(
+//////            &p, std::back_inserter(polylines));
+//
+//    // Get polylines using the built-in methods in Mesh_3 (we ignore contexts)
+//    typedef std::vector<Point_3> Bare_polyline;
+//    typedef CGAL::Mesh_3::Polyline_with_context<MeshDomain::Surface_patch_index, MeshDomain::Curve_segment_index,
+//    Bare_polyline > Polyline;
+//
+//    std::vector<Polyline> polylines;
 //    typedef std::back_insert_iterator<std::vector<Polyline> > Output_iterator;
 //
-////    CGAL::Mesh_3::detect_polylines<Polyhedron,Polyline,Output_iterator>(
-////            &p, std::back_inserter(polylines));
-
-    // Get polylines using the built-in methods in Mesh_3 (we ignore contexts)
-    typedef std::vector<Point_3> Bare_polyline;
-    typedef CGAL::Mesh_3::Polyline_with_context<MeshDomain::Surface_patch_index, MeshDomain::Curve_segment_index,
-    Bare_polyline > Polyline;
-
-    std::vector<Polyline> polylines;
-    typedef std::back_insert_iterator<std::vector<Polyline> > Output_iterator;
-
-    CGAL::Mesh_3::detect_polylines<Polyhedron,Polyline,Output_iterator>(
-            &p, std::back_inserter(polylines));
-
-    // Extract the polylines without context information
-    CGAL::Mesh_3::Extract_bare_polyline<Polyline> extractor;
-
-//    return polys;
-}
+//    CGAL::Mesh_3::detect_polylines<Polyhedron,Polyline,Output_iterator>(
+//            &p, std::back_inserter(polylines));
+//
+//    // Extract the polylines without context information
+//    CGAL::Mesh_3::Extract_bare_polyline<Polyline> extractor;
+//
+////    return polys;
+//}
 
 #endif //EMODNET_TOOLS_CGAL_POLYHEDRON_DETECT_SHARP_EDGES_H

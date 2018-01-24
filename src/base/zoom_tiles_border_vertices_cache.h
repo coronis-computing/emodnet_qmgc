@@ -8,11 +8,15 @@
 #include <ctb.hpp>
 #include <unordered_map>
 #include "tile_border_vertices.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 
 
 
 class ZoomTilesBorderVerticesCache
 {
+    // --- Private typedefs ---
+    typedef TinCreation::Point_3 Point_3;
+
 public:
     /**
      * Constructor

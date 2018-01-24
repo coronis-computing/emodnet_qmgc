@@ -4,8 +4,8 @@
 
 #include <vector>
 #include <fstream>
-#include "../base/cgal_defines.h"
-#include "cgal/cgal_utils.h"
+#include "tin_creation/tin_creation_cgal_types.h"
+#include "cgal/polyhedron_builder_from_projected_triangulation.h"
 #include <CGAL/hierarchy_simplify_point_set.h>
 #include <CGAL/IO/read_xyz_points.h>
 #include <CGAL/Timer.h>
@@ -15,6 +15,7 @@
 #include <boost/program_options.hpp>
 
 using namespace std ;
+using namespace TinCreation ;
 namespace po = boost::program_options ;
 
 

@@ -7,7 +7,7 @@
 
 #include "tin_creation_simplification_point_set.h"
 
-
+namespace TinCreation {
 
 class TinCreationSimplificationPointSetWLOP
         : public TinCreationSimplificationPointSet
@@ -31,5 +31,6 @@ private:
     unsigned int m_iterNumber;
 };
 
+} // End namespace TinCreation
 
 #endif //EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_WLOP_H

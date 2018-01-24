@@ -5,16 +5,17 @@
 #include "tin_creation_simplification_point_set_grid.h"
 #include <CGAL/grid_simplify_point_set.h>
 
-
+namespace TinCreation {
 
 std::vector<Point_3>
 TinCreationSimplificationPointSetGrid::
-simplify(const std::vector<Point_3>& pts)
-{
-    std::vector<Point_3> ptsSimp = pts ;
+simplify(const std::vector<Point_3> &pts) {
+    std::vector<Point_3> ptsSimp = pts;
     ptsSimp.erase(CGAL::grid_simplify_point_set(ptsSimp.begin(),
                                                 ptsSimp.end(),
                                                 m_cellSize),
                   ptsSimp.end());
-    return ptsSimp ;
+    return ptsSimp;
 }
+
+} // End namespace TinCreation

@@ -5,7 +5,7 @@
 #include "quantized_mesh_tiler.h"
 #include <GeographicLib/Geocentric.hpp>
 #include <algorithm>
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 //#include "cgal_border_edges_are_constrained_edge_map.h"
 //#include "cgal_corner_vertices_are_constrained_vertex_map.h"
 //#include "cgal_further_constrained_placement.h"
@@ -54,7 +54,7 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 
 
 
-std::vector<Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
+std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
                                                                 const std::vector<Point_3> &tileEastVertices,
                                                                 const std::vector<Point_3> &tileWestVertices,
                                                                 const std::vector<Point_3> &tileNorthVertices,
@@ -290,7 +290,7 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
     header.CenterZ = minEcefZ + ((maxEcefZ - minEcefZ) / 2);
 
     // Compute the minimum bounding sphere given the points
-    MinSphere ms(ecefPoints.begin(), ecefPoints.end());
+    TinCreation::MinSphere ms(ecefPoints.begin(), ecefPoints.end());
     header.BoundingSphereRadius = CGAL::to_double(ms.radius());
     header.BoundingSphereCenterX = CGAL::to_double(*ms.center_cartesian_begin());
     header.BoundingSphereCenterY = CGAL::to_double(*(ms.center_cartesian_begin() + 1));
@@ -319,7 +319,7 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                                                       std::vector<Point_3> &tileSouthVertices) const
 {
     // --> VertexData part
-        std::vector<unsigned short> vertices ;
+    std::vector<unsigned short> vertices ;
     int numVertices = surface.size_of_vertices() ;
     vertices.reserve(numVertices*3) ;
     for ( Polyhedron::Point_const_iterator it = surface.points_begin(); it != surface.points_end(); ++it ) {

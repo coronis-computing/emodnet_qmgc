@@ -5,23 +5,28 @@
 #ifndef EMODNET_TOOLS_CGAL_EXTRACT_TILE_BORDERS_FROM_POLYHEDRON_H
 #define EMODNET_TOOLS_CGAL_EXTRACT_TILE_BORDERS_FROM_POLYHEDRON_H
 
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include <CGAL/centroid.h>
 
 
 
 /// \pre normalize_borders() has been called before this function and is still valid
-template<class Polyhedron_>
-bool extractTileBordersFromPolyhedron(const Polyhedron_& poly,
-                                      std::vector<K::Point_3>& easternBorderPts,
-                                      std::vector<K::Point_3>& westernBorderPts,
-                                      std::vector<K::Point_3>& northernBorderPts,
-                                      std::vector<K::Point_3>& southernBorderPts,
-                                      Point_3& cornerPoint00,
-                                      Point_3& cornerPoint01,
-                                      Point_3& cornerPoint10,
-                                      Point_3& cornerPoint11)
+template<class Polyhedron>
+bool extractTileBordersFromPolyhedron(const Polyhedron& poly,
+                                      std::vector<typename Polyhedron::Point_3>& easternBorderPts,
+                                      std::vector<typename Polyhedron::Point_3>& westernBorderPts,
+                                      std::vector<typename Polyhedron::Point_3>& northernBorderPts,
+                                      std::vector<typename Polyhedron::Point_3>& southernBorderPts,
+                                      typename Polyhedron::Point_3& cornerPoint00,
+                                      typename Polyhedron::Point_3& cornerPoint01,
+                                      typename Polyhedron::Point_3& cornerPoint10,
+                                      typename Polyhedron::Point_3& cornerPoint11)
 {
+    typedef typename Polyhedron::Point_3 Point_3;
+    typedef typename Polyhedron::Traits::FT FT;
+    typedef typename Polyhedron::Vertex_const_iterator Vertex_const_iterator;
+    typedef typename Polyhedron::Halfedge_const_iterator Halfedge_const_iterator;
+
     easternBorderPts.clear();
     westernBorderPts.clear();
     northernBorderPts.clear();
@@ -30,13 +35,13 @@ bool extractTileBordersFromPolyhedron(const Polyhedron_& poly,
     int numCorners ;
 
     std::vector<Point_3 > pts ;
-    for ( typename Polyhedron_::Vertex_const_iterator it = poly.vertices_begin(); it != poly.vertices_end(); ++it )
+    for ( Vertex_const_iterator it = poly.vertices_begin(); it != poly.vertices_end(); ++it )
         pts.push_back(it->point());
     Point_3 c3 = CGAL::centroid(pts.begin(), pts.end(),CGAL::Dimension_tag<0>());
-    K::FT midX = c3.x() ;
-    K::FT midY = c3.y() ;
+    FT midX = c3.x() ;
+    FT midY = c3.y() ;
 
-    Polyhedron::Halfedge_const_iterator e = poly.border_halfedges_begin() ;
+    Halfedge_const_iterator e = poly.border_halfedges_begin() ;
     ++e ; // We start at the second halfedge!
     while( e->is_border() )
     {

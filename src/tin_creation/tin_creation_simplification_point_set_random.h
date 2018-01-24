@@ -7,21 +7,23 @@
 
 #include "tin_creation_simplification_point_set.h"
 
+namespace TinCreation {
 
 class TinCreationSimplificationPointSetRandom
-        : public TinCreationSimplificationPointSet
-{
+        : public TinCreationSimplificationPointSet {
 public:
     TinCreationSimplificationPointSetRandom(double borderSimplificationMaxDistance,
                                             unsigned int minFeaturePolylineSize,
                                             double removePercentage)
-            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, minFeaturePolylineSize)
-            , m_removePercentage(removePercentage) {}
+            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, minFeaturePolylineSize),
+              m_removePercentage(removePercentage) {}
 
-    std::vector<Point_3> simplify(const std::vector<Point_3>& pts);
+    std::vector<Point_3> simplify(const std::vector<Point_3> &pts);
 
 private:
-    double m_removePercentage ;
+    double m_removePercentage;
 };
+
+} // End namespace TinCreation
 
 #endif //EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_RANDOM_H

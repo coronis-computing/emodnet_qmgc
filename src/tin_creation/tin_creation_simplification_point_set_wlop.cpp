@@ -5,16 +5,11 @@
 #include "tin_creation_simplification_point_set_wlop.h"
 #include <CGAL/wlop_simplify_and_regularize_point_set.h>
 
-#ifdef CGAL_LINKED_WITH_TBB
-typedef CGAL::Parallel_tag Concurrency_tag;
-#else
-typedef CGAL::Sequential_tag Concurrency_tag;
-#endif
+namespace TinCreation {
 
 std::vector<Point_3>
 TinCreationSimplificationPointSetWLOP::
-simplify(const std::vector<Point_3>& pts)
-{
+simplify(const std::vector<Point_3> &pts) {
     std::vector<Point_3> ptsOrig = pts, ptsSimp;
     //parameters
     const double retain_percentage = 2;   // percentage of points to retain.
@@ -30,3 +25,5 @@ simplify(const std::vector<Point_3>& pts)
 
     return ptsSimp;
 }
+
+} // End namespace TinCreation

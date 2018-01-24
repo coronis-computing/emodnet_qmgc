@@ -5,7 +5,7 @@
 #ifndef EMODNET_TOOLS_CORNER_VERTICES_ARE_CONSTRAINED_VERTEX_MAP_H
 #define EMODNET_TOOLS_CORNER_VERTICES_ARE_CONSTRAINED_VERTEX_MAP_H
 
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include "cgal_utils.h"
 #include <iostream>
 
@@ -17,12 +17,14 @@
  *
  * For Quantized Mesh tiles, we need to preserve these corners when simplifying.
  */
+template <class Polyhedron>
 struct CornerVerticesAreConstrainedVertexMap
 {
-    typedef boost::graph_traits<Polyhedron>::vertex_descriptor key_type;
-    typedef boost::graph_traits<Polyhedron>::halfedge_descriptor  HalfedgeDescriptor;
+    typedef typename boost::graph_traits<Polyhedron>::vertex_descriptor key_type;
+    typedef typename boost::graph_traits<Polyhedron>::halfedge_descriptor  HalfedgeDescriptor;
     typedef bool value_type;
     typedef value_type reference;
+    typedef typename Polyhedron::Point_3 Point_3;
 
     const Polyhedron *m_pPolyPtr;
 

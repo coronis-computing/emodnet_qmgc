@@ -7,7 +7,7 @@
 
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include <CGAL/array.h>
 #include <map>
 
@@ -16,14 +16,15 @@
 /**
  * \brief A modifier creating a Polyhedron_3 structure with the incremental builder from the boundary in a C3T3
  */
-template<class Gt, class HDS>
+template<class C3T3, class HDS>
 class PolyhedronBuilderFromC3T3Boundary : public CGAL::Modifier_base<HDS> {
 public:
     C3T3 m_c3t3 ;
-    C3T3::Subdomain_index m_index ;
+    typename C3T3::Subdomain_index  m_index ;
+    typedef typename C3T3::Point  Point_3;
 
     PolyhedronBuilderFromC3T3Boundary( const C3T3& c,
-                                       const C3T3::Subdomain_index& index ) : m_c3t3(c), m_index(index) {}
+                                       const typename C3T3::Subdomain_index& index ) : m_c3t3(c), m_index(index) {}
 
     void operator()( HDS& hds )
     {
@@ -94,7 +95,7 @@ public:
         // Begin the surface construction
         B.begin_surface( vertices.size(), facesIndices.size() );
 
-        for( std::vector<Point_3>::iterator it = vertices.begin(); it != vertices.end(); ++it )
+        for( typename std::vector<Point_3>::iterator it = vertices.begin(); it != vertices.end(); ++it )
         {
             B.add_vertex( *it );
         }

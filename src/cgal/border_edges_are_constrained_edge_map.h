@@ -1,7 +1,7 @@
 #ifndef EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
 #define EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
 
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include "cgal_utils.h"
 
 
@@ -14,12 +14,14 @@
  * edges corresponding to border edges of already processed neighboring tiles.
  *
  */
+template <class Polyhedron>
 struct BorderEdgesAreConstrainedEdgeMap
 {
-    typedef boost::graph_traits<Polyhedron>::edge_descriptor key_type ;
+    typedef typename boost::graph_traits<Polyhedron>::edge_descriptor key_type ;
     typedef bool value_type ;
     typedef value_type reference ;
-    typedef boost::readable_property_map_tag category ;
+    typedef boost::readable_property_map_tag category;
+    typedef typename Polyhedron::Point_3 Point_3;
 
     const Polyhedron* m_pPolyPtr ;
     const bool m_constrainEastBorder ;

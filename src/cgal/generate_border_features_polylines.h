@@ -5,8 +5,9 @@
 #ifndef EMODNET_TOOLS_GENERATE_BORDER_FEATURES_POLYLINES_H
 #define EMODNET_TOOLS_GENERATE_BORDER_FEATURES_POLYLINES_H
 
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include "cgal_utils.h"
+#include <CGAL/centroid.h>
 
 /**
  * Gets the polylines corresponding to the edges on each of the 4 borders the tile if the corresponding flag
@@ -19,23 +20,39 @@
  * @param constrainNorthBorder
  * @param constrainSouthBorder
  */
-Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
-                                           const bool& constrainEastBorder = true,
-                                           const bool& constrainWestBorder = true,
-                                           const bool& constrainNorthBorder = true,
-                                           const bool& constrainSouthBorder = true )
+template <class Polyhedron>
+std::vector<std::vector<typename Polyhedron::Point_3>>
+generateBorderFeaturesPolylines( const Polyhedron& surface,
+                                 const bool& constrainEastBorder = true,
+                                 const bool& constrainWestBorder = true,
+                                 const bool& constrainNorthBorder = true,
+                                 const bool& constrainSouthBorder = true )
 {
+    typedef typename Polyhedron::Point_3                    Point_3;
+    typedef typename Polyhedron::Traits::FT                 FT;
+    typedef typename Polyhedron::Vertex_const_iterator      Vertex_const_iterator;
+    typedef std::vector<Point_3>                            Polyline;
+    typedef std::vector<Polyline>                           Polylines;
+
     Polylines polylines ;
+
+    // Compute the middle point for reference
+    std::vector<Point_3 > pts ;
+    for ( Vertex_const_iterator it = surface.vertices_begin(); it != surface.vertices_end(); ++it )
+        pts.push_back(it->point());
+    Point_3 c3 = CGAL::centroid(pts.begin(), pts.end(),CGAL::Dimension_tag<0>());
+    FT midX = c3.x() ;
+    FT midY = c3.y() ;
 
 //    Polyhedron::Halfedge_const_iterator e = surface.border_halfedges_begin() ;
 
     // NOTE: The naming of the functions is a bit misleading in CGAL's documentation...
     // The docs always refer to border halfedges as those halfedges incident to the "hole". However, the range [border_halfedges_begin(), halfedges_end()) includes ALL halfedges in the border, those who are incident to the hole AND ALSO their opposites, incident on a face.
     // For this reason, we check if this is a real "border halfedge", and take the opposite if it is not
-    Polyhedron::Halfedge_const_handle startHE = surface.border_halfedges_begin() ;
+    typename Polyhedron::Halfedge_const_handle startHE = surface.border_halfedges_begin() ;
     if (!startHE->is_border())
         startHE = startHE->opposite() ;
-    Polyhedron::Halfedge_const_handle e = startHE ;
+    typename Polyhedron::Halfedge_const_handle e = startHE ;
 
     Polyline plU; // Polyline for unconstrained border edges. This should be entered as a sequential polyline, not individual edges!
     bool prevIsRegularBorder = false ; // Checks wether the previously visited edge is a "regular" border edge, or it is a "constrained" border edge. When this is false, we should start a new polyline
@@ -47,10 +64,10 @@ Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
         double diffX = fabs( p1.x() - p0.x() ) ;
         double diffY = fabs( p1.y() - p0.y() ) ;
 
-        if ( ( constrainEastBorder && diffX < diffY && p0.x() > 0.5 ) ||
-             ( constrainWestBorder && diffX < diffY && p0.x() < 0.5 ) ||
-             ( constrainNorthBorder && diffY < diffX && p0.y() > 0.5 ) ||
-             ( constrainSouthBorder && diffY < diffX && p0.y() < 0.5 ) ) {
+        if ( ( constrainEastBorder && diffX < diffY && p0.x() > midX ) ||
+             ( constrainWestBorder && diffX < diffY && p0.x() < midX ) ||
+             ( constrainNorthBorder && diffY < diffX && p0.y() > midY ) ||
+             ( constrainSouthBorder && diffY < diffX && p0.y() < midY ) ) {
             // We add this edge as a polyline, since polylines' endpoints are preserved by the meshing algorithm
             Polyline pl;
             pl.push_back(p0);
@@ -81,7 +98,7 @@ Polylines generateBorderFeaturesPolylines( const Polyhedron& surface,
 
         if (prevIsRegularBorder)
             // If the edge is regular so far, check if it is incident to a corner (they need to be endpoints of the polylines to be maintained during meshing)
-            prevIsRegularBorder = !isTileCorner(e) ;
+            prevIsRegularBorder = !isTileCorner<Polyhedron>(e) ;
 
 //        std::advance(e,2) ;
         e = e->next() ; // Advancing in this way should circulate through the "hole", if we start in a border halfedge

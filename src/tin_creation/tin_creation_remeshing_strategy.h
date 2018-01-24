@@ -5,7 +5,9 @@
 #ifndef EMODNET_TOOLS_SURFACE_SIMPLIFIER_REMESHING_STRATEGY_H
 #define EMODNET_TOOLS_SURFACE_SIMPLIFIER_REMESHING_STRATEGY_H
 
-#include "tin_creation/tin_creator.h"
+#include "tin_creator.h"
+
+namespace TinCreation {
 
 /**
  * Simplifies the surface using Delaunay refinement algorithm
@@ -19,10 +21,10 @@
  * Note that this also means that, if the parameters are not set wisely, using this process we can
  * get a mesh of even larger complexity with respect to the original one!
  */
-class TINCreationRemeshingStrategy : public TINCreationStrategy
+class TinCreationRemeshingStrategy : public TinCreationStrategy
 {
 public:
-    TINCreationRemeshingStrategy( double facetDistance,
+    TinCreationRemeshingStrategy( double facetDistance,
                                             double facetAngle,
                                             double facetSize,
                                             double edgeSize)
@@ -49,5 +51,7 @@ private:
     std::vector<Point_3> defaultPointsForPlanarTile() const ;
 
 };
+
+} // End namespace TinCreation
 
 #endif //EMODNET_TOOLS_SURFACE_SIMPLIFIER_REMESHING_STRATEGY_H

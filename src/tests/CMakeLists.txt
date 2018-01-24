@@ -3,7 +3,7 @@ add_executable(test_read_write test_read_write.cpp
                                ../base/gzip_file_reader.cpp
                                ../base/gzip_file_writer.cpp
                                ../base/quantized_mesh.cpp
-        ../cgal/cgal_utils.cpp)
+        )
 target_link_libraries(test_read_write ${Boost_LIBRARIES}
                                       ${ZLIB_LIBRARIES}
                                       ${CTB_LIBRARY}

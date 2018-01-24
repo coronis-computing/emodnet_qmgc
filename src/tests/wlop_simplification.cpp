@@ -8,17 +8,19 @@
 
 #include <vector>
 #include <fstream>
-#include "../base/cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include "cgal/cgal_utils.h"
 #include <CGAL/wlop_simplify_and_regularize_point_set.h>
 #include <CGAL/IO/read_xyz_points.h>
 #include <CGAL/Timer.h>
 #include <CGAL/Memory_sizer.h>
 #include <CGAL/IO/Polyhedron_iostream.h>
+#include "cgal/polyhedron_builder_from_projected_triangulation.h"
 // Boost
 #include <boost/program_options.hpp>
 
 using namespace std ;
+using namespace TinCreation ;
 namespace po = boost::program_options ;
 
 // Concurrency

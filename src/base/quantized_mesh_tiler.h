@@ -7,7 +7,7 @@
 
 #include "quantized_mesh.h"
 #include "quantized_mesh_tile.h"
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include <ctb.hpp>
 #include <boost/filesystem.hpp>
 #include "ellipsoid.h"
@@ -20,8 +20,14 @@ namespace fs = boost::filesystem ;
 
 class QuantizedMeshTiler : public ctb::TerrainTiler
 {
-public:
+    // --- Private Typedefs ---
+    typedef TinCreation::Point_3 Point_3;
+    typedef TinCreation::Vector_3 Vector_3;
+    typedef TinCreation::Point_2 Point_2;
+    typedef TinCreation::Polyhedron Polyhedron;
 
+public:
+    // --- Options struct ---
     struct QMTOptions {
         bool IsBathymetry = false ;                     // Flag indicating wether the values on the raster must be considered as elevations (false) or depths (true)
         Ellipsoid RefEllipsoid = WGS84Ellipsoid() ;     // The reference ellipsoid of the tile (needed to compute horizon occlusion point)
@@ -30,13 +36,15 @@ public:
         float ClippingLowValue = -std::numeric_limits<float>::infinity() ; // Minimum value allowed on the raster, clip values if smaller
     };
 
+    // --- Methods ---
+
     /// Constructor: instantiates a tiler with all required arguments
     // Note: We use a string instead of a GDALDataset*, as in ctb, because we want a new GDALDataset* to be opened for each tiler (they are not threadsafe!)
     QuantizedMeshTiler(GDALDataset *dataset,
                        const ctb::Grid &grid,
                        const ctb::TilerOptions &tilerOptions,
                        const QMTOptions& options,
-                       const TINCreator& tinCreator )
+                       const TinCreation::TinCreator& tinCreator )
             : TerrainTiler(dataset, grid, tilerOptions)
             , m_options(options)
             , m_tinCreator(tinCreator)
@@ -70,7 +78,7 @@ public:
 private:
     // --- Attributes ---
     QMTOptions m_options ;
-    TINCreator m_tinCreator ;
+    TinCreation::TinCreator m_tinCreator ;
     mutable std::mutex m_mutex; // Mark mutex as mutable because it doesn't represent the object's real state
                                 // Note that we don't need the mutex if we create multiple instances of tilers, as done in qm_tiler right now. We leave it here in case it is needed for other implementations
 

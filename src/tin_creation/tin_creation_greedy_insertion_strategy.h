@@ -5,23 +5,25 @@
 #ifndef EMODNET_TOOLS_TIN_CREATION_GREEDY_INSERTION_H
 #define EMODNET_TOOLS_TIN_CREATION_GREEDY_INSERTION_H
 
-#include "tin_creation/tin_creator.h"
-#include "cgal_defines.h"
+#include "tin_creator.h"
+#include "tin_creation_cgal_types.h"
 #include <CGAL/Triangulation_face_base_2.h>
 #include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <memory>
 #include <boost/heap/fibonacci_heap.hpp>
+
+namespace TinCreation {
 
 /**
  * @class HeapNode
  * @brief The information to be maintained in the heap structure
  */
 struct GIHeapNode {
-    K::FT error ;
-    K::Point_3 candidate ;
+    FT error ;
+    Point_3 candidate ;
 
     GIHeapNode() : error(0.0), candidate(Point_3(.0,.0,.0)) {}
-    GIHeapNode( const K::FT& e, const K::Point_3& c ) : error(e), candidate(c) {}
+    GIHeapNode( const FT& e, const Point_3& c ) : error(e), candidate(c) {}
 };
 
 struct CompareGIHeapNodes
@@ -64,7 +66,7 @@ private:
 };
 
 
-class TinCreationGreedyInsertionStrategy : public TINCreationStrategy
+class TinCreationGreedyInsertionStrategy : public TinCreationStrategy
 {
 public:
     // --- Typedefs ---
@@ -131,5 +133,7 @@ private:
      */
     void computeErrorAndUpdateHeap( FaceHandle fh ) ;
 };
+
+} // End namespace TinCreation
 
 #endif //EMODNET_TOOLS_TIN_CREATION_GREEDY_INSERTION_H

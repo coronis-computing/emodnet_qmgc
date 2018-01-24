@@ -5,13 +5,14 @@
 #ifndef EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_H
 #define EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_H
 
-#include "tin_creation/tin_creator.h"
-#include "cgal_defines.h"
+#include "tin_creator.h"
+#include "tin_creation_cgal_types.h"
 #include "cgal/Projection_traits_3_extended.h"
 #include "cgal/squared_distance_3_cost.h"
 
+namespace TinCreation {
 
-class TinCreationSimplificationPointSet : public TINCreationStrategy
+class TinCreationSimplificationPointSet : public TinCreationStrategy
 {
     // --- Typedefs ---
     typedef CGAL::Projection_traits_xy_3_extended<K>                         ProjTraitsXY;
@@ -79,5 +80,7 @@ private:
     Polylines simplifyPolylines(const Polylines& polylines) const ;
 
 };
+
+} // End namespace TinCreation
 
 #endif //EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_H

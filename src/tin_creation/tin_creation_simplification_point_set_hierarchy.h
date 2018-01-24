@@ -7,7 +7,7 @@
 
 #include "tin_creation_simplification_point_set.h"
 
-
+namespace TinCreation {
 
 class TinCreationSimplificationPointSetHierarchy
         : public TinCreationSimplificationPointSet
@@ -27,5 +27,7 @@ private:
     unsigned int m_maxClusterSize;
     double m_maxSurfaceVariance;
 };
+
+} // End namespace TinCreation
 
 #endif //EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_HIERARCHY_H

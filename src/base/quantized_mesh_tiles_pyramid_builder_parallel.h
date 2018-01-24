@@ -6,6 +6,7 @@
 #define EMODNET_TOOLS_QUANTIZED_MESH_TILES_PYRAMID_BUILDER_H
 
 #include <ctb.hpp>
+#include "tin_creation/tin_creation_cgal_types.h"
 #include "quantized_mesh_tiler.h"
 #include "zoom_tiles_scheduler.h"
 #include "zoom_tiles_border_vertices_cache.h"
@@ -21,7 +22,11 @@
  * Since the quantized mesh format requires coherence between neighboring tiles, this class is the responsible
  * of maintaining this coherence and build the tiles by taking into account already built tiles.
  */
-class QuantizedMeshTilesPyramidBuilderParallel {
+class QuantizedMeshTilesPyramidBuilderParallel
+{
+    // --- Private typedefs ---
+    typedef typename TinCreation::Point_3 Point_3;
+
 public:
 
     struct BordersData {

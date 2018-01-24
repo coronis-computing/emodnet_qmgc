@@ -21,6 +21,7 @@ typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> Mesh_domain;
 // Polyhedron type
 typedef CGAL::Mesh_polyhedron_3<K>::type Polyhedron;
+typedef Polyhedron::HalfedgeDS HalfedgeDS;
 // Triangulation
 typedef CGAL::Mesh_triangulation_3<Mesh_domain>::type Tr;
 typedef CGAL::Mesh_complex_3_in_triangulation_3<
@@ -199,7 +200,7 @@ int main( int argc, char** argv )
     std::ofstream off_file(outputFile);
     if (orientOutputSurface) {
         Polyhedron surface;
-        PolyhedronBuilderFromC3T3Boundary <Gt, HalfedgeDS> builder(c3t3, 0);
+        PolyhedronBuilderFromC3T3Boundary <C3t3, HalfedgeDS> builder(c3t3, 0);
         surface.delegate(builder);
         std::ofstream off_file(outputFile);
         off_file << surface ;

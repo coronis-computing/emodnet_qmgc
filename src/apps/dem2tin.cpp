@@ -11,7 +11,7 @@
 // Boost
 #include <boost/program_options.hpp>
 // CGAL
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include <CGAL/IO/read_xyz_points.h>
 #include <CGAL/IO/Polyhedron_iostream.h>
 // Tin creation
@@ -25,8 +25,9 @@
 #include "tin_creation/tin_creation_simplification_point_set_grid.h"
 #include "tin_creation/tin_creation_simplification_point_set_random.h"
 
-using namespace std ;
-namespace po = boost::program_options ;
+using namespace std;
+using namespace TinCreation;
+namespace po = boost::program_options;
 
 
 
@@ -62,10 +63,10 @@ int main ( int argc, char **argv) {
             ( "tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
-            ( "tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(0.2), "Remeshing facet distance." )
+            ( "tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(10), "Remeshing facet distance." )
             ( "tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
-            ( "tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(0.2), "Remeshing facet size." )
-            ( "tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(0.2), "Remeshing edge size." )
+            ( "tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(10), "Remeshing facet size." )
+            ( "tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(10), "Remeshing edge size." )
             ( "tc-ps-border-max-error", po::value<double>(&psBorderSimpMaxDist)->default_value(0.01), "Polyline simplification error at borders" )
             ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered" )
             ( "tc-ps-hierarchy-cluster-size", po::value<unsigned int>(&psHierMaxClusterSize)->default_value(100), "Hierarchy point set simplification maximum cluster size" )
@@ -86,9 +87,8 @@ int main ( int argc, char **argv) {
             options(options).positional(positionalOptions).run(), vm);
 
     // Read the configuration file (if exists)
-    if(vm.count("config") > 0) {
+    if(vm.count("config") > 0 && !vm["config"].as<std::string>().empty()) {
         configFile = vm["config"].as<std::string>() ;
-        std::cout << "Reading configuration from file" << std::endl;
         ifstream ifs(configFile);
         if (ifs.good())
             po::store(po::parse_config_file(ifs, options), vm);
@@ -193,11 +193,11 @@ int main ( int argc, char **argv) {
 
     // Setup the TIN creator
     if(verbose) cout << "Creating the TIN..." << flush;
-    TINCreator tinCreator;
+    TinCreator tinCreator;
     std::transform(tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower);
     if (tinCreationStrategy.compare("lt") == 0) {
-        std::shared_ptr<TINCreationSimplificationLindstromTurkStrategy> tcLT
-                = std::make_shared<TINCreationSimplificationLindstromTurkStrategy>(simpStopEdgesCount,
+        std::shared_ptr<TinCreationSimplificationLindstromTurkStrategy> tcLT
+                = std::make_shared<TinCreationSimplificationLindstromTurkStrategy>(simpStopEdgesCount,
                                                                                    simpWeightVolume,
                                                                                    simpWeightBoundary,
                                                                                    simpWeightShape);
@@ -209,8 +209,8 @@ int main ( int argc, char **argv) {
         tinCreator.setCreator(tcGreedy);
     }
     else if (tinCreationStrategy.compare("remeshing") == 0) {
-        std::shared_ptr<TINCreationRemeshingStrategy> tcRemesh
-                = std::make_shared<TINCreationRemeshingStrategy>(remeshingFacetDistance,
+        std::shared_ptr<TinCreationRemeshingStrategy> tcRemesh
+                = std::make_shared<TinCreationRemeshingStrategy>(remeshingFacetDistance,
                                                                  remeshingFacetAngle,
                                                                  remeshingFacetSize,
                                                                  remeshingEdgeSize);
@@ -248,8 +248,8 @@ int main ( int argc, char **argv) {
         tinCreator.setCreator(tcRand);
     }
     else if (tinCreationStrategy.compare("delaunay") == 0) {
-        std::shared_ptr<TINCreationDelaunayStrategy> tcDel =
-                std::make_shared<TINCreationDelaunayStrategy>();
+        std::shared_ptr<TinCreationDelaunayStrategy> tcDel =
+                std::make_shared<TinCreationDelaunayStrategy>();
         tinCreator.setCreator(tcDel);
     }
     else {

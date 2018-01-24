@@ -3,7 +3,7 @@
 //
 
 #include "quantized_mesh_tile.h"
-#include "cgal_defines.h"
+#include "tin_creation/tin_creation_cgal_types.h"
 #include "cgal/cgal_utils.h"
 #include <fstream>
 
@@ -68,7 +68,7 @@ bool QuantizedMeshTile::exportToOFF( const std::string &outFilePath, const bool&
 
 
 
-Point_3 QuantizedMeshTile::horizonOcclusionPoint( const std::vector<Point_3> &pts, const Point_3 &center )
+TinCreation::Point_3 QuantizedMeshTile::horizonOcclusionPoint( const std::vector<TinCreation::Point_3> &pts, const TinCreation::Point_3 &center )
 {
     // Compute the scaledSpaceDirectionToPoint, a vector passing through the center of the ellipsoid and scaled on it
     // https://groups.google.com/forum/#!topic/cesium-dev/8NTW1Wl0d8s
@@ -76,10 +76,10 @@ Point_3 QuantizedMeshTile::horizonOcclusionPoint( const std::vector<Point_3> &pt
     const double rY = m_ellipsoid.getRadiusY();
     const double rZ = m_ellipsoid.getRadiusZ();
 
-    Vector_3 scaledSpaceDirectionToPoint = Vector_3( center.x()/rX, center.y()/rY, center.z()/rZ ) ;
+    TinCreation::Vector_3 scaledSpaceDirectionToPoint = Vector_3( center.x()/rX, center.y()/rY, center.z()/rZ ) ;
     scaledSpaceDirectionToPoint = scaledSpaceDirectionToPoint / sqrt(scaledSpaceDirectionToPoint.squared_length()) ; // Normalize
 
-    std::vector< Point_3 >::const_iterator it ;
+    std::vector< TinCreation::Point_3 >::const_iterator it ;
     double maxMagnitude = 0 ;
     for ( it = pts.begin(); it != pts.end(); ++it ) {
         double magnitude = computeHorizonOcclusionPointMagnitude( *it, scaledSpaceDirectionToPoint ) ;
@@ -87,24 +87,24 @@ Point_3 QuantizedMeshTile::horizonOcclusionPoint( const std::vector<Point_3> &pt
             maxMagnitude = magnitude ;
     }
 
-    Vector_3 hov = scaledSpaceDirectionToPoint * maxMagnitude ;
+    TinCreation::Vector_3 hov = scaledSpaceDirectionToPoint * maxMagnitude ;
 
-    return Point_3( hov.x(), hov.y(), hov.z() ) ;
+    return TinCreation::Point_3( hov.x(), hov.y(), hov.z() ) ;
 }
 
 
 
-double QuantizedMeshTile::computeHorizonOcclusionPointMagnitude( const Point_3 &position, const Vector_3 &scaledSpaceDirectionToPoint )
+double QuantizedMeshTile::computeHorizonOcclusionPointMagnitude( const TinCreation::Point_3 &position, const TinCreation::Vector_3 &scaledSpaceDirectionToPoint )
 {
     const double rX = m_ellipsoid.getRadiusX();
     const double rY = m_ellipsoid.getRadiusY();
     const double rZ = m_ellipsoid.getRadiusZ();
 
-    Vector_3 scaledSpaceVector( position.x()/rX, position.y()/rY, position.z()/rZ ) ;
+    TinCreation::Vector_3 scaledSpaceVector( position.x()/rX, position.y()/rY, position.z()/rZ ) ;
 
     double magnitudeSquared = scaledSpaceVector.squared_length();
     double magnitude = sqrt(magnitudeSquared);
-    Vector_3 unitScaledSpaceVector = scaledSpaceVector / magnitude ;
+    TinCreation::Vector_3 unitScaledSpaceVector = scaledSpaceVector / magnitude ;
 
     // For the purpose of this computation, points below the ellipsoid
     // are considered to be on it instead.
