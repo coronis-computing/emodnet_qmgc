@@ -67,7 +67,7 @@ QuantizedMeshTilesPyramidBuilderParallel(const std::vector<QuantizedMeshTiler>& 
     if ( m_numThreads <= 0 )
         m_numThreads = numMaxThreads ;
 
-    std::cout << "m_tilers.size() = " << m_tilers.size() << std::endl ;
+//    std::cout << "m_tilers.size() = " << m_tilers.size() << std::endl ;
 
     // Create a tiler with its own pointer to the dataset for each thread
 //    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;

@@ -230,6 +230,8 @@ public:
                 visited[i][j] = false ;
         }
 
+        std::cout << "rows*cols = " << rows*cols << std::endl ;
+
         // Middle point
         unsigned int midY = zoomBounds.getMinY() + ( (zoomBounds.getMaxY()-zoomBounds.getMinY())/2 ) ;
         unsigned int midX = zoomBounds.getMinX() + ( (zoomBounds.getMaxX()-zoomBounds.getMinX())/2 ) ;
@@ -253,20 +255,20 @@ public:
                 // Add the tile if not visited
                 m_tilesToProcess.push_back(tp) ;
                 visited[tyy][txx] = true ;
-            }
 
-            // Visit up
-            if ( inBounds(tx+1, ty, zoomBounds) && !visited[tyy][txx+1] )
-                queue.push(ctb::TilePoint(tx+1, ty)) ;
-            // Visit down
-            if ( inBounds(tx-1, ty, zoomBounds) && !visited[tyy][txx-1] )
-                queue.push(ctb::TilePoint(tx-1, ty)) ;
-            // Visit left
-            if ( inBounds(tx, ty-1, zoomBounds) && !visited[tyy-1][txx] )
-                queue.push(ctb::TilePoint(tx, ty-1)) ;
-            // Visit right
-            if ( inBounds(tx, ty+1, zoomBounds) && !visited[tyy+1][txx] )
-                queue.push(ctb::TilePoint(tx, ty+1)) ;
+                // Visit up
+                if ( inBounds(tx+1, ty, zoomBounds) && !visited[tyy][txx+1] )
+                    queue.push(ctb::TilePoint(tx+1, ty)) ;
+                // Visit down
+                if ( inBounds(tx-1, ty, zoomBounds) && !visited[tyy][txx-1] )
+                    queue.push(ctb::TilePoint(tx-1, ty)) ;
+                // Visit left
+                if ( inBounds(tx, ty-1, zoomBounds) && !visited[tyy-1][txx] )
+                    queue.push(ctb::TilePoint(tx, ty-1)) ;
+                // Visit right
+                if ( inBounds(tx, ty+1, zoomBounds) && !visited[tyy+1][txx] )
+                    queue.push(ctb::TilePoint(tx, ty+1)) ;
+            }
         }
     }
 

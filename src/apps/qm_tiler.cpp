@@ -77,7 +77,7 @@ int main ( int argc, char **argv)
             ( "tc-ps-grid-cell-size", po::value<double>(&psGridCellSize)->default_value(0.1), "PS Grid simplification: Cell size")
             ( "tc-ps-random-percent", po::value<double>(&psRandomRemovePercentage)->default_value(80), "PS Random simplification: percentage to remove")
             ( "debug-dir", po::value<string>(&debugDir)->default_value(""), "Debug directory where simplified meshes will be stored in OFF format for easing visualization")
-            ( "config,c", po::value<string>(&configFile)->default_value("hola"), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
+            ( "config,c", po::value<string>(&configFile)->default_value(""), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
     ;
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
@@ -226,7 +226,7 @@ int main ( int argc, char **argv)
     }
     else if (schedulerType.compare("4connected") == 0) {
         std::shared_ptr<ZoomTilesSchedulerFourConnectedStrategy> fourConnectedStrategy = std::make_shared<ZoomTilesSchedulerFourConnectedStrategy>() ;
-        // std::shared_ptr<ZoomTilesSchedulerRecursiveFourConnectedStrategy> fourConnectedStrategy = std::make_shared<ZoomTilesSchedulerRecursiveFourConnectedStrategy>() ;
+//        std::shared_ptr<ZoomTilesSchedulerRecursiveFourConnectedStrategy> fourConnectedStrategy = std::make_shared<ZoomTilesSchedulerRecursiveFourConnectedStrategy>() ;
         scheduler.setScheduler(fourConnectedStrategy) ;
     }
     else if (schedulerType.compare("chessboard") == 0) {
