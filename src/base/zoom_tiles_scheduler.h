@@ -156,6 +156,9 @@ public:
     /// Initialize the schedule given the zoom bounds
     void initSchedule(const ctb::TileBounds& zoomBounds)
     {
+        m_index = 0 ;
+        m_tilesToProcess.clear() ;
+
         unsigned int rows = zoomBounds.getMaxY()-zoomBounds.getMinY()+1 ;
         unsigned int cols = zoomBounds.getMaxX()-zoomBounds.getMinX()+1 ;
 
@@ -216,6 +219,9 @@ public:
     /// Initialize the schedule given the zoom bounds
     void initSchedule(const ctb::TileBounds& zoomBounds)
     {
+        m_index = 0 ;
+        m_tilesToProcess.clear() ;
+
         // Initialize the "visited" matrix
         unsigned int rows = zoomBounds.getMaxY()-zoomBounds.getMinY()+1 ;
         unsigned int cols = zoomBounds.getMaxX()-zoomBounds.getMinX()+1 ;

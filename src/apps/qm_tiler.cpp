@@ -47,7 +47,7 @@ int main ( int argc, char **argv)
     po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format");
     options.add_options()
             ( "help,h", "Produce help message" )
-            ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse" )
+            ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse (can be specified like this or as a positional parameter)" )
             ( "output-dir,o", po::value<std::string>(&outDir)->default_value("terrain_tiles_qm"), "The output directory for the tiles" )
             ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level (i.e., the TMS pyramid is constructed from bottom to top). If smaller than zero, defaults to the maximum zoom possible according to DEM resolution." )
             ( "end-zoom,e", po::value<int>(&endZoom)->default_value(0), "The zoom level to end at. This should be less than the start zoom level (i.e., the TMS pyramid is constructed from bottom to top)." )
