@@ -49,7 +49,7 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
                                                     const bool &constrainNorthernVertices,
                                                     const bool &constrainSouthernVertices) {
     if (!constrainEasternVertices && !constrainWesternVertices && !constrainNorthernVertices &&
-        !constrainSouthernVertices) {
+        !constrainSouthernVertices && m_initGridSamples <= 0) {
         // Create the base mesh as the two triangles covering the tile
         std::vector<Point_3> chPts;
         CGAL::convex_hull_2(m_dataPts.begin(), m_dataPts.end(), std::back_inserter(chPts),
@@ -70,12 +70,14 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
         Polyhedron poly;
         PolyhedronBuilderFromProjectedTriangulation<DT, HalfedgeDS> builderDT(tmpDt);
         poly.delegate(builderDT);
+        poly.normalize_border();
         // Extract border vertices
         std::vector<Point_3> easternBorderPts, westernBorderPts, northernBorderPts, southernBorderPts;
         Point_3 cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11;
         extractTileBordersFromPolyhedron<Polyhedron>(poly, easternBorderPts, westernBorderPts, northernBorderPts,
                                                      southernBorderPts, cornerPoint00, cornerPoint01, cornerPoint10,
                                                      cornerPoint11);
+
         // For each constrained border, add the points to the internal triangulation and remove the points from the data points
         if (constrainEasternVertices) {
             m_dt.insert(easternBorderPts.begin(), easternBorderPts.end());
@@ -101,6 +103,45 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
             for (std::vector<Point_3>::iterator it = northernBorderPts.begin();
                  it != northernBorderPts.end(); ++it) {
                 m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
+            }
+        }
+
+        // If required, create the base grid
+        if (m_initGridSamples > 0) {
+            // Compute the extents of the terrain/tile
+            FT startX = cornerPoint00.x();
+            FT endX = cornerPoint11.x();
+            FT startY = cornerPoint00.y();
+            FT endY = cornerPoint11.y();
+            FT extX = endX - startX;
+            FT extY = endY - startY;
+            FT stepX = extX / (double)m_initGridSamples;
+            FT stepY = extY / (double)m_initGridSamples;
+            int numSteps = m_initGridSamples-1;
+            for (int i = 0; i <= m_initGridSamples; i++) {
+                if ( (i == 0 && constrainSouthernVertices ) ||
+                     (i == m_initGridSamples && constrainNorthernVertices ) )
+                    continue ;
+                for (int j = 0; j <= m_initGridSamples; j++) {
+                    if ( (j == 0 && constrainWesternVertices) ||
+                         (j == m_initGridSamples && constrainEasternVertices ) )
+                        continue ;
+
+                    // Dummy point
+                    FT curX = startX + (i*stepX);
+                    FT curY = startY + (j*stepY);
+                    Point_3 p(curX, curY, 0.0);
+
+                    // Detect in which triangle does the projection of this grid point falls
+                    FaceHandle fh = tmpDt.locate(p);
+                    if (tmpDt.is_infinite(fh))
+                        std::cout << "Infinite facet!!!!!!!!!!" << std::endl;
+                    Triangle_3 t = tmpDt.triangle(fh);
+
+                    FT h = eval(p, t);
+
+                    m_dt.insert(Point_3(curX, curY, h));
+                }
             }
         }
     }
@@ -241,6 +282,38 @@ error(const Point_3 &p, const Triangle_3 &t) const {
         return errorHeight(p, t);
     else
         return error3D(p, t);
+}
+
+
+
+FT
+TinCreationGreedyInsertionStrategy::eval(const Point_3& p, const Triangle_3&t) const{
+    // Compute the distance to the triangle in the Z direction
+    Line_3 l(p, Vector_3(0, 0, 1));
+
+    // Compute their intersection
+    CGAL::cpp11::result_of<Intersect_3(Line_3, Triangle_3)>::type intersect = CGAL::intersection(l, t);
+
+    // If everything goes as expected, the intersection should exist and should be a point
+    if (!intersect) {
+        std::cerr << "Error! Empty intersection" << std::endl;
+        return FT(0.0);
+    }
+    if (const Segment_3 *s = boost::get<Segment_3>(&*intersect)) {
+        std::cerr << "Error! Segment intersection" << std::endl;
+        return FT(0.0);
+    }
+
+    // Get the intersection point
+    const Point_3 *ip = boost::get<Point_3>(&*intersect);
+
+    // Finally, compute the squared distance between the query point and the intersection
+    FT sqDist = CGAL::squared_distance(p, *ip);
+    FT dist = CGAL::sqrt(sqDist);
+    if (p.z() > ip->z())
+        dist = -dist;
+
+    return dist;
 }
 
 

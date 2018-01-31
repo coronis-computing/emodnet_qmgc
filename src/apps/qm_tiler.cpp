@@ -35,11 +35,11 @@ namespace po = boost::program_options;
 int main ( int argc, char **argv)
 {
     // Command line parser
-    std::string inputFile, outDir, tinCreationStrategy, schedulerType, debugDir, configFile;
+    std::string inputFile, outDir, tinCreationStrategy, schedulerType, debugDir, configFile, greedyErrorType;
     int startZoom, endZoom;
     double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize, psHierMaxSurfaceVariance, psBorderSimpMaxDist, greedyErrorTol, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
     float clippingHighValue, clippingLowValue;
-    int simpStopEdgesCount, heighMapSamplingSteps;
+    int simpStopEdgesCount, heighMapSamplingSteps, greedyInitGridSize;
     unsigned int psHierMaxClusterSize, psWlopIterNumber, psMinFeaturePolylineSize;
     int numThreads = 0 ;
     bool bathymetryFlag ;
@@ -59,6 +59,8 @@ int main ( int argc, char **argv)
             ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
             ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random (see documentation for further information)" )
             ( "tc-greedy-error-tol", po::value<double>(&greedyErrorTol)->default_value(0.1), "Error tolerance for a tile to fulfill in the greedy insertion approach")
+            ( "tc-greedy-init-grid-size", po::value<int>(&greedyInitGridSize)->default_value(-1), "An initial grid of this size will be used as base mesh to start the insertion process. Defaults to the 4 corners of the tile if < 0")
+            ( "tc-greedy-error-type", po::value<string>(&greedyErrorType)->default_value("height"), "The error computation type. Available: height, 3d.")
             ( "tc-lt-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value." )
             ( "tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
@@ -151,8 +153,19 @@ int main ( int argc, char **argv)
             tinCreator.setCreator(tcLT);
         }
         else if (tinCreationStrategy.compare("greedy") == 0) {
+            std::transform(greedyErrorType.begin(), greedyErrorType.end(), greedyErrorType.begin(), ::tolower);
+            int et;
+            if (greedyErrorType.compare("height"))
+                et = TinCreationGreedyInsertionStrategy::ErrorHeight;
+            else if (greedyErrorType.compare("3d"))
+                et = TinCreationGreedyInsertionStrategy::Error3D;
+            else {
+                std::cerr << "[ERROR] Unknown error type \"" << tinCreationStrategy << "\" for the Greedy TIN creation strategy" << std::endl;
+                return 1;
+            }
+
             std::shared_ptr<TinCreationGreedyInsertionStrategy> tcGreedy
-                    = std::make_shared<TinCreationGreedyInsertionStrategy>(greedyErrorTol);
+                    = std::make_shared<TinCreationGreedyInsertionStrategy>(greedyErrorTol, greedyInitGridSize, et);
             tinCreator.setCreator(tcGreedy);
         }
 //        else if (tinCreationStrategy.compare("remeshing") == 0) {

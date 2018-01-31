@@ -89,7 +89,12 @@ public:
     enum ErrorType { ErrorHeight=0, Error3D } ;
 
     // --- Public Methods ---
-    TinCreationGreedyInsertionStrategy( double approxTolerance, int errorType = ErrorHeight ) : m_sqApproxTol(approxTolerance*approxTolerance), m_errorType(errorType) {}
+    TinCreationGreedyInsertionStrategy( double approxTolerance,
+                                        int initGridSamples = -1,
+                                        int errorType = ErrorHeight )
+            : m_sqApproxTol(approxTolerance*approxTolerance)
+            , m_initGridSamples(initGridSamples)
+            , m_errorType(errorType) {}
 
     Polyhedron create( const std::vector<Point_3>& dataPts,
                        const bool& constrainEasternVertices,
@@ -103,6 +108,7 @@ private:
     DT m_dt ;
     GIHeap m_heap;
     int m_errorType;
+    int m_initGridSamples;
 
     // --- Private Methods ---
     /// Initialize the data structures
@@ -122,6 +128,8 @@ private:
     /// Compute the error given a point/triangle. Orthogonal distance.
     /// \pre Point XY projection falls within triangle XY projection
     FT error3D(const Point_3& p, const Triangle_3&t ) const ;
+
+    FT eval(const Point_3& p, const Triangle_3&t) const;
 
     /// Contains all the steps to perform when inserting a new point in the triangulation
     void insert( const Point_3& p ) ;
