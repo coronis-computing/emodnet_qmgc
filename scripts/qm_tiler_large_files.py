@@ -44,8 +44,8 @@ def main():
         print "[ERROR] Invalid end zoom level for tiffs, it should be larger than the end-zoom-tiff"
         return
 
-    if param.end_zoom_tiff >= param.start_zoom:
-        print "[ERROR] If you do not want to use the intermediate tif tiles (--end_zoom_tiff/--end_zoom >= --start_zoom), then you should probably use the qm_tiler app directly"
+    if param.end_zoom_tiff > param.start_zoom:
+        print "[ERROR] If you do not want to use the intermediate tif tiles (--end_zoom_tiff/--end_zoom > --start_zoom), then you should probably use the qm_tiler app directly"
         return
 
     if param.start_zoom_tiff == 0 & param.start_zoom > 0:
@@ -83,29 +83,29 @@ def main():
     # Create the tiles of the terrain for the highest zoom levels (without intermediate tiffs)
     cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.start_zoom) + " --end-zoom " + str(param.start_zoom_tiff) + " " + further_options + param.input_file
     print cmd
-    # os.system(cmd)
+    os.system(cmd)
 
     # Create the tiles of the terrain for the selected zooms using a base of tiff tiles of a deeper zoom in the pyramid
     for i in xrange(param.start_zoom_tiff+1, param.end_zoom_tiff, -1):
         # Create the GDAL tileset for this zoom level
         cmd = "ctb-tile --output-format GTiff --output-dir " + param.output_dir_tiff + " --start-zoom " + str(i) + " --end-zoom " + str(i) + " " + param.input_file
         print cmd
-        # os.system(cmd)
+        os.system(cmd)
 
         # Build the VRT from this level
         cmd = "gdalbuildvrt " + param.output_dir_tiff + "/" + "zoom" + str(i) + ".vrt " + param.output_dir_tiff + "/" + str(i) + "/*/*.tif"
         print cmd
-        # os.system(cmd)
+        os.system(cmd)
 
         # Construct the quantized mesh terrain tiles from the VRT of the previous zoom level
         cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(i-1) + " --end-zoom " + str(i-1) + " " + further_options +  param.output_dir_tiff + "/zoom" + str(i) + ".vrt"
         print cmd
-        # os.system(cmd)
+        os.system(cmd)
 
     # Create the rest of zooms from the remaining zooms from the last tiff base
     cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.end_zoom_tiff-1) + " --end-zoom " + str(param.end_zoom) + " " + further_options + param.output_dir_tiff + "/zoom" + str(param.end_zoom_tiff+1) + ".vrt"
     print cmd
-    # os.system(cmd)
+    os.system(cmd)
 
 if __name__ == '__main__':
     main()

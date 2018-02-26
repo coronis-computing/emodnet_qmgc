@@ -21,7 +21,8 @@ class PolyhedronBuilderFromC3T3Boundary : public CGAL::Modifier_base<HDS> {
 public:
     C3T3 m_c3t3 ;
     typename C3T3::Subdomain_index  m_index ;
-    typedef typename C3T3::Point  Point_3;
+//    typedef typename C3T3::Point  Point_3; // This works on CGAL < 4.11...
+    typedef typename C3T3::Point::Point  Point_3;
 
     PolyhedronBuilderFromC3T3Boundary( const C3T3& c,
                                        const typename C3T3::Subdomain_index& index ) : m_c3t3(c), m_index(index) {}

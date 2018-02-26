@@ -96,9 +96,9 @@ typedef SMS::Count_stop_predicate<Polyhedron>               SimplificationStopPr
 
 // Polyline simplification related
 typedef PS::Stop_above_cost_threshold                       PSStopCost;
-typedef PS::Stop_below_count_ratio_threshold                PSStopCountRatio;
-typedef PS::Squared_distance_cost                           PSSqDistCost;
-typedef PS::Scaled_squared_distance_cost                    PSScaledSqDistCost;
+//typedef PS::Stop_below_count_ratio_threshold                PSStopCountRatio;
+//typedef PS::Squared_distance_cost                           PSSqDistCost;
+//typedef PS::Scaled_squared_distance_cost                    PSScaledSqDistCost;
 
 #ifdef CGAL_LINKED_WITH_TBB
     typedef CGAL::Parallel_tag Concurrency_tag;

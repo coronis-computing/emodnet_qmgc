@@ -4,6 +4,7 @@
 
 #include "tin_creation_simplification_point_set.h"
 #include <CGAL/convex_hull_2.h>
+#include <CGAL/Triangulation_conformer_2.h>
 #include "cgal/polyhedron_builder_from_projected_triangulation.h"
 #include "cgal/Polyhedral_mesh_domain_with_features_3_extended.h"
 #include "cgal/extract_tile_borders_from_polyhedron.h"
@@ -44,6 +45,10 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
     for( PointCloud::iterator it = ptsToSimplify.begin(); it != ptsToSimplify.end(); ++it ) {
         m_cdt.insert(*it);
     }
+
+    // Test: Make it conforming Delaunay before storing
+//    std::cout << "Making conforming delaunay" << std::endl;
+//    CGAL::make_conforming_Delaunay_2(m_cdt);
 
 //    // Translate to Polyhedron
     Polyhedron surface2 ;
