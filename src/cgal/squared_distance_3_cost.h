@@ -30,7 +30,7 @@ class Squared_distance_3_cost
 public:
 
   /// Initializes the cost function
-  Squared_distance_3_cost() {}
+  Squared_distance_3_cost(const double& maxLength) : m_maxSqLength(maxLength*maxLength) {}
 
    /// Given a vertex in constraint iterator `vicq` computes `vicp=std::prev(vicq)` and `vicr=std::next(vicq)`,
   /// returns the maximum of the square distances between each point along the original subpolyline,
@@ -60,7 +60,13 @@ public:
 
     Point const& lP = (*vicp)->point();
     Point const& lR = (*vicr)->point();
+    Point const& Q = (*vicq)->point();
 
+    // Check if the segment (P,Q) or (Q,R) is too large
+    if ( CGAL::squared_distance(lP, Q) > m_maxSqLength || CGAL::squared_distance(lR, Q) > m_maxSqLength )
+      return std::numeric_limits<double>::infinity();
+
+    // Otherwise, check the cost using 3D distance
     Segment lP_R = construct_segment(lP, lR) ;
 
     FT d1 = 0.0;
@@ -73,6 +79,9 @@ public:
     return d1 ;
   }
 
+private:
+    // --- Attributes ---
+    double m_maxSqLength;
 
 };
 

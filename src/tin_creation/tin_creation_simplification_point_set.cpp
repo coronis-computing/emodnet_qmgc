@@ -147,7 +147,7 @@ imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintai
 //    // Simplify the polylines
 //    Polylines polylinesSimp = simplifyPolylines(polylinesToSimplify) ;
 
-    std::size_t numRemoved = PS::simplify(m_cdt, PSSqDist3Cost(), PSStopCost(m_borderSimpMaxSqDist), true);
+    std::size_t numRemoved = PS::simplify(m_cdt, PSSqDist3Cost(m_borderSimpMaxLength), PSStopCost(m_borderSimpMaxSqDist), true);
 
 //    for ( Polylines::iterator it = polylinesSimp.begin(); it != polylinesSimp.end(); ++it ) {
 //        ptsToMaintain.insert( ptsToMaintain.end(), it->begin(), it->end() );
@@ -405,7 +405,7 @@ simplifyPolylines(const Polylines& polylines) const
 //    }
 //    // --- Debug (end) ---
 
-    std::size_t numRemoved = PS::simplify(ct, PSSqDist3Cost(), PSStopCost(m_borderSimpMaxSqDist), true);
+    std::size_t numRemoved = PS::simplify(ct, PSSqDist3Cost(m_borderSimpMaxLength), PSStopCost(m_borderSimpMaxSqDist), true);
 
     Polylines polylinesSimp ;
     for(CTXY::Constraint_iterator cit = ct.constraints_begin();

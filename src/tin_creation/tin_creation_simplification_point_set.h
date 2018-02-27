@@ -26,8 +26,10 @@ class TinCreationSimplificationPointSet : public TinCreationStrategy
 
 public:
     TinCreationSimplificationPointSet(double borderSimplificationMaxDistance,
+                                      double borderSimplificationMaxLength,
                                       unsigned int minFeaturePolylineSize)
             : m_borderSimpMaxSqDist(borderSimplificationMaxDistance*borderSimplificationMaxDistance)
+            , m_borderSimpMaxLength(borderSimplificationMaxLength*borderSimplificationMaxLength)
             , m_minFeaturePolylineSize(minFeaturePolylineSize) {} ;
 
     Polyhedron create(const std::vector<Point_3>& dataPts,
@@ -47,6 +49,7 @@ public:
 
 private:
     double m_borderSimpMaxSqDist;
+    double m_borderSimpMaxLength;
     unsigned int m_minFeaturePolylineSize ;
     CTXY m_cdt;
 

@@ -14,11 +14,12 @@ class TinCreationSimplificationPointSetWLOP
 {
 public:
     TinCreationSimplificationPointSetWLOP(double borderSimplificationMaxDistance,
+                                          double borderSimplificationMaxLength,
                                           unsigned int minFeaturePolylineSize,
                                           double retainPercentage,
                                           double radius,
                                           unsigned int iterNumber = 35)
-            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, minFeaturePolylineSize)
+            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, borderSimplificationMaxLength, minFeaturePolylineSize)
             , m_retainPercentage(retainPercentage)
             , m_radius(radius)
             , m_iterNumber(iterNumber) {}
