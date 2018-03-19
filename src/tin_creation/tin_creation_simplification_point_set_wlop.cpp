@@ -12,15 +12,15 @@ TinCreationSimplificationPointSetWLOP::
 simplify(const std::vector<Point_3> &pts) {
     std::vector<Point_3> ptsOrig = pts, ptsSimp;
     //parameters
-    const double retain_percentage = 2;   // percentage of points to retain.
-    const double neighbor_radius = 0.5;   // neighbors size.
+//    const double retain_percentage = 2;   // percentage of points to retain.
+//    const double neighbor_radius = 0.5;   // neighbors size.
     CGAL::wlop_simplify_and_regularize_point_set
             <Concurrency_tag>
             (ptsOrig.begin(),
              ptsOrig.end(),
              std::back_inserter(ptsSimp),
-             retain_percentage,
-             neighbor_radius
+             m_retainPercentage,
+             m_radius
             );
 
     return ptsSimp;

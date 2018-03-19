@@ -12,6 +12,7 @@
 #include "zoom_tiles_border_vertices_cache.h"
 #include <iostream>
 #include <vector>
+#include <mutex>
 
 
 
@@ -63,6 +64,12 @@ public:
     void createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir, const std::string &debugDir = std::string("")) ;
 
     /**
+     * @brief Creates the tile pyramid in quantized-mesh format without taking into account coherence along neighboring tiles' borders
+     * Useful when we know, by the way the simplification is created, that the vertices in the borders will always be the same (e.g., in the Delaunay TIN creation strategy)
+     */
+    void createTmsPyramidUnconstrainedBorders(const int &startZoom, const int &endZoom, const std::string &outDir, const std::string &debugDir = std::string("")) ;
+
+    /**
      * @brief Check that the tile folder (zoom/x) exists, and creates it otherwise.
      *
      * @return The path of the tile's file.
@@ -72,7 +79,8 @@ public:
 
     BordersData createTile( const ctb::TileCoordinate& coord,
                             const int& numThread,
-                            const std::string& outDir ) ;
+                            const std::string& outDir,
+                            const BordersData& bd ) ;
 
     /**
      * Get the next tile to process in the current zoom
@@ -94,6 +102,7 @@ private:
     ZoomTilesBorderVerticesCache m_bordersCache ;
     bool m_debugMode ;
     std::string m_debugDir ;
+    std::mutex m_diskWriteMutex;
 
     /**
     * @brief Check that the DEBUG tile folder (zoom/x) exists, and creates it otherwise.

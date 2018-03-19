@@ -236,8 +236,6 @@ public:
                 visited[i][j] = false ;
         }
 
-        std::cout << "rows*cols = " << rows*cols << std::endl ;
-
         // Middle point
         unsigned int midY = zoomBounds.getMinY() + ( (zoomBounds.getMaxY()-zoomBounds.getMinY())/2 ) ;
         unsigned int midX = zoomBounds.getMinX() + ( (zoomBounds.getMaxX()-zoomBounds.getMinX())/2 ) ;

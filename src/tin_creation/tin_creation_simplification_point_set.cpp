@@ -41,7 +41,7 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
                       constrainNorthernVertices,
                       constrainSouthernVertices);
 
-    // Insert the simplifyed points in the constrained triangulation
+    // Insert the simplified points in the constrained triangulation
     for( PointCloud::iterator it = ptsToSimplify.begin(); it != ptsToSimplify.end(); ++it ) {
         m_cdt.insert(*it);
     }

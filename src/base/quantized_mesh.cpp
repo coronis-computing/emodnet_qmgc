@@ -151,6 +151,11 @@ bool QuantizedMesh::readFile( const std::string &filePath ) {
         unsigned char extensionId = reader.readUChar();
         unsigned int extensionLength = reader.readUInt();
 
+        if (reader.eof()) { // TODO: Why do we have to perform this check?
+            reader.close() ;
+            return true ;
+        }
+
         if ( (int)extensionId == OCT_VERTEX_NORMALS ) {
             m_vertexNormals.nx.reserve(m_vertexData.vertexCount) ;
             m_vertexNormals.ny.reserve(m_vertexData.vertexCount) ;
@@ -433,6 +438,7 @@ void QuantizedMesh::print()
 
     if ( m_vertexNormals.nx.size() > 0 ) {
         cout << "Vertices' Normals:" << endl;
+        cout << "  Num. vertices normal = " << m_vertexNormals.nx.size() << endl;
         cout << "  nx =  ";
         for (int i = 0; i < m_vertexNormals.nx.size(); i++)
             cout << m_vertexNormals.nx[i] << " ";

@@ -75,6 +75,9 @@ public:
                                   std::vector<Point_3> &tileNorthVertices,
                                   std::vector<Point_3> &tileSouthVertices) ;
 
+
+    QMTOptions getOptions() { return m_options; }
+
 private:
     // --- Attributes ---
     QMTOptions m_options ;
@@ -117,10 +120,10 @@ private:
      * @return vector of points in the heightmap
      */
     std::vector<Point_3> getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
-                                                const std::vector<Point_3> &tileEastVertices,
-                                                const std::vector<Point_3> &tileWestVertices,
-                                                const std::vector<Point_3> &tileNorthVertices,
-                                                const std::vector<Point_3> &tileSouthVertices,
+                                                std::vector<Point_3> &tileEastVertices, // Note: these are not const because border vertices are input in tile coordinates, but are output in uvh coordinates
+                                                std::vector<Point_3> &tileWestVertices,
+                                                std::vector<Point_3> &tileNorthVertices,
+                                                std::vector<Point_3> &tileSouthVertices,
                                                 float& minHeight, float& maxHeight,
                                                 ctb::CRSBounds& tileBounds) const ;
 

@@ -132,16 +132,19 @@ public:
     void setVertexNormals( const VertexNormals& vn ) { m_vertexNormals = vn ; }
 
     /// Get the header part of the quantized mesh structure
-    Header getHeader() { return m_header ; }
+    Header getHeader() const { return m_header ; }
 
     /// Get the vertex data part of the quantized mesh structure
-    VertexData getVertexData() { return m_vertexData ; }
+    VertexData getVertexData() const { return m_vertexData ; }
 
     /// Get the index data of the quantized mesh structure
-    IndexData getIndexData() { return m_indexData ; }
+    IndexData getIndexData() const { return m_indexData ; }
 
     /// Get the vertex normals of the quantized mesh structure
-    VertexNormals getVertexNormals() { return m_vertexNormals ; }
+    VertexNormals getVertexNormals() const { return m_vertexNormals ; }
+
+    /// Get the edge indices of the quantized mesh structure
+    EdgeIndices getEdgeIndices() const { return m_edgeIndices; }
 
     // --- Constants ---
     const unsigned short int TILE_SIZE = 65;

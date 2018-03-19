@@ -108,6 +108,8 @@ int main ( int argc, char **argv)
         return 1;
     }
 
+    bool preserveBorders = tinCreationStrategy.compare("delaunay") != 0;
+
     // Setup all GDAL-supported raster drivers
     GDALAllRegister();
 
@@ -266,7 +268,10 @@ int main ( int argc, char **argv)
     // Create the tiles
     QuantizedMeshTilesPyramidBuilderParallel qmtpb( tilers, scheduler ) ;
     auto start = std::chrono::high_resolution_clock::now();
-    qmtpb.createTmsPyramid( startZoom, endZoom, outDir, debugDir ) ;
+    if (preserveBorders)
+        qmtpb.createTmsPyramid( startZoom, endZoom, outDir, debugDir ) ;
+    else
+        qmtpb.createTmsPyramidUnconstrainedBorders( startZoom, endZoom, outDir, debugDir ) ;
     auto finish = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = finish - start;

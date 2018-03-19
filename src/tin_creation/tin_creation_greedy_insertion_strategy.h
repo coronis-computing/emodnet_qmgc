@@ -11,6 +11,7 @@
 #include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <memory>
 #include <boost/heap/fibonacci_heap.hpp>
+#include <mutex> // TODO: Remember to remove the mutex from here after debugging
 
 namespace TinCreation {
 

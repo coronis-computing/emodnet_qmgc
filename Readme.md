@@ -11,6 +11,7 @@ This project depends on the following C++ libraries:
 * GDAL: http://www.gdal.org/
 * CGAL: https://www.cgal.org/
 * meshoptimizer: https://github.com/zeux/meshoptimizer (with small modifications, source included in this project) 
+* JSON for modern C++: https://github.com/nlohmann/json (source included in this project)
 
 Also, Python is required to run the scripts provided.
 

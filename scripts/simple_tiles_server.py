@@ -33,7 +33,7 @@ class CORSRequestHandler(SimpleHTTPRequestHandler):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Sets up a simple http server with the CORS headers needed for serving "
                                                  "quantized mesh tiles")
-    parser.add_argument("-d", dest="folder", type=str, default='./', help="Folder to serve")
+    parser.add_argument("folder", type=str, default='./', help="Folder to serve")
     parser.add_argument("-p", dest="port", type=int, default=8000, help="The port the server will be listening to")
     param = parser.parse_args()
 

@@ -14,9 +14,8 @@
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <cmath>
 #include "meshoptimizer/meshoptimizer.h"
-#include <mutex>
 #include "crs_conversions.h"
-
+#include <sstream>
 
 QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord,
                                                    std::vector<Point_3> &tileEastVertices,
@@ -35,9 +34,87 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
                                                           tileNorthVertices, tileSouthVertices,
                                                           minHeight, maxHeight, tileBounds );
 
+//    std::cout << "UV = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = uvhPts.begin(); it != uvhPts.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+//    std::cout << "EasternConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+//    std::cout << "WesternConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+//    std::cout << "NorthernConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+//    std::cout << "SouthernConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+
+//    if (tileEastVertices.size() > 0 || tileWestVertices.size() > 0 || tileNorthVertices.size() > 0 || tileSouthVertices.size() > 0 ) {
+//        std::cout << "THERE IS SOMETHING TO PRESERVE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+//    }
+//    else {
+//        std::cout << "NOTHING TO PRESERVE........................................................." << std::endl;
+//    }
+//    std::cout << "tileEastVertices.size() = " << tileEastVertices.size() << std::endl;
+//    std::cout << "tileWestVertices.size() = " << tileWestVertices.size() << std::endl;
+//    std::cout << "tileNorthVertices.size() = " << tileNorthVertices.size() << std::endl;
+//    std::cout << "tileSouthVertices.size() = " << tileSouthVertices.size() << std::endl;
+//    if (tileEastVertices.size() != 65 && tileEastVertices.size() != 0)
+//        std::cout << "tileEastVertices.size() != 0/65!!!!!!!!!!!!!!!!!!!!!!!!!" << tileEastVertices.size() << std::endl;
+//    if (tileWestVertices.size() != 65 && tileWestVertices.size() != 0)
+//        std::cout << "tileWestVertices.size() != 0/65!!!!!!!!!!!!!!!!!!!!!!!!!" << tileWestVertices.size() << std::endl;
+//    if (tileNorthVertices.size() != 65 && tileNorthVertices.size() != 0)
+//        std::cout << "tileNorthVertices.size() != 0/65!!!!!!!!!!!!!!!!!!!!!!!!!" << tileNorthVertices.size() << std::endl;
+//    if (tileSouthVertices.size() != 65 && tileSouthVertices.size() != 0)
+//        std::cout << "tileSouthVertices.size() != 0/65!!!!!!!!!!!!!!!!!!!!!!!!!" << tileSouthVertices.size() << std::endl;
+
+//    std::stringstream debugFileName;
+//    debugFileName << "./" << coord.zoom << "_" << coord.x << "_" << coord.y << ".m";
+//    std::ofstream ofs(debugFileName.str());
+//    if (!ofs)
+//        std::cout << "[ERROR] Cannot open debug file" << std::endl;
+//    ofs << "UV = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = uvhPts.begin(); it != uvhPts.end(); ++it) {
+//        ofs << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    ofs << "];" << std::endl;
+//    ofs << "EasternConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it) {
+//        ofs << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    ofs << "];" << std::endl;
+//    ofs << "WesternConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it) {
+//        ofs << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    ofs << "];" << std::endl;
+//    ofs << "NorthernConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it) {
+//        ofs << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    ofs << "];" << std::endl;
+//    ofs << "SouthernConstraint = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it) {
+//        ofs << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    ofs << "];" << std::endl;
+
+
     // Simplify the surface
     //simplifySurface(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
-    Polyhedron surface = m_tinCreator.create(uvhPts, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
+//    Polyhedron surface = m_tinCreator.create(uvhPts, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
+    Polyhedron surface = m_tinCreator.create(uvhPts, true, true, true, true) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
     // Needed for the next steps to work properly
@@ -49,16 +126,43 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
     // ...and the QuantizedMesh geometry
     computeQuantizedMeshGeometry( qmTile, surface, minHeight, maxHeight, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices) ;
 
+//    std::cout << "EasternConstraint2 = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+//    std::cout << "WesternConstraint2 = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+//    std::cout << "NorthernConstraint2 = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+//    std::cout << "SouthernConstraint2 = [ " << std::endl;
+//    for (std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it) {
+//        std::cout << (*it).x() << ", " << (*it).y() << ", " << (*it).z() << std::endl;
+//    }
+//    std::cout << "];" << std::endl;
+
+//    for (std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it) {
+//        if (it->z() - 0.163599)
+//            std::cout << "Conflicting southern in coord = " << coord.zoom << ", " << coord.x << ", " << coord.y << std::endl;
+//    }
+
+
     return qmTile;
 }
 
 
 
 std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
-                                                                const std::vector<Point_3> &tileEastVertices,
-                                                                const std::vector<Point_3> &tileWestVertices,
-                                                                const std::vector<Point_3> &tileNorthVertices,
-                                                                const std::vector<Point_3> &tileSouthVertices,
+                                                                std::vector<Point_3> &tileEastVertices,
+                                                                std::vector<Point_3> &tileWestVertices,
+                                                                std::vector<Point_3> &tileNorthVertices,
+                                                                std::vector<Point_3> &tileSouthVertices,
                                                                 float& minHeight, float& maxHeight,
                                                                 ctb::CRSBounds& tileBounds ) const
 {
@@ -165,6 +269,32 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
         double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
 
         uvhPts.push_back( Point_3( u, v, h ) ) ;
+    }
+
+    // Change also the constraints to uvh format? (for debug purposes only, they are not used anymore)
+    for ( std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it ) {
+        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+        *it = Point_3(u,v,h);
+    }
+    for ( std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it ) {
+        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+        *it = Point_3(u,v,h);
+    }
+    for ( std::vector<Point_3>::iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it ) {
+        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+        *it = Point_3(u,v,h);
+    }
+    for ( std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it ) {
+        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+        *it = Point_3(u,v,h);
     }
 
     delete rasterTile;
@@ -318,6 +448,11 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                                                       std::vector<Point_3> &tileNorthVertices,
                                                       std::vector<Point_3> &tileSouthVertices) const
 {
+    tileEastVertices.clear();
+    tileWestVertices.clear();
+    tileNorthVertices.clear();
+    tileSouthVertices.clear();
+
     // --> VertexData part
     std::vector<unsigned short> vertices ;
     int numVertices = surface.size_of_vertices() ;

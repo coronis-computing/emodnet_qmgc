@@ -36,7 +36,7 @@ public:
                         const std::vector<BorderVertex>& westernVertices,
                         const std::vector<BorderVertex>& northernVertices,
                         const std::vector<BorderVertex>& southernVertices,
-                        const int& lifeCounter = 4 ) // The life counter will be 4 for those tiles not in the zoom borders
+                        const int& lifeCounter = 4 ) // The life counter will be 4 for those tiles not in the zoom borders and surrounded by unprocessed tiles
             : m_easternVertices(easternVertices)
             , m_westernVertices(westernVertices)
             , m_northernVertices(northernVertices)

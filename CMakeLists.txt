@@ -74,6 +74,7 @@ endif(DOXYGEN_FOUND)
 # Project-related include dirs
 include_directories("src")
 include_directories("3rdParty")
+include_directories("3rdParty/json")
 
 # -----------------------------------------------------------------------------
 # Compilation

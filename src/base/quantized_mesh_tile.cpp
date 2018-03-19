@@ -10,15 +10,15 @@
 
 
 void QuantizedMeshTile::convertUVHToLonLatHeight( const unsigned short &u, const unsigned short &v, const unsigned short &h,
-                                                  double &lon, double &lat, double &height )
+                                                  double &lon, double &lat, double &height ) const
 {
     const ctb::GlobalGeodetic profile;
     const ctb::CRSBounds tileBounds = profile.tileBounds(*this);
     const Header header = getHeader() ;
 
-    lon = tileBounds.getMinX() + ( tileBounds.getMaxX() - tileBounds.getMinX() ) * u/QuantizedMesh::MAX_VERTEX_DATA ;
-    lat = tileBounds.getMinY() + ( tileBounds.getMaxY() - tileBounds.getMinY() ) * v/QuantizedMesh::MAX_VERTEX_DATA ;
-    height = header.MinimumHeight + ( header.MaximumHeight - header.MinimumHeight ) * h/QuantizedMesh::MAX_VERTEX_DATA ;
+    lon = tileBounds.getMinX() + fabs( tileBounds.getMaxX() - tileBounds.getMinX() ) * (double)u/(double)QuantizedMesh::MAX_VERTEX_DATA ;
+    lat = tileBounds.getMinY() + fabs( tileBounds.getMaxY() - tileBounds.getMinY() ) * (double)v/(double)QuantizedMesh::MAX_VERTEX_DATA ;
+    height = header.MinimumHeight + fabs( header.MaximumHeight - header.MinimumHeight ) * (double)h/(double)QuantizedMesh::MAX_VERTEX_DATA ;
 }
 
 

@@ -32,7 +32,7 @@ bool extractTileBordersFromPolyhedron(const Polyhedron& poly,
     northernBorderPts.clear();
     southernBorderPts.clear();
 
-    int numCorners ;
+    int numCorners = 0 ;
 
     std::vector<Point_3 > pts ;
     for ( Vertex_const_iterator it = poly.vertices_begin(); it != poly.vertices_end(); ++it )

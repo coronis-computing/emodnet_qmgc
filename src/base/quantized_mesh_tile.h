@@ -51,7 +51,7 @@ public:
 
     /// Convert U/V/Height coordinates in quantized mesh tile to Lon/Lat/Height
     void convertUVHToLonLatHeight( const unsigned short &u, const unsigned short &v, const unsigned short &h,
-                                   double &lon, double &lat, double &height ) ;
+                                   double &lon, double &lat, double &height ) const ;
 
     /// Export to OFF format
     bool exportToOFF( const std::string &outFilePath, const bool& useRealWorldValues = false ) ;
