@@ -17,6 +17,14 @@ public:
 
     virtual void initSchedule(const ctb::TileBounds& zoomBounds) = 0 ;
 
+    // The root is only composed of two tiles... and should be always present regardless of the computed zoom bounds
+    void initRootSchedule() {
+        m_index = 0;
+        m_tilesToProcess.clear();
+        m_tilesToProcess.emplace_back(ctb::TilePoint(0,0));
+        m_tilesToProcess.emplace_back(ctb::TilePoint(1,0));
+    }
+
     /// Get the next tile to process
     ctb::TilePoint getNextTile() {
         if ( finished() )
@@ -57,10 +65,13 @@ public:
 
     // Replication of the ZoomTilesSchedulerBase interphase
     void initSchedule(const ctb::TileBounds& zoomBounds) { m_scheduler->initSchedule(zoomBounds) ; }
-    ctb::TilePoint getNextTile() { return m_scheduler->getNextTile() ; }
-    bool finished() { return m_scheduler->finished() ; }
-    int numTiles() { return m_scheduler->numTiles() ; }
-    int currentIndex() { return m_scheduler->currentIndex() ; }
+
+    void initRootSchedule() { m_scheduler->initRootSchedule(); }
+
+    ctb::TilePoint getNextTile() { return m_scheduler->getNextTile(); }
+    bool finished() { return m_scheduler->finished(); }
+    int numTiles() { return m_scheduler->numTiles(); }
+    int currentIndex() { return m_scheduler->currentIndex(); }
 
 private:
     std::shared_ptr<ZoomTilesSchedulerStrategy> m_scheduler ;

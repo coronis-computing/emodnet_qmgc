@@ -38,6 +38,10 @@ public:
                          const bool& constrainWesternVertices,
                          const bool& constrainNorthernVertices,
                          const bool& constrainSouthernVertices ) ;
+
+    // WARNING: The remeshing strategy should not be used for tiled rendering!
+    void setParamsForZoom(const unsigned int& zoom) {}
+
 private:
     // Algorithm parameters
     double m_facetDistance ;
@@ -49,6 +53,8 @@ private:
     bool dataPtsArePlanar(const std::vector<Point_3>& dataPts) const ;
 
     std::vector<Point_3> defaultPointsForPlanarTile() const ;
+
+
 
 };
 

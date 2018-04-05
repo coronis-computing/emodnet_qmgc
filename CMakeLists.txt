@@ -81,5 +81,3 @@ include_directories("3rdParty/json")
 # -----------------------------------------------------------------------------
 include(GNUInstallDirs)
 add_subdirectory("src")
-
-

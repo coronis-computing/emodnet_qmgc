@@ -46,13 +46,16 @@ public:
     typedef typename Constrained_triangulation_plus_2<CDT>::Points_in_constraint_iterator Points_in_constraint_iterator;
     typedef typename Constrained_triangulation_plus_2<CDT>::Geom_traits Geom_traits ;
     typedef typename Geom_traits::FT                                  FT;
-    typedef typename Geom_traits::Compute_squared_distance_3 Compute_squared_distance ;
-    typedef typename Geom_traits::Construct_segment_3        Construct_segment ;
-    typedef typename Geom_traits::Segment_3                  Segment ;
-    typedef typename Geom_traits::Point_3                    Point ;
+    typedef typename Geom_traits::Compute_squared_distance_3 Compute_squared_distance;
+    typedef typename Geom_traits::Compute_squared_distance_2 Compute_squared_distance_2;
+    typedef typename Geom_traits::Construct_segment_3        Construct_segment;
+    typedef typename Geom_traits::Segment_3                  Segment;
+    typedef typename Geom_traits::Point_3                    Point;
+    typedef typename Geom_traits::Point_2                    Point_2;
 
-    Compute_squared_distance compute_squared_distance = pct.geom_traits().compute_squared_distance_3_object() ;
-    Construct_segment        construct_segment        = pct.geom_traits().construct_segment_3_object() ;
+    Compute_squared_distance compute_squared_distance = pct.geom_traits().compute_squared_distance_3_object();
+    Compute_squared_distance_2 compute_squared_distance_2 = pct.geom_traits().compute_squared_distance_2_object();
+    Construct_segment        construct_segment        = pct.geom_traits().construct_segment_3_object();
     typedef typename Constrained_triangulation_plus_2<CDT>::Vertices_in_constraint_iterator Vertices_in_constraint_iterator;
 
     Vertices_in_constraint_iterator vicp = boost::prior(vicq);
@@ -62,8 +65,11 @@ public:
     Point const& lR = (*vicr)->point();
     Point const& Q = (*vicq)->point();
 
-    // Check if the segment (P,Q) or (Q,R) is too large
-    if ( CGAL::squared_distance(lP, Q) > m_maxSqLength || CGAL::squared_distance(lR, Q) > m_maxSqLength )
+    // Check if the segments (P,Q) or (Q,R) are too large when projected to the XY plane
+    Point const& lP2 = Point((*vicp)->point().x(), (*vicp)->point().y(), FT(0.0));
+    Point const& lR2 = Point((*vicr)->point().x(), (*vicr)->point().y(), FT(0.0));
+    Point const& Q2 = Point((*vicq)->point().x(), (*vicq)->point().y(), FT(0.0));
+    if ( compute_squared_distance(lP2, Q2) > m_maxSqLength || compute_squared_distance(lR2, Q2) > m_maxSqLength )
       return std::numeric_limits<double>::infinity();
 
     // Otherwise, check the cost using 3D distance

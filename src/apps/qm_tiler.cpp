@@ -30,21 +30,54 @@ using namespace std;
 using namespace TinCreation;
 namespace po = boost::program_options;
 
+// Adding ostream operator << to vectors. Required by boost::program_options to be able to define default values for vectors
+namespace std
+{
+    std::ostream& operator<<(std::ostream &os, const std::vector<double> &vec)
+    {
+        for (auto item : vec)
+        {
+            os << item << " ";
+        }
+        return os;
+    }
 
+    std::ostream& operator<<(std::ostream &os, const std::vector<int> &vec)
+    {
+        for (auto item : vec)
+        {
+            os << item << " ";
+        }
+        return os;
+    }
+
+    std::ostream& operator<<(std::ostream &os, const std::vector<unsigned int> &vec)
+    {
+        for (auto item : vec)
+        {
+            os << item << " ";
+        }
+        return os;
+    }
+}
 
 int main ( int argc, char **argv)
 {
     // Command line parser
     std::string inputFile, outDir, tinCreationStrategy, schedulerType, debugDir, configFile, greedyErrorType;
     int startZoom, endZoom;
-    double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize, psHierMaxSurfaceVariance, psBorderSimpMaxDist, psBorderSimpMaxLength, greedyErrorTol, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
+    double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize;
     float clippingHighValue, clippingLowValue;
-    int simpStopEdgesCount, heighMapSamplingSteps, greedyInitGridSize;
-    unsigned int psHierMaxClusterSize, psWlopIterNumber, psMinFeaturePolylineSize;
+    int heighMapSamplingSteps, greedyInitGridSize;
+    unsigned int psWlopIterNumber, psMinFeaturePolylineSize;
     int numThreads = 0 ;
     bool bathymetryFlag ;
+    // Parameters per zoom level
+    std::vector<int> simpStopEdgesCount;
+    std::vector<unsigned int> psHierMaxClusterSize;
+    std::vector<double> greedyErrorTol, psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
 
-    po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format");
+    po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format\n(*) The parameters marked with this sing scan be specified multiple times to reflect the desired value per zoom level. When the required zoom is larger than the number of specified parameters, the last one is used. On the other hand, when a single parameter is specifyed, the value is assumed to represent the value for the root (i.e., 0) level of the pyramid, and the values for the lower levels will be halved (or doubled) for each deeper level.");
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse (can be specified like this or as a positional parameter)" )
@@ -58,10 +91,10 @@ int main ( int argc, char **argv)
             ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)" )
             ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
             ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random (see documentation for further information)" )
-            ( "tc-greedy-error-tol", po::value<double>(&greedyErrorTol)->default_value(0.1), "Error tolerance for a tile to fulfill in the greedy insertion approach")
+            ( "tc-greedy-error-tol", po::value<vector<double> >(&greedyErrorTol)->multitoken()->default_value(std::vector<double>{150000}), "Error tolerance for a tile to fulfill in the greedy insertion approach (*).")
             ( "tc-greedy-init-grid-size", po::value<int>(&greedyInitGridSize)->default_value(-1), "An initial grid of this size will be used as base mesh to start the insertion process. Defaults to the 4 corners of the tile if < 0")
             ( "tc-greedy-error-type", po::value<string>(&greedyErrorType)->default_value("height"), "The error computation type. Available: height, 3d.")
-            ( "tc-lt-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value." )
+            ( "tc-lt-stop-edges-count", po::value<vector<int> >(&simpStopEdgesCount)->multitoken()->default_value(std::vector<int>{500}), "Simplification stops when the number of edges is below this value (*)." )
             ( "tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
@@ -69,17 +102,17 @@ int main ( int argc, char **argv)
 //            ( "tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
 //            ( "tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(0.2), "Remeshing facet size." )
 //            ( "tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(0.2), "Remeshing edge size." )
-            ( "tc-ps-border-max-error", po::value<double>(&psBorderSimpMaxDist)->default_value(0.01), "Polyline simplification error at borders" )
-            ( "tc-ps-border-max-length", po::value<double>(&psBorderSimpMaxLength)->default_value(0.1), "Polyline simplification, maximum length of border edges" )
-            ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered" )
-            ( "tc-ps-hierarchy-cluster-size", po::value<unsigned int>(&psHierMaxClusterSize)->default_value(100), "Hierarchy point set simplification maximum cluster size" )
-            ( "tc-ps-hierarchy-max-surface-variance", po::value<double>(&psHierMaxSurfaceVariance)->default_value(0.01), "Hierarchy point set simplification maximum surface variation" )
-            ( "tc-ps-wlop-retain-percent", po::value<double>(&psWlopRetainPercentage)->default_value(5), "Percentage of points to retain, [0..100]" )
-            ( "tc-ps-wlop-radius", po::value<double>(&psWlopRadius)->default_value(0.2), "PS WLOP simplification: radius" )
-            ( "tc-ps-wlop-iter-number", po::value<unsigned int>(&psWlopIterNumber)->default_value(35), "PS WLOP simplification: number of iterations" )
-            ( "tc-ps-grid-cell-size", po::value<double>(&psGridCellSize)->default_value(0.1), "PS Grid simplification: Cell size")
-            ( "tc-ps-random-percent", po::value<double>(&psRandomRemovePercentage)->default_value(80), "PS Random simplification: percentage to remove")
-            ( "debug-dir", po::value<string>(&debugDir)->default_value(""), "Debug directory where simplified meshes will be stored in OFF format for easing visualization")
+            ( "tc-ps-border-max-error", po::value<vector<double> >(&psBorderSimpMaxDist)->multitoken()->default_value(std::vector<double>{10000}), "Polyline simplification error at borders (*)." )
+            ( "tc-ps-border-max-length", po::value<vector<double> >(&psBorderSimpMaxLength)->multitoken()->default_value(std::vector<double>{10000}), "Polyline simplification, maximum length of border edges (*)." )
+            ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered." )
+            ( "tc-ps-hierarchy-cluster-size", po::value<vector<unsigned int> >(&psHierMaxClusterSize)->default_value(std::vector<unsigned int>{1000}), "Hierarchy point set simplification maximum cluster size (*)." )
+            ( "tc-ps-hierarchy-max-surface-variance", po::value<vector<double> >(&psHierMaxSurfaceVariance)->default_value(std::vector<double>{1000}), "Hierarchy point set simplification maximum surface variation (*)." )
+            ( "tc-ps-wlop-retain-percent", po::value<vector<double> >(&psWlopRetainPercentage)->multitoken()->default_value(vector<double>{1}), "Percentage of points to retain, [0..100] (*)." )
+            ( "tc-ps-wlop-radius", po::value<vector<double> >(&psWlopRadius)->multitoken()->default_value(vector<double>{10000}), "PS WLOP simplification: radius." )
+            ( "tc-ps-wlop-iter-number", po::value<unsigned int>(&psWlopIterNumber)->default_value(35), "PS WLOP simplification: number of iterations." )
+            ( "tc-ps-grid-cell-size", po::value<vector<double> >(&psGridCellSize)->multitoken()->default_value(vector<double>{10000}), "PS Grid simplification: Cell size (*).")
+            ( "tc-ps-random-percent", po::value<vector<double> >(&psRandomRemovePercentage)->multitoken()->default_value(vector<double>{90}), "PS Random simplification: percentage to remove.")
+            ( "debug-dir", po::value<string>(&debugDir)->default_value(""), "Debug directory where simplified meshes will be stored in OFF format for easing visualization.")
             ( "config,c", po::value<string>(&configFile)->default_value(""), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
     ;
     po::positional_options_description positionalOptions;

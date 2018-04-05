@@ -78,6 +78,11 @@ public:
 
     QMTOptions getOptions() { return m_options; }
 
+    void setTinCreatorParamsForZoom(const unsigned int& zoom) { m_tinCreator.setParamsForZoom(zoom); }
+
+    // Useful to create an empty tile for the root levels when there is no data in the input raster overlapping coords 0/0/0 or 0/1/0
+//    QuantizedMeshTile createEmptyFlatTile(const ctb::TileCoordinate &coord);
+
 private:
     // --- Attributes ---
     QMTOptions m_options ;

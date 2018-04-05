@@ -103,10 +103,18 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
-        ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
-
-        ctb::TileBounds zoomBounds(ll, ur);
+//        ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
+//        ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
+//        ctb::TileBounds zoomBounds(ll, ur);
+        ctb::TileBounds zoomBounds;
+        if (zoom == 0) {
+            zoomBounds = ctb::TileBounds(ctb::TileCoordinate(0,0,0), ctb::TileCoordinate(0,1,0));
+        }
+        else {
+            ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
+            ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
+            zoomBounds = ctb::TileBounds(ll, ur);
+        }
 
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
 
@@ -114,7 +122,14 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
         m_bordersCache = ZoomTilesBorderVerticesCache(zoomBounds, m_tilers[0].getOptions().HeighMapSamplingSteps-1);
 
         // Get the preferred ordering of processing
-        m_scheduler.initSchedule( zoomBounds ) ;
+        if (zoom == 0)
+            m_scheduler.initRootSchedule(); // Special schedule for the root, forcing the two tiles to be built
+        else
+            m_scheduler.initSchedule( zoomBounds ) ;
+
+        // Set the parameters of the tin creators for this zoom
+        for (int t = 0; t < m_numThreads; t++)
+            m_tilers[t].setTinCreatorParamsForZoom(zoom);
 
         int numLaunchedProcesses = 0 ; // Number of launched child processes in total
         while (!m_bordersCache.allTilesProcessed()) {
@@ -139,8 +154,14 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
                 // Get constraints at borders from cache
                 BordersData bd;
 //                std::vector<Point_3> tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ;
-                m_bordersCache.getConstrainedBorderVerticesForTile(tp.x, tp.y, bd.tileEastVertices, bd.tileWestVertices,
+                m_bordersCache.getConstrainedBorderVerticesForTile(tp.x, tp.y,
+                                                                   bd.tileEastVertices, bd.tileWestVertices,
                                                                    bd.tileNorthVertices, bd.tileSouthVertices);
+
+//                std::cout << "bd.tileEastVertices.size() = " << bd.tileEastVertices.size() << std::endl;
+//                std::cout << "bd.tileWestVertices.size() = " << bd.tileWestVertices.size() << std::endl;
+//                std::cout << "bd.tileNorthVertices.size() = " << bd.tileNorthVertices.size() << std::endl;
+//                std::cout << "bd.tileSouthVertices.size() = " << bd.tileSouthVertices.size() << std::endl;
 
                 std::future<BordersData> f = std::async( std::launch::async,
                                                          &QuantizedMeshTilesPyramidBuilderParallel::createTile, this,
@@ -186,15 +207,22 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramidUnconstrainedBord
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
-        ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
-
-        ctb::TileBounds zoomBounds(ll, ur);
-
+        ctb::TileBounds zoomBounds;
+        if (zoom == 0) {
+            zoomBounds = ctb::TileBounds(ctb::TileCoordinate(0,0,0), ctb::TileCoordinate(0,1,0));
+        }
+        else {
+            ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
+            ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
+            zoomBounds = ctb::TileBounds(ll, ur);
+        }
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
 
         // Get the preferred ordering of processing
-        m_scheduler.initSchedule( zoomBounds ) ;
+//        if (zoom == 0)
+//            m_scheduler.initRootSchedule(); // Special schedule for the root, forcing the two tiles to be built
+//        else
+            m_scheduler.initSchedule( zoomBounds ) ;
 
         int numLaunchedProcesses = 0 ; // Number of launched child processes in total
         while (!m_scheduler.finished()) {

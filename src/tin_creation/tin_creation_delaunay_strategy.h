@@ -23,6 +23,8 @@ public:
                       const bool &constrainWesternVertices,
                       const bool &constrainNorthernVertices,
                       const bool &constrainSouthernVertices);
+
+    void setParamsForZoom(const unsigned int& zoom) {}
 };
 
 } // End namespace TinCreation

@@ -82,10 +82,10 @@ bool isBorder(typename Polyhedron::Vertex_handle& v)
     typename Polyhedron::Halfedge_around_vertex_const_circulator hv = v->vertex_begin();
     //move around the vertex and check if there is a halfedge which
     //is on border
-    for(; hv != v->vertex_begin(); v++){
+    do {
         if(hv->is_border())
             return true;
-    }
+    }while (++hv != v->vertex_begin());
     return false;
 }
 
@@ -97,10 +97,10 @@ bool isBorder(typename Polyhedron::Vertex_const_handle& v)
     typename Polyhedron::Halfedge_around_vertex_const_circulator hv = v->vertex_begin();
     //move around the vertex and check if there is a halfedge which
     //is on border
-    for(; hv != v->vertex_begin(); v++){
+    do {
         if(hv->is_border())
             return true;
-    }
+    }while (++hv != v->vertex_begin());
     return false;
 }
 

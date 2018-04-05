@@ -10,18 +10,21 @@ namespace TinCreation {
 std::vector<Point_3>
 TinCreationSimplificationPointSetWLOP::
 simplify(const std::vector<Point_3> &pts) {
-    std::vector<Point_3> ptsOrig = pts, ptsSimp;
-    //parameters
-//    const double retain_percentage = 2;   // percentage of points to retain.
-//    const double neighbor_radius = 0.5;   // neighbors size.
+    // Convert to metric
+    std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
+
+    std::vector<Point_3> ptsSimpECEF;
     CGAL::wlop_simplify_and_regularize_point_set
             <Concurrency_tag>
-            (ptsOrig.begin(),
-             ptsOrig.end(),
-             std::back_inserter(ptsSimp),
+            (ptsToSimpECEF.begin(),
+             ptsToSimpECEF.end(),
+             std::back_inserter(ptsSimpECEF),
              m_retainPercentage,
              m_radius
             );
+
+    // Convert to the local (XY-projectable) coordinates again
+    std::vector<Point_3> ptsSimp = this->convertECEFToUVH(ptsSimpECEF);
 
     return ptsSimp;
 }

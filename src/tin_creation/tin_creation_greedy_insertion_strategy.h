@@ -11,7 +11,7 @@
 #include <CGAL/Triangulation_face_base_with_info_2.h>
 #include <memory>
 #include <boost/heap/fibonacci_heap.hpp>
-#include <mutex> // TODO: Remember to remove the mutex from here after debugging
+#include "tin_creation_utils.h"
 
 namespace TinCreation {
 
@@ -90,12 +90,52 @@ public:
     enum ErrorType { ErrorHeight=0, Error3D } ;
 
     // --- Public Methods ---
-    TinCreationGreedyInsertionStrategy( double approxTolerance,
+    TinCreationGreedyInsertionStrategy( double rootApproxTolerance,
                                         int initGridSamples = -1,
                                         int errorType = ErrorHeight )
-            : m_sqApproxTol(approxTolerance*approxTolerance)
-            , m_initGridSamples(initGridSamples)
-            , m_errorType(errorType) {}
+            : m_initGridSamples(initGridSamples)
+            , m_errorType(errorType)
+    {
+        m_approxTolPerZoom = std::vector<FT>{rootApproxTolerance};
+        setParamsForZoom(0);
+    }
+
+    TinCreationGreedyInsertionStrategy( const std::vector<FT>& approxTolPerZoom,
+                                        int initGridSamples = -1,
+                                        int errorType = ErrorHeight )
+            : m_initGridSamples(initGridSamples)
+            , m_errorType(errorType)
+            , m_approxTolPerZoom(approxTolPerZoom)
+    {
+        setParamsForZoom(0);
+    }
+
+    void setParamsForZoom(const unsigned int& zoom)
+    {
+//        if (m_approxTolPerZoom.size() == 0) {
+//            std::cerr << "[WARNING::TinCreationGreedyInsertionStrategy] Input edges count per zoom vector is empty, using 1 (default value)" << std::endl;
+//            m_approxTol = 1;
+//        }
+//        else if (m_approxTolPerZoom.size() == 1) {
+//            // This means that only the root tolerance was specified, we will infer the tolerance at the desired zoom level by dividing by two the root number for each level
+//            if (zoom == 0)
+//                m_approxTol = m_approxTolPerZoom[0];
+//            else {
+//                m_approxTol = m_approxTolPerZoom[0] / pow(2, zoom);
+//            }
+//        }
+//        else if ( zoom < m_approxTolPerZoom.size()) {
+//            // Use the approximation tolerance corresponding to the zoom in the vector
+//            m_approxTol = m_approxTolPerZoom[zoom];
+//        }
+//        else {
+//            // Use the approximation tolerance corresponding to the last zoom specified in the vector
+//            m_approxTol = m_approxTolPerZoom.back();
+//        }
+
+        m_approxTol = standardHandlingOfThresholdPerZoom(m_approxTolPerZoom, zoom);
+        std::cout << "m_approxTol = " << m_approxTol << std::endl;
+    }
 
     Polyhedron create( const std::vector<Point_3>& dataPts,
                        const bool& constrainEasternVertices,
@@ -104,12 +144,14 @@ public:
                        const bool& constrainSouthernVertices ) ;
 private:
     // --- Attributes ---
-    FT m_sqApproxTol ;
+    FT m_approxTol ;
+    FT m_scaledSqApproxTol ;
     std::vector<Point_3> m_dataPts ;
     DT m_dt ;
     GIHeap m_heap;
     int m_errorType;
     int m_initGridSamples;
+    std::vector<FT> m_approxTolPerZoom; // in metric, not squared!
 
     // --- Private Methods ---
     /// Initialize the data structures

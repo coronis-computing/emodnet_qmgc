@@ -110,11 +110,18 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 //    }
 //    ofs << "];" << std::endl;
 
+    // Set the scale of the units to the TinCreator (used by some of the methods to scale the parameters w.r.t. the tile units)
+    double scale = QuantizedMesh::remap( 1.0, 0.0, maxHeight-minHeight, 0.0, 1.0 );
+//    double scaledThres = QuantizedMesh::remap( 292.969, 0.0, maxHeight-minHeight, 0.0, 1.0 );
+//    std::cout << "scaledThres = " << scaledThres << std::endl;
+    m_tinCreator.setScaleZ(scale);
+    m_tinCreator.setBounds(tileBounds.getMinX(), tileBounds.getMinY(), minHeight,
+                           tileBounds.getMaxX(), tileBounds.getMaxY(), maxHeight);
 
     // Simplify the surface
     //simplifySurface(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
-//    Polyhedron surface = m_tinCreator.create(uvhPts, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
-    Polyhedron surface = m_tinCreator.create(uvhPts, true, true, true, true) ;
+    Polyhedron surface = m_tinCreator.create(uvhPts, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
+    //Polyhedron surface = m_tinCreator.create(uvhPts, true, true, true, true) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
     // Needed for the next steps to work properly
@@ -169,6 +176,12 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
     m_mutex.lock() ;
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
     GDALRasterBand *heightsBand = rasterTile->dataset->GetRasterBand(1);
+
+    // The commented snipplet below retrieves the pixel size of this tile
+//    double adfGeoTransform[6];
+//    rasterTile->dataset->GetGeoTransform(adfGeoTransform);
+//    std::cout << "Pixel size = " << adfGeoTransform[1] << ", " << adfGeoTransform[5] << std::endl;
+
     double noDataValue = heightsBand->GetNoDataValue();
     double resolution;
     tileBounds = terrainTileBounds(coord, resolution);
@@ -180,6 +193,9 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
                               m_options.HeighMapSamplingSteps, m_options.HeighMapSamplingSteps,
                               GDT_Float32, 0, 0) != CE_None) {
         throw ctb::CTBException("Could not read heights from raster");
+
+        for (int a = 0; a < m_options.HeighMapSamplingSteps*m_options.HeighMapSamplingSteps; a++)
+                rasterHeights[a] = 0.0;
     }
     m_mutex.unlock() ;
 
@@ -268,34 +284,36 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
         double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
         double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
 
+//        std::cout << "u = " << u << " / v = " << v << " / h = " << h << std::endl;
+
         uvhPts.push_back( Point_3( u, v, h ) ) ;
     }
 
     // Change also the constraints to uvh format? (for debug purposes only, they are not used anymore)
-    for ( std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it ) {
-        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
-        *it = Point_3(u,v,h);
-    }
-    for ( std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it ) {
-        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
-        *it = Point_3(u,v,h);
-    }
-    for ( std::vector<Point_3>::iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it ) {
-        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
-        *it = Point_3(u,v,h);
-    }
-    for ( std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it ) {
-        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
-        *it = Point_3(u,v,h);
-    }
+//    for ( std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it ) {
+//        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+//        *it = Point_3(u,v,h);
+//    }
+//    for ( std::vector<Point_3>::iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it ) {
+//        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+//        *it = Point_3(u,v,h);
+//    }
+//    for ( std::vector<Point_3>::iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it ) {
+//        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+//        *it = Point_3(u,v,h);
+//    }
+//    for ( std::vector<Point_3>::iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it ) {
+//        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+//        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+//        *it = Point_3(u,v,h);
+//    }
 
     delete rasterTile;
 
@@ -383,9 +401,9 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
 
         ecefPoints.push_back(Point_3(tmpx, tmpy, tmpz));
 
-        double tmpx2, tmpy2, tmpz2;
-        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
-                                  tmpx2, tmpy2, tmpz2) ;
+//        double tmpx2, tmpy2, tmpz2;
+//        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
+//                                  tmpx2, tmpy2, tmpz2) ;
 
         if (tmpx < minEcefX)
             minEcefX = tmpx;
@@ -461,6 +479,8 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
         double x = it->x() ;
         double y = it->y() ;
         double z = it->z() ;
+
+//        std::cout << "x = " << x << " / y = " << y << " / z = " << z << std::endl;
 
         // Truncate values (after simplification, values might be smaller than 0.0 or larger than 1.0
         x = x < 0.0? 0.0 : x ;
@@ -655,3 +675,27 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
 //    qmTile->print() ;
 }
 
+
+
+//QuantizedMeshTile QuantizedMeshTiler::createEmptyFlatTile(const ctb::TileCoordinate &coord)
+//{
+//    // Get a terrain tile represented by the tile coordinate
+//    QuantizedMeshTile qmTile(coord, m_options.RefEllipsoid );
+//
+//    std::vector<Point_3> dummyGrid;
+//    for ( int i = 0; i < 65; i++ ) {
+//        for (int j = 0; j < 65; j++) {
+//            dummyGrid.emplace_back(Point_3(i, j, 0.0));
+//        }
+//    }
+//
+//    // Delaunay triangulation
+//    Delaunay dt(dummyGrid.begin(), dummyGrid.end());
+//
+//    // Translate to Polyhedron
+//    Polyhedron surface;
+//    PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builder(dt);
+//    surface.delegate(builder);
+//
+//
+//}

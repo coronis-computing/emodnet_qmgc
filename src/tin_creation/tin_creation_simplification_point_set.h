@@ -9,6 +9,9 @@
 #include "tin_creation_cgal_types.h"
 #include "cgal/Projection_traits_3_extended.h"
 #include "cgal/squared_distance_3_cost.h"
+#include "tin_creation_utils.h"
+
+
 
 namespace TinCreation {
 
@@ -28,9 +31,21 @@ public:
     TinCreationSimplificationPointSet(double borderSimplificationMaxDistance,
                                       double borderSimplificationMaxLength,
                                       unsigned int minFeaturePolylineSize)
-            : m_borderSimpMaxSqDist(borderSimplificationMaxDistance*borderSimplificationMaxDistance)
-            , m_borderSimpMaxLength(borderSimplificationMaxLength*borderSimplificationMaxLength)
-            , m_minFeaturePolylineSize(minFeaturePolylineSize) {} ;
+            : m_minFeaturePolylineSize(minFeaturePolylineSize)
+    {
+        m_borderSimpMaxDistPerZoom = std::vector<FT>{borderSimplificationMaxDistance};
+        m_borderSimpMaxLengthPerZoom = std::vector<FT>{borderSimplificationMaxLength};
+        setParamsForZoom(0);
+    }
+
+    TinCreationSimplificationPointSet(const std::vector<double>& borderSimplificationMaxDistance,
+                                      const std::vector<double>& borderSimplificationMaxLength,
+                                      unsigned int minFeaturePolylineSize)
+            : m_borderSimpMaxDistPerZoom(borderSimplificationMaxDistance)
+            , m_borderSimpMaxLengthPerZoom(borderSimplificationMaxLength)
+    {
+        setParamsForZoom(0);
+    }
 
     Polyhedron create(const std::vector<Point_3>& dataPts,
                       const bool &constrainEasternVertices,
@@ -47,9 +62,73 @@ public:
      */
     virtual std::vector<Point_3> simplify(const std::vector<Point_3>& pts) = 0;
 
+    void setParamsForZoom(const unsigned int& zoom) {
+//        if (m_borderSimpMaxDistPerZoom.size() == 0) {
+//            std::cerr << "[WARNING::TinCreationSimplificationPointSet] Input edges count per zoom vector is empty, using 1 (default value)" << std::endl;
+//            m_borderSimpMaxDist = 1;
+//        }
+//        else if (m_borderSimpMaxDistPerZoom.size() == 1) {
+//            // This means that only the root tolerance was specified, we will infer the tolerance at the desired zoom level by dividing by two the root number for each level
+//            if (zoom == 0)
+//                m_borderSimpMaxDist = m_borderSimpMaxDistPerZoom[0];
+//            else {
+//                m_borderSimpMaxDist = m_borderSimpMaxDistPerZoom[0] / pow(2, zoom);
+//            }
+//        }
+//        else if ( zoom < m_borderSimpMaxDistPerZoom.size()) {
+//            // Use the approximation tolerance corresponding to the zoom in the vector
+//            m_borderSimpMaxDist = m_borderSimpMaxDistPerZoom[zoom];
+//        }
+//        else {
+//            // Use the approximation tolerance corresponding to the last zoom specified in the vector
+//            m_borderSimpMaxDist = m_borderSimpMaxDistPerZoom.back();
+//        }
+
+        m_borderSimpMaxDist = standardHandlingOfThresholdPerZoom(m_borderSimpMaxDistPerZoom, zoom);
+        std::cout << "m_borderSimpMaxDist = " << m_borderSimpMaxDist << std::endl;
+
+//        if (m_borderSimpMaxLengthPerZoom.size() == 0) {
+//            std::cerr << "[WARNING::TinCreationSimplificationPointSet] Input edges count per zoom vector is empty, using 1 (default value)" << std::endl;
+//            m_borderSimpMaxLength = 1;
+//        }
+//        else if (m_borderSimpMaxLengthPerZoom.size() == 1) {
+//            // This means that only the root tolerance was specified, we will infer the tolerance at the desired zoom level by dividing by two the root number for each level
+//            if (zoom == 0)
+//                m_borderSimpMaxLength = m_borderSimpMaxLengthPerZoom[0];
+//            else {
+//                m_borderSimpMaxLength = m_borderSimpMaxLengthPerZoom[0] / pow(2, zoom);
+//            }
+//        }
+//        else if ( zoom < m_borderSimpMaxLengthPerZoom.size()) {
+//            // Use the approximation tolerance corresponding to the zoom in the vector
+//            m_borderSimpMaxLength = m_borderSimpMaxLengthPerZoom[zoom];
+//        }
+//        else {
+//            // Use the approximation tolerance corresponding to the last zoom specified in the vector
+//            m_borderSimpMaxLength = m_borderSimpMaxLengthPerZoom.back();
+//        }
+
+        m_borderSimpMaxLength = standardHandlingOfThresholdPerZoom(m_borderSimpMaxLengthPerZoom, zoom);
+
+        // Set further parameters that are exclusive of each point set simplification strategy using setParamsForZoomConcreteStrategy(zoom); in derived classes
+    }
+
+    virtual void setParamsForZoomConcreteStrategy(const unsigned int& zoom) = 0;
+
+    /// Convert points to ECEF assuming that they are on a UVH format, and given the limits of the tile
+    // This conversion is used by some point set simplification methods requiring metric coordinates
+    std::vector<Point_3> convertUVHToECEF(const std::vector<Point_3>& pts) const ;
+
+    /// Convert points from local UVH to ECEF given the limits of the tile
+    // This conversion is used by some point set simplification methods requiring metric coordinates
+    std::vector<Point_3> convertECEFToUVH(const std::vector<Point_3>& pts) const ;
+
 private:
-    double m_borderSimpMaxSqDist;
-    double m_borderSimpMaxLength;
+    double m_borderSimpMaxDist;
+    double m_borderSimpMaxScaledSqDist;
+    double m_borderSimpMaxLength; // We do not scale this length, as it is relative to the XY plane
+    std::vector<double> m_borderSimpMaxDistPerZoom;
+    std::vector<double> m_borderSimpMaxLengthPerZoom;
     unsigned int m_minFeaturePolylineSize ;
     CTXY m_cdt;
 
@@ -81,7 +160,6 @@ private:
 
     /// Simplify a set of polylines based on their elevation, while preserving the topology in the XY plane
     Polylines simplifyPolylines(const Polylines& polylines) const ;
-
 };
 
 } // End namespace TinCreation
