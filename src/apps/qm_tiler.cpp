@@ -12,6 +12,8 @@
 #include <string>
 #include <chrono>
 #include <tin_creation/tin_creation_simplification_point_set_grid.h>
+// GDAl
+#include "cpl_conv.h"
 // Project-specific
 #include "quantized_mesh_tiles_pyramid_builder_parallel.h"
 #include "zoom_tiles_scheduler.h"
@@ -145,6 +147,7 @@ int main ( int argc, char **argv)
 
     // Setup all GDAL-supported raster drivers
     GDALAllRegister();
+    CPLSetConfigOption("VRT_SHARED_SOURCE", "0"); // Needed when accessing a single VRT from multiple files: http://gdal.org/gdal_vrttut.html#gdal_vrttut_mt
 
     // --- Create as many tilers as required threads ---
     std::vector<QuantizedMeshTiler> tilers ;
@@ -278,12 +281,14 @@ int main ( int argc, char **argv)
         scheduler.setScheduler(colwiseScheduler) ;
     }
     else if (schedulerType.compare("4connected") == 0) {
-        std::shared_ptr<ZoomTilesSchedulerFourConnectedStrategy> fourConnectedStrategy = std::make_shared<ZoomTilesSchedulerFourConnectedStrategy>() ;
+        std::shared_ptr<ZoomTilesSchedulerFourConnectedStrategy> fourConnectedStrategy
+                = std::make_shared<ZoomTilesSchedulerFourConnectedStrategy>() ;
 //        std::shared_ptr<ZoomTilesSchedulerRecursiveFourConnectedStrategy> fourConnectedStrategy = std::make_shared<ZoomTilesSchedulerRecursiveFourConnectedStrategy>() ;
         scheduler.setScheduler(fourConnectedStrategy) ;
     }
     else if (schedulerType.compare("chessboard") == 0) {
-        std::shared_ptr<ZoomTilesSchedulerChessboardStrategy> chessboardScheduler = std::make_shared<ZoomTilesSchedulerChessboardStrategy>() ;
+        std::shared_ptr<ZoomTilesSchedulerChessboardStrategy> chessboardScheduler
+                = std::make_shared<ZoomTilesSchedulerChessboardStrategy>() ;
         scheduler.setScheduler(chessboardScheduler);
     }
     else {

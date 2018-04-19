@@ -211,17 +211,17 @@ bool ZoomTilesBorderVerticesCache::canTileStartProcessing( const int& tileX, con
     // Check that the 8! neighbors are either visited or not being processed
     std::vector<std::pair<int,int>> eightConnNeigh ;
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX+1, tileY-1));
-    eightConnNeigh.emplace_back(std::pair<int,int>(tileX, tileY+1));
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX+1, tileY+1));
+    eightConnNeigh.emplace_back(std::pair<int,int>(tileX-1, tileY-1));
+    eightConnNeigh.emplace_back(std::pair<int,int>(tileX-1, tileY+1));
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX-1, tileY));
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX+1, tileY));
-    eightConnNeigh.emplace_back(std::pair<int,int>(tileX-1, tileY-1));
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX, tileY-1));
-    eightConnNeigh.emplace_back(std::pair<int,int>(tileX+1, tileY-1));
+    eightConnNeigh.emplace_back(std::pair<int,int>(tileX, tileY+1));
 
     for ( std::vector<std::pair<int,int>>::iterator it = eightConnNeigh.begin(); it != eightConnNeigh.end(); ++it ) {
-//        if (!(!isTileInBounds(*it) || isTileVisited(*it) || !isTileBeingProcessed(*it)))
-        if (isTileInBounds(*it) && !isTileVisited(*it) && isTileBeingProcessed(*it))
+        if (!(!isTileInBounds(*it) || isTileVisited(*it) || !isTileBeingProcessed(*it)))
+//        if (isTileInBounds(*it) && !isTileVisited(*it) && isTileBeingProcessed(*it))
             return false;
     }
     return true ;

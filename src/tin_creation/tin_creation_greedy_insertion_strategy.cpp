@@ -32,8 +32,8 @@ Polyhedron TinCreationGreedyInsertionStrategy::create(const std::vector<Point_3>
 //    std::cout << "m_dataPts.size() = " << m_dataPts.size() << std::endl ;
 
     // Initialize the data structures
-    initialize(constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices,
-               constrainSouthernVertices);
+    initialize(constrainEasternVertices, constrainWesternVertices,
+               constrainNorthernVertices, constrainSouthernVertices);
 
 //    std::cout << "Init m_heap.size() = " << m_heap.size() << std::endl ;
 
