@@ -9,21 +9,13 @@
 
 namespace CGAL {
 
-#ifndef DOXYGEN_RUNNING
-
 template < class Tr >
 class Constrained_triangulation_plus_2;
-
-#endif
 
 namespace Polyline_simplification_2
 {
 
-/// \ingroup PkgPolylineSimplification2Classes
-
 /// This class is a cost function which calculates the cost as the square of the distance between the original and simplified polylines in R3. To be used with Projection_traits_xy_3 class.
-///
-/// \cgalModels `PolylineSimplificationCostFunction`.
 class Squared_distance_3_cost
 {
 
@@ -32,12 +24,11 @@ public:
   /// Initializes the cost function
   Squared_distance_3_cost(const double& maxLength) : m_maxSqLength(maxLength*maxLength) {}
 
-   /// Given a vertex in constraint iterator `vicq` computes `vicp=std::prev(vicq)` and `vicr=std::next(vicq)`,
+  /// Given a vertex in constraint iterator `vicq` computes `vicp=std::prev(vicq)` and `vicr=std::next(vicq)`,
   /// returns the maximum of the square distances between each point along the original subpolyline,
   /// between `vicp` and `vicr`, and the straight line segment  from `*vicp->point() to *vicr->point()`.
   /// \tparam CDT  must be `CGAL::Constrained_Delaunay_triangulation_2` with a vertex type that
   /// is model of  `PolylineSimplificationVertexBase_2`.
-
     template<class CDT>
     boost::optional<typename CDT::Geom_traits::FT>
     operator()(const Constrained_triangulation_plus_2<CDT>& pct
@@ -69,8 +60,10 @@ public:
     Point const& lP2 = Point((*vicp)->point().x(), (*vicp)->point().y(), FT(0.0));
     Point const& lR2 = Point((*vicr)->point().x(), (*vicr)->point().y(), FT(0.0));
     Point const& Q2 = Point((*vicq)->point().x(), (*vicq)->point().y(), FT(0.0));
-    if ( compute_squared_distance(lP2, Q2) > m_maxSqLength || compute_squared_distance(lR2, Q2) > m_maxSqLength )
-      return std::numeric_limits<double>::infinity();
+    if ( compute_squared_distance(lP2, Q2) > m_maxSqLength || compute_squared_distance(lR2, Q2) > m_maxSqLength ) {
+        return std::numeric_limits<double>::infinity();
+    }
+
 
     // Otherwise, check the cost using 3D distance
     Segment lP_R = construct_segment(lP, lR) ;

@@ -18,6 +18,12 @@ struct BorderVertex {
     double height ;
 
     BorderVertex( const double& c, const double& h ) : coord(c), height(h) {}
+
+    // To be able to sort the vertices by coordinates
+    bool operator < (const BorderVertex& v) const
+    {
+        return (coord < v.coord);
+    }
 };
 
 

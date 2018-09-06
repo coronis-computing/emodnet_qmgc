@@ -13,6 +13,7 @@
 #include "ellipsoid.h"
 #include "tin_creation/tin_creator.h"
 #include <mutex>
+#include "borders_data.h"
 
 namespace fs = boost::filesystem ;
 
@@ -69,11 +70,7 @@ public:
      * this height is the raster-extracted height in meters.
      *
      */
-    QuantizedMeshTile createTile(const ctb::TileCoordinate &coord,
-                                  std::vector<Point_3> &tileEastVertices,
-                                  std::vector<Point_3> &tileWestVertices,
-                                  std::vector<Point_3> &tileNorthVertices,
-                                  std::vector<Point_3> &tileSouthVertices) ;
+    QuantizedMeshTile createTile(const ctb::TileCoordinate &coord, BordersData& bd) ;
 
 
     QMTOptions getOptions() { return m_options; }
@@ -125,10 +122,7 @@ private:
      * @return vector of points in the heightmap
      */
     std::vector<Point_3> getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
-                                                std::vector<Point_3> &tileEastVertices, // Note: these are not const because border vertices are input in tile coordinates, but are output in uvh coordinates
-                                                std::vector<Point_3> &tileWestVertices,
-                                                std::vector<Point_3> &tileNorthVertices,
-                                                std::vector<Point_3> &tileSouthVertices,
+                                                BordersData& bd, // Note: this is not const because border vertices are input in tile coordinates, but are output in uvh coordinates
                                                 float& minHeight, float& maxHeight,
                                                 ctb::CRSBounds& tileBounds) const ;
 

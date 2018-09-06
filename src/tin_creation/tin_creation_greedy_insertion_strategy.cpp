@@ -418,6 +418,12 @@ TinCreationGreedyInsertionStrategy::eval(const Point_3& p, const Triangle_3&t) c
     // Finally, compute the squared distance between the query point and the intersection
     FT sqDist = CGAL::squared_distance(p, *ip);
     FT dist = CGAL::sqrt(sqDist);
+
+    // --- Debug (start) ---
+//    if (dist > 1000)
+//        std::cout << "Distance = " << dist << std::endl;
+    // --- Debug (end) ---
+
     if (p.z() > ip->z())
         dist = -dist;
 

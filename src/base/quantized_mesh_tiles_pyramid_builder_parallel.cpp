@@ -154,9 +154,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
                 // Get constraints at borders from cache
                 BordersData bd;
 //                std::vector<Point_3> tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ;
-                m_bordersCache.getConstrainedBorderVerticesForTile(tp.x, tp.y,
-                                                                   bd.tileEastVertices, bd.tileWestVertices,
-                                                                   bd.tileNorthVertices, bd.tileSouthVertices);
+                m_bordersCache.getConstrainedBorderVerticesForTile(tp.x, tp.y, bd);
 
 //                std::cout << "bd.tileEastVertices.size() = " << bd.tileEastVertices.size() << std::endl;
 //                std::cout << "bd.tileWestVertices.size() = " << bd.tileWestVertices.size() << std::endl;
@@ -299,20 +297,19 @@ bool QuantizedMeshTilesPyramidBuilderParallel::getNextTileToProcess(ctb::TilePoi
 
 
 
-QuantizedMeshTilesPyramidBuilderParallel::BordersData
+BordersData
 QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate& coord,
                                                       const int& numThread,
                                                       const std::string& outDir,
                                                       const BordersData& bd )
 {
-    // Note: Using std::ref(bd) does not work, as we use bd as the future return value...
-    BordersData bdC ;
-    bdC.tileEastVertices = bd.tileEastVertices;
-    bdC.tileWestVertices = bd.tileWestVertices;
-    bdC.tileNorthVertices = bd.tileNorthVertices;
-    bdC.tileSouthVertices = bd.tileSouthVertices;
-    QuantizedMeshTile terrainTile = m_tilers[numThread].createTile( coord, bdC.tileEastVertices, bdC.tileWestVertices,
-                                                                           bdC.tileNorthVertices, bdC.tileSouthVertices ) ;
+    // Note: Using std::ref(bd) does not work, as we use bd as the future return value... So we copy the borders data
+    BordersData bdC(bd) ;
+//    bdC.tileEastVertices = bd.tileEastVertices;
+//    bdC.tileWestVertices = bd.tileWestVertices;
+//    bdC.tileNorthVertices = bd.tileNorthVertices;
+//    bdC.tileSouthVertices = bd.tileSouthVertices;
+    QuantizedMeshTile terrainTile = m_tilers[numThread].createTile(coord, bdC) ;
 
     // Write the file to disk (should be thread safe, as every thread will write to a different file, but we don't risk and use a mutex)
     m_diskWriteMutex.lock();

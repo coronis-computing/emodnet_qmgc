@@ -13,6 +13,7 @@
 #include <iostream>
 #include <vector>
 #include <mutex>
+#include "borders_data.h"
 
 
 
@@ -30,12 +31,7 @@ class QuantizedMeshTilesPyramidBuilderParallel
 
 public:
 
-    struct BordersData {
-        std::vector<Point_3> tileEastVertices ;
-        std::vector<Point_3> tileWestVertices ;
-        std::vector<Point_3> tileNorthVertices ;
-        std::vector<Point_3> tileSouthVertices ;
-    };
+
 
 //    QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
 //                                      const ctb::TilerOptions& options,

@@ -29,20 +29,20 @@ class TinCreationSimplificationPointSet : public TinCreationStrategy
 
 public:
     TinCreationSimplificationPointSet(double borderSimplificationMaxDistance,
-                                      double borderSimplificationMaxLength,
+                                      double borderSimplificationMaxLengthPercent,
                                       unsigned int minFeaturePolylineSize)
             : m_minFeaturePolylineSize(minFeaturePolylineSize)
     {
         m_borderSimpMaxDistPerZoom = std::vector<FT>{borderSimplificationMaxDistance};
-        m_borderSimpMaxLengthPerZoom = std::vector<FT>{borderSimplificationMaxLength};
+        m_borderSimpMaxLengthPercentPerZoom = std::vector<FT>{borderSimplificationMaxLengthPercent};
         setParamsForZoom(0);
     }
 
     TinCreationSimplificationPointSet(const std::vector<double>& borderSimplificationMaxDistance,
-                                      const std::vector<double>& borderSimplificationMaxLength,
+                                      const std::vector<double>& borderSimplificationMaxLengthPercent,
                                       unsigned int minFeaturePolylineSize)
             : m_borderSimpMaxDistPerZoom(borderSimplificationMaxDistance)
-            , m_borderSimpMaxLengthPerZoom(borderSimplificationMaxLength)
+            , m_borderSimpMaxLengthPercentPerZoom(borderSimplificationMaxLengthPercent)
     {
         setParamsForZoom(0);
     }
@@ -85,7 +85,7 @@ public:
 //        }
 
         m_borderSimpMaxDist = standardHandlingOfThresholdPerZoom(m_borderSimpMaxDistPerZoom, zoom);
-        std::cout << "m_borderSimpMaxDist = " << m_borderSimpMaxDist << std::endl;
+//        std::cout << "m_borderSimpMaxDist = " << m_borderSimpMaxDist << std::endl;
 
 //        if (m_borderSimpMaxLengthPerZoom.size() == 0) {
 //            std::cerr << "[WARNING::TinCreationSimplificationPointSet] Input edges count per zoom vector is empty, using 1 (default value)" << std::endl;
@@ -108,7 +108,9 @@ public:
 //            m_borderSimpMaxLength = m_borderSimpMaxLengthPerZoom.back();
 //        }
 
-        m_borderSimpMaxLength = standardHandlingOfThresholdPerZoom(m_borderSimpMaxLengthPerZoom, zoom);
+        m_borderSimpMaxLengthPercent = standardHandlingOfThresholdPerZoom(m_borderSimpMaxLengthPercentPerZoom, zoom);
+        m_borderSimpMaxLengthPercent /= 100.0; // Convert to the range [0..1]
+//        std::cout << "m_borderSimpMaxLengthPercent = " << m_borderSimpMaxLengthPercent << std::endl;
 
         // Set further parameters that are exclusive of each point set simplification strategy using setParamsForZoomConcreteStrategy(zoom); in derived classes
     }
@@ -126,9 +128,9 @@ public:
 private:
     double m_borderSimpMaxDist;
     double m_borderSimpMaxScaledSqDist;
-    double m_borderSimpMaxLength; // We do not scale this length, as it is relative to the XY plane
+    double m_borderSimpMaxLengthPercent; // We do not scale this length, as it is relative to the XY plane
     std::vector<double> m_borderSimpMaxDistPerZoom;
-    std::vector<double> m_borderSimpMaxLengthPerZoom;
+    std::vector<double> m_borderSimpMaxLengthPercentPerZoom;
     unsigned int m_minFeaturePolylineSize ;
     CTXY m_cdt;
 

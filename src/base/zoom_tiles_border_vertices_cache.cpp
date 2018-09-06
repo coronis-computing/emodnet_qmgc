@@ -7,104 +7,177 @@
 
 
 
-bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile( const int& tileX, const int& tileY,
-                                                                        std::vector<Point_3>& easternVerticesToPreserve,
-                                                                        std::vector<Point_3>& westernVerticesToPreserve,
-                                                                        std::vector<Point_3>& northernVerticesToPreserve,
-                                                                        std::vector<Point_3>& southernVerticesToPreserve )
+bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData &bd)
 {
-    easternVerticesToPreserve.clear() ;
-    westernVerticesToPreserve.clear() ;
-    northernVerticesToPreserve.clear() ;
-    southernVerticesToPreserve.clear() ;
+//    bd.tileEastVertices.clear();
+//    bd.tileWestVertices.clear();
+//    bd.tileNorthVertices.clear();
+//    bd.tileSouthVertices.clear();
+
 
     /* Eastern vertices */
     // They come from tile tileX+1, tileY, if exists...
-    std::pair<int,int> tileInd = std::make_pair( tileX+1, tileY ) ;
-    if ( m_mapTileToBorderVertices.count(tileInd) ) {
+    std::pair<int,int> easternTileInd = std::make_pair( tileX+1, tileY ) ;
+    bool easternTileExists = m_mapTileToBorderVertices.count(easternTileInd);
+    if ( easternTileExists ) {
         // ... and from the western border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[tileInd].getWesternVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[easternTileInd].getWesternVertices() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
         {
             Point_3 p( m_tileMaxCoord, it->coord, it->height ) ;
-            easternVerticesToPreserve.push_back(p) ;
+            bd.tileEastVertices.push_back(p) ;
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
-            m_mapTileToBorderVertices.erase(tileInd);
+        if( !m_mapTileToBorderVertices[easternTileInd].isAlive() )
+            m_mapTileToBorderVertices.erase(easternTileInd);
     }
 
     /* Western vertices */
     // They come from tile tileX-1, tileY, if exists...
-    tileInd = std::make_pair( tileX-1, tileY ) ;
-    if ( m_mapTileToBorderVertices.count(tileInd) ) {
+    std::pair<int,int> westernTileInd = std::make_pair( tileX-1, tileY ) ;
+    bool westernTileExists = m_mapTileToBorderVertices.count(westernTileInd);
+    if ( westernTileExists ) {
         // ... and from the eastern border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[tileInd].getEasternVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[westernTileInd].getEasternVertices() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
         {
             Point_3 p( 0.0, it->coord, it->height ) ;
-            westernVerticesToPreserve.push_back(p) ;
+            bd.tileWestVertices.push_back(p) ;
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
-            m_mapTileToBorderVertices.erase(tileInd) ;
+        if( !m_mapTileToBorderVertices[westernTileInd].isAlive() )
+            m_mapTileToBorderVertices.erase(westernTileInd) ;
     }
 
     /* Northern vertices */
     // They come from tile tileX, tileY+1, if exists...
-    tileInd = std::make_pair( tileX, tileY+1 ) ;
-
+    std::pair<int, int> northernTileInd = std::make_pair( tileX, tileY+1 ) ;
+    bool northernTileExists = m_mapTileToBorderVertices.count(northernTileInd);
 //    std::cout << "tileX, tileY-1 = " << tileX << ", " << tileY-1 << std::endl;
 //    std::cout << "tileInd (n) = " << tileInd << std::endl;
-    if ( m_mapTileToBorderVertices.count(tileInd) ) {
+    if ( northernTileExists ) {
 //        std::cout << "Get northern vertices" << std::endl;
 
         // ... and from the southern border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[tileInd].getSouthernVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northernTileInd].getSouthernVertices() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
         {
             Point_3 p( it->coord, m_tileMaxCoord, it->height ) ;
-            northernVerticesToPreserve.push_back(p) ;
+            bd.tileNorthVertices.push_back(p) ;
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
-            m_mapTileToBorderVertices.erase(tileInd);
+        if( !m_mapTileToBorderVertices[northernTileInd].isAlive() )
+            m_mapTileToBorderVertices.erase(northernTileInd);
     }
 
     /* Southern vertices */
     // They come from tile tileX, tileY-1, if exists...
-    tileInd = std::make_pair( tileX, tileY-1 ) ;
+    std::pair<int,int> southernTileInd = std::make_pair( tileX, tileY-1 ) ;
+    bool southernTileExists = m_mapTileToBorderVertices.count(southernTileInd);
 //    std::cout << "tileX, tileY+1 = " << tileX << ", " << tileY+1 << std::endl;
 //    std::cout << "tileInd (s) = " << tileInd << std::endl;
-    if ( m_mapTileToBorderVertices.count(tileInd) ) {
+    if ( southernTileExists ) {
 //        std::cout << "Get southern vertices" << std::endl;
 
         // ... and from the northern border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[tileInd].getNorthernVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southernTileInd].getNorthernVertices() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
         {
             Point_3 p( it->coord, 0.0, it->height ) ;
-            southernVerticesToPreserve.push_back(p) ;
+            bd.tileSouthVertices.push_back(p) ;
         }
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
-        if( !m_mapTileToBorderVertices[tileInd].isAlive() )
-            m_mapTileToBorderVertices.erase(tileInd) ;
+        if( !m_mapTileToBorderVertices[southernTileInd].isAlive() )
+            m_mapTileToBorderVertices.erase(southernTileInd) ;
     }
 
+    // Special cases for the corners of the tile: when the 4-connected neighbors haven't been processed BUT some of the
+    // diagonal neighbors (the rest of neighbors to get to 8-connectivity) have been processed.
+    // In this case, we need to preserve the corresponding corner that overlaps with this tile!
+    if (!northernTileExists && !westernTileExists) {
+        // Check if north-west tile exists
+        std::pair<int, int> northWestTileInd = std::make_pair(tileX-1, tileY+1);
+        if (m_mapTileToBorderVertices.count(northWestTileInd)) {
+//            std::cout << "Using north-west corner" << std::endl;
+
+            // Take the corner, in this case we look for the (0, m_tileMaxCoord) corner of the north-west tile
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northWestTileInd].getSouthernVertices() ;
+            std::sort(borderCoords.begin(), borderCoords.end());
+
+            // Which is the (0.0, m_tileMaxCoord) corner of the current tile
+            bd.northWestCorner = Point_3(0.0, m_tileMaxCoord, borderCoords.rbegin()->height);
+            bd.constrainNorthWestCorner = true;
+
+//            std::cout << "Using bd.northWestCorner = " << bd.northWestCorner << std::endl;
+        }
+    }
+    if (!northernTileExists && !easternTileExists) {
+        // Check if north-east tile exists
+        std::pair<int, int> northEastTileInd = std::make_pair(tileX+1, tileY+1);
+        if (m_mapTileToBorderVertices.count(northEastTileInd)) {
+//            std::cout << "Using north-east corner" << std::endl;
+
+            // Take the corner, in this case we look for the (0, 0) corner of the north-east tile
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northEastTileInd].getSouthernVertices() ;
+            std::sort(borderCoords.begin(), borderCoords.end());
+
+            // Which is the (m_tileMaxCoord, m_tileMaxCoord) corner of the current tile
+            bd.northEastCorner = Point_3(m_tileMaxCoord, m_tileMaxCoord, borderCoords.begin()->height);
+            bd.constrainNorthEastCorner = true;
+
+//            std::cout << "Using bd.northEastCorner = " << bd.northEastCorner << std::endl;
+        }
+    }
+    if (!southernTileExists && !westernTileExists) {
+        // Check if south-west tile exists
+        std::pair<int, int> southWestTileInd = std::make_pair(tileX-1, tileY-1);
+        if (m_mapTileToBorderVertices.count(southWestTileInd)) {
+//            std::cout << "Using south-west corner" << std::endl;
+
+            // Take the corner, in this case we look for the (m_tileMaxCoord, m_tileMaxCoord) corner of the south-west tile
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southWestTileInd].getNorthernVertices() ;
+            std::sort(borderCoords.begin(), borderCoords.end());
+
+            // Which is the (0.0, 0.0) corner of the current tile
+            bd.southWestCorner = Point_3(0.0, 0.0, borderCoords.rbegin()->height);
+            bd.constrainSouthWestCorner = true;
+//
+//            std::cout << "Using bd.southWestCorner = " << bd.southWestCorner << std::endl;
+        }
+    }
+    if (!southernTileExists && !easternTileExists) {
+        // Check if south-west tile exists
+        std::pair<int, int> southEastTileInd = std::make_pair(tileX+1, tileY-1);
+        if (m_mapTileToBorderVertices.count(southEastTileInd)) {
+//            std::cout << "Using south-east corner" << std::endl;
+
+            // Take the corner, in this case we look for the (0, m_tileMaxCoord) corner of the south-east tile
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southEastTileInd].getNorthernVertices() ;
+            std::sort(borderCoords.begin(), borderCoords.end());
+
+            // Which is the (m_tileMaxCoord, 0.0) corner of the current tile
+            bd.southEastCorner = Point_3(m_tileMaxCoord, 0.0, borderCoords.begin()->height);
+            bd.constrainSouthEastCorner = true;
+
+//            std::cout << "Using bd.southEastCorner = " << bd.southEastCorner << std::endl;
+        }
+    }
+
+
     // Mark it as being processed
-    tileInd = std::make_pair( tileX, tileY ) ;
+    std::pair<int, int> tileInd = std::make_pair( tileX, tileY ) ;
     m_tilesBeingProcessed[tileInd] = true ;
 }
 

@@ -134,7 +134,7 @@ public:
 //        }
 
         m_approxTol = standardHandlingOfThresholdPerZoom(m_approxTolPerZoom, zoom);
-        std::cout << "m_approxTol = " << m_approxTol << std::endl;
+//        std::cout << "m_approxTol = " << m_approxTol << std::endl;
     }
 
     Polyhedron create( const std::vector<Point_3>& dataPts,

@@ -10,6 +10,7 @@
 #include <boost/functional/hash.hpp>
 #include "tile_border_vertices.h"
 #include "tin_creation/tin_creation_cgal_types.h"
+#include "borders_data.h"
 
 
 
@@ -59,18 +60,12 @@ public:
      *
      * @param tileX The X coordinate of the tile to construct
      * @param tileY The Y coordinate of the tile to construct
-     * @param easternVerticesToPreserve Eastern vertices to preserve for the next tile to construct
-     * @param westernVerticesToPreserve Western vertices to preserve for the next tile to construct
-     * @param northernVerticesToPreserve Southern vertices to preserve for the next tile to construct
-     * @param southernVerticesToPreserve Northern vertices to preserve for the next tile to construct
+     * @param bd Tile's borders' data to be maintained for this tile based on the info in the cache
      */
-    bool getConstrainedBorderVerticesForTile( const int& tileX, const int& tileY,
-                                              std::vector<Point_3>& easternVerticesToPreserve,
-                                              std::vector<Point_3>& westernVerticesToPreserve,
-                                              std::vector<Point_3>& northernVerticesToPreserve,
-                                              std::vector<Point_3>& southernVerticesToPreserve ) ;
+    bool getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData& bd);
+
     /**
-     * Stores the borders to preserve for a given tile in the cache
+     * Stores the borders to preserve for a given tile in the cache. Note that the eastern/western/northern/southern vectors already include the corners, so we don't set them separately as opposed to getConstrainedBorderVerticesForTile
      *
      * @param tileX The X coordinate of the tile
      * @param tileY The Y coordinate of the tile

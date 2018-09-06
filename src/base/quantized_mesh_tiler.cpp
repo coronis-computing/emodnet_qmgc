@@ -16,12 +16,9 @@
 #include "meshoptimizer/meshoptimizer.h"
 #include "crs_conversions.h"
 #include <sstream>
+#include <gdal.h>
 
-QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord,
-                                                   std::vector<Point_3> &tileEastVertices,
-                                                   std::vector<Point_3> &tileWestVertices,
-                                                   std::vector<Point_3> &tileNorthVertices,
-                                                   std::vector<Point_3> &tileSouthVertices )
+QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord, BordersData& bd)
 {
     // Get a terrain tile represented by the tile coordinate
     QuantizedMeshTile qmTile(coord, m_options.RefEllipsoid );
@@ -29,9 +26,7 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 
     float minHeight, maxHeight ;
     ctb::CRSBounds tileBounds ;
-    std::vector<Point_3 > uvhPts = getUVHPointsFromRaster(coord,
-                                                          tileEastVertices, tileWestVertices,
-                                                          tileNorthVertices, tileSouthVertices,
+    std::vector<Point_3 > uvhPts = getUVHPointsFromRaster(coord, bd,
                                                           minHeight, maxHeight, tileBounds );
 
 //    std::cout << "UV = [ " << std::endl;
@@ -120,7 +115,7 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 
     // Simplify the surface
     //simplifySurface(surface, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
-    Polyhedron surface = m_tinCreator.create(uvhPts, tileEastVertices.size() > 0, tileWestVertices.size() > 0, tileNorthVertices.size() > 0, tileSouthVertices.size() > 0) ;
+    Polyhedron surface = m_tinCreator.create(uvhPts, bd.tileEastVertices.size() > 0, bd.tileWestVertices.size() > 0, bd.tileNorthVertices.size() > 0, bd.tileSouthVertices.size() > 0) ;
     //Polyhedron surface = m_tinCreator.create(uvhPts, true, true, true, true) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
@@ -131,7 +126,7 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
     computeQuantizedMeshHeader( qmTile, surface, minHeight, maxHeight, tileBounds ) ;
 
     // ...and the QuantizedMesh geometry
-    computeQuantizedMeshGeometry( qmTile, surface, minHeight, maxHeight, tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices) ;
+    computeQuantizedMeshGeometry( qmTile, surface, minHeight, maxHeight, bd.tileEastVertices, bd.tileWestVertices, bd.tileNorthVertices, bd.tileSouthVertices) ;
 
 //    std::cout << "EasternConstraint2 = [ " << std::endl;
 //    for (std::vector<Point_3>::iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it) {
@@ -166,12 +161,9 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 
 
 std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
-                                                                std::vector<Point_3> &tileEastVertices,
-                                                                std::vector<Point_3> &tileWestVertices,
-                                                                std::vector<Point_3> &tileNorthVertices,
-                                                                std::vector<Point_3> &tileSouthVertices,
-                                                                float& minHeight, float& maxHeight,
-                                                                ctb::CRSBounds& tileBounds ) const
+                                                                             BordersData& bd,
+                                                                             float& minHeight, float& maxHeight,
+                                                                             ctb::CRSBounds& tileBounds ) const
 {
     m_mutex.lock() ;
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
@@ -183,11 +175,15 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
 //    std::cout << "Pixel size = " << adfGeoTransform[1] << ", " << adfGeoTransform[5] << std::endl;
 
     double noDataValue = heightsBand->GetNoDataValue();
-    double resolution;
+//    std::cout << "noDataValue = " << noDataValue << std::endl;
+    double resolution                                                                                                               ;
     tileBounds = terrainTileBounds(coord, resolution);
 
     // Copy the raster data into an array
     float rasterHeights[m_options.HeighMapSamplingSteps * m_options.HeighMapSamplingSteps];
+//    GDALRasterIOExtraArg args;
+//    INIT_RASTERIO_EXTRA_ARG(args);
+//    args.eResampleAlg = GRIORA_Bilinear;
     if (heightsBand->RasterIO(GF_Read, 0, 0, 256, 256,
                               (void *) rasterHeights,
                               m_options.HeighMapSamplingSteps, m_options.HeighMapSamplingSteps,
@@ -204,10 +200,10 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
 
     // Check the start of the rasters: if there are constrained vertices from neighboring tiles to maintain,
     // the western and/or the southern vertices are not touched, and thus we should parse the raster starting from index 1
-    bool constrainEastVertices = tileEastVertices.size() > 0 ;
-    bool constrainWestVertices = tileWestVertices.size() > 0 ;
-    bool constrainNorthVertices = tileNorthVertices.size() > 0 ;
-    bool constrainSouthVertices = tileSouthVertices.size() > 0 ;
+    bool constrainEastVertices = bd.tileEastVertices.size() > 0 ;
+    bool constrainWestVertices = bd.tileWestVertices.size() > 0 ;
+    bool constrainNorthVertices = bd.tileNorthVertices.size() > 0 ;
+    bool constrainSouthVertices = bd.tileSouthVertices.size() > 0 ;
 
     int startX = constrainWestVertices? 1: 0 ;
     int endX = constrainEastVertices? m_options.HeighMapSamplingSteps-1: m_options.HeighMapSamplingSteps ;
@@ -217,12 +213,26 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
     // Add the vertices from the raster
     for ( int i = startX; i < endX; i++ ) {
         for (int j = startY; j < endY; j++) {
-            int y = m_options.HeighMapSamplingSteps - 1 - j; // y coordinate within the tile.
+            // y coordinate within the tile
+            int y = m_options.HeighMapSamplingSteps - 1 - j;
+
+            // Skip special cases where we are at the corners, and the height was already computed
+            if (i == 0 && y == 0 && bd.useSouthWestCorner() ||
+                i == 0 && y == m_options.HeighMapSamplingSteps-1 && bd.useNorthWestCorner() ||
+                i == m_options.HeighMapSamplingSteps-1 && y == m_options.HeighMapSamplingSteps-1 && bd.useNorthEastCorner() ||
+                i == m_options.HeighMapSamplingSteps-1 && y == 0 && bd.useSouthEastCorner())
+                continue;
+
             // Note that the heights in RasterIO have the origin in the upper-left corner,
             // while the tile has it in the lower-left. Obviously, x = i
 
-            // Height value
+            // Compute the height value
             float height = rasterHeights[j * m_options.HeighMapSamplingSteps + i];
+
+//            if (fabs(height) > 10000 && height != noDataValue)
+//                std::cout << "height = " << height << std::endl;
+//            if (fabs(height) > 10000)
+//                height = 0;
 
             // Clipping
             height = clip( height, m_options.ClippingLowValue, m_options.ClippingHighValue ) ;
@@ -239,29 +249,42 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
             heightMapPoints.push_back(Point_3(i, y, height));
         }
     }
-    // Also, add the vertices to preserve from neighboring tiles
+    // Also, add the vertices to preserve from neighboring tiles ...
     if ( constrainEastVertices ) {
-        for ( std::vector<Point_3>::const_iterator it = tileEastVertices.begin(); it != tileEastVertices.end(); ++it ) {
+        for ( std::vector<Point_3>::const_iterator it = bd.tileEastVertices.begin(); it != bd.tileEastVertices.end(); ++it ) {
             // In heightmap format
             heightMapPoints.push_back(*it);
         }
     }
     if ( constrainWestVertices ) {
-        for ( std::vector<Point_3>::const_iterator it = tileWestVertices.begin(); it != tileWestVertices.end(); ++it ) {
+        for ( std::vector<Point_3>::const_iterator it = bd.tileWestVertices.begin(); it != bd.tileWestVertices.end(); ++it ) {
             // In heightmap format
             heightMapPoints.push_back(*it);
         }
     }
     if ( constrainNorthVertices ) {
-        for ( std::vector<Point_3>::const_iterator it = tileNorthVertices.begin(); it != tileNorthVertices.end(); ++it ) {
+        for ( std::vector<Point_3>::const_iterator it = bd.tileNorthVertices.begin(); it != bd.tileNorthVertices.end(); ++it ) {
             // In heightmap format
             heightMapPoints.push_back(*it);
         }
     }
     if ( constrainSouthVertices ) {
-        for ( std::vector<Point_3>::const_iterator it = tileSouthVertices.begin(); it != tileSouthVertices.end(); ++it ) {
+        for ( std::vector<Point_3>::const_iterator it = bd.tileSouthVertices.begin(); it != bd.tileSouthVertices.end(); ++it ) {
             heightMapPoints.push_back(*it);
         }
+    }
+    // .. and the corners, if not already added above
+    if (bd.useSouthWestCorner()) {
+        heightMapPoints.push_back(bd.southWestCorner);
+    }
+    if (bd.useSouthEastCorner()) {
+        heightMapPoints.push_back(bd.southEastCorner);
+    }
+    if (bd.useNorthWestCorner()) {
+        heightMapPoints.push_back(bd.northWestCorner);
+    }
+    if (bd.useNorthEastCorner()) {
+        heightMapPoints.push_back(bd.northEastCorner);
     }
 
     // Compute min/max height
@@ -275,7 +298,10 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
             maxHeight = it->z();
     }
 
-    // Encode the points extracted from the raster in u/v/height values in the range [0..1]
+//    std::cout << "minHeight = " << minHeight << std::endl;
+//    std::cout << "maxHeight = " << maxHeight << std::endl;
+
+            // Encode the points extracted from the raster in u/v/height values in the range [0..1]
     // We simplify the mesh in u/v/h format because they are normalized values and the surface will be better
     // conditioned for simplification
     std::vector< Point_3 > uvhPts ;

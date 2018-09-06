@@ -80,10 +80,11 @@ def main():
     # Further options to be passed to qm_tiler
     further_options = " " + param.qm_tiler_params + " "
 
-    # Create the tiles of the terrain for the highest zoom levels (without intermediate tiffs)
-    cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.start_zoom) + " --end-zoom " + str(param.start_zoom_tiff) + " " + further_options + param.input_file
-    print cmd
-    os.system(cmd)
+    # Create the tiles of the terrain for the deepest zoom levels (without intermediate tiffs)
+    if param.start_zoom > param.start_zoom_tiff:
+        cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.start_zoom) + " --end-zoom " + str(param.start_zoom_tiff-1) + " " + further_options + param.input_file
+        print cmd
+        os.system(cmd)
 
     # Create the tiles of the terrain for the selected zooms using a base of tiff tiles of a deeper zoom in the pyramid
     for i in xrange(param.start_zoom_tiff+1, param.end_zoom_tiff, -1):
