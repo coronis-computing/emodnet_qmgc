@@ -69,7 +69,7 @@ int main ( int argc, char **argv)
     std::string inputFile, outDir, tinCreationStrategy, schedulerType, debugDir, configFile, greedyErrorType;
     int startZoom, endZoom;
     double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize;
-    float clippingHighValue, clippingLowValue;
+    float clippingHighValue, clippingLowValue, belowSeaLevelScaleFactor, aboveSeaLevelScaleFactor;
     int heighMapSamplingSteps, greedyInitGridSize;
     unsigned int psWlopIterNumber, psMinFeaturePolylineSize;
     int numThreads = 0 ;
@@ -90,6 +90,8 @@ int main ( int argc, char **argv)
             ( "samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify." )
             ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold." )
             ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
+            ( "above-sea-level-scale-factor", po::value<float>(&aboveSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings above sea level (ignored if < 0)" )
+            ( "below-sea-level-scale-factor", po::value<float>(&belowSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings below sea level (ignored if < 0)" )
             ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)" )
             ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
             ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random (see documentation for further information)" )
@@ -179,6 +181,8 @@ int main ( int argc, char **argv)
         qmtOptions.HeighMapSamplingSteps = heighMapSamplingSteps;
         qmtOptions.ClippingHighValue = clippingHighValue;
         qmtOptions.ClippingLowValue = clippingLowValue;
+        qmtOptions.AboveSeaLevelScaleFactor = aboveSeaLevelScaleFactor;
+        qmtOptions.BelowSeaLevelScaleFactor = belowSeaLevelScaleFactor;
 
         // Setup the TIN creator
         TinCreator tinCreator;

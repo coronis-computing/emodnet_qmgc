@@ -35,6 +35,8 @@ public:
         int HeighMapSamplingSteps = 256 ;               // Maximum!
         float ClippingHighValue = std::numeric_limits<float>::infinity() ; // Maximum value allowed on the raster, clip values if larger
         float ClippingLowValue = -std::numeric_limits<float>::infinity() ; // Minimum value allowed on the raster, clip values if smaller
+        float AboveSeaLevelScaleFactor = -1;    // Scale factor to apply to the readings above sea level (ignored if < 0)
+        float BelowSeaLevelScaleFactor = -1;    // Scale factor to apply to the readings below sea level (ignored if < 0)
     };
 
     // --- Methods ---

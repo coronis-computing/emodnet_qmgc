@@ -245,6 +245,14 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
             if ( m_options.IsBathymetry )
                 height = -height ;
 
+            // Apply scales
+            if (height < 0 && m_options.BelowSeaLevelScaleFactor > 0) {
+                height *= m_options.BelowSeaLevelScaleFactor;
+            }
+            else if (height > 0 && m_options.AboveSeaLevelScaleFactor > 0) {
+                height *= m_options.AboveSeaLevelScaleFactor;
+            }
+
             // In heightmap format
             heightMapPoints.push_back(Point_3(i, y, height));
         }
