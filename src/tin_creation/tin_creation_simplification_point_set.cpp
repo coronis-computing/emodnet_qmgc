@@ -6,7 +6,10 @@
 #include <CGAL/convex_hull_2.h>
 #include <CGAL/Triangulation_conformer_2.h>
 #include "cgal/polyhedron_builder_from_projected_triangulation.h"
-#include "cgal/Polyhedral_mesh_domain_with_features_3_extended.h"
+//#include "cgal/Polyhedral_mesh_domain_with_features_3_extended.h"
+// Project-related
+#include "cgal/detect_sharp_edges_without_borders.h"
+#include "cgal/extract_polylines_from_sharp_edges.h"
 #include "cgal/extract_tile_borders_from_polyhedron.h"
 #include "cgal/cgal_utils.h"
 #include "crs_conversions.h"
@@ -143,21 +146,37 @@ imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintai
     else
         polylinesToMaintain.push_back(southernBorderVertices);
 
+    // ------------------------------------------------------------- (uncomment when the detection of polylines is properly implemented)
     // Detect non-border feature polylines
-    std::vector<Polyhedron*> polyPtrsVector(1, &surface);
-    typedef CGAL::Polyhedral_mesh_domain_with_features_3_extended<K>         MeshDomainExt;
-    MeshDomainExt domain(polyPtrsVector.begin(), polyPtrsVector.end());
-//    Polylines pls = detect_features_without_border<Polyhedron>(surface, FT(60.0));
-    Polylines featurePolylines = domain.extract_features_without_borders(60.0, surface);
+//    std::vector<Polyhedron*> polyPtrsVector(1, &surface);
+//    typedef CGAL::Polyhedral_mesh_domain_with_features_3_extended<K>         MeshDomainExt;
+//    MeshDomainExt domain(polyPtrsVector.begin(), polyPtrsVector.end());
+////    Polylines pls = detect_features_without_border<Polyhedron>(surface, FT(60.0));
+//    Polylines featurePolylines = domain.extract_features_without_borders(60.0, surface);
+//
+//    // Filter small polylines (in terms of its number of points)
+//    featurePolylines.erase(std::remove_if(featurePolylines.begin(), featurePolylines.end(),
+//                                          [this](const Polyline& pl){return pl.size() < this->m_minFeaturePolylineSize;}),
+//                           featurePolylines.end()) ;
+//
+//    for ( Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it ) {
+//        m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+//    }
 
-    // Filter small polylines (in terms of its number of points)
-    featurePolylines.erase(std::remove_if(featurePolylines.begin(), featurePolylines.end(),
-                                          [this](const Polyline& pl){return pl.size() < this->m_minFeaturePolylineSize;}),
-                           featurePolylines.end()) ;
+    // -------------------------------------------------------------
 
-    for ( Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it ) {
-        m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
-    }
+    // Create a property map storing if an edge is sharp or not (since the Polyhedron_3 does not have internal property_maps creation, we use a map container within a boost::associative_property_map)
+    typedef typename boost::graph_traits<Polyhedron>::edge_descriptor edge_descriptor;
+    typedef typename std::map<edge_descriptor, bool> EdgeIsSharpMap;
+    typedef typename boost::associative_property_map<EdgeIsSharpMap> EdgeIsSharpPropertyMap;
+    EdgeIsSharpPropertyMap eisMap;
+
+    // Detect sharp edges
+    detect_sharp_edges_without_borders<Polyhedron, double, EdgeIsSharpPropertyMap, K>(surface, FT(60.0), eisMap);
+
+    // Trace the polylines from the detected edges
+    Polylines featurePolylines;
+    extract_polylines_from_sharp_edges(surface, eisMap, featurePolylines);
 
 //    int i = 1 ;
 //    for (Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it, i++ ) {
@@ -167,7 +186,9 @@ imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintai
 //        std::cout << "];" << std::endl ;
 //    }
 
-
+    for ( Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it ) {
+        m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+    }
 
 //    std::cout << "Number of feature Polylines = " << featurePolylines.size() << std::endl ;
 

@@ -84,9 +84,7 @@ private:
 
 };
 
-
 } // namespace Polyline_simplification_2
-
 
 } //namespace CGAL
 

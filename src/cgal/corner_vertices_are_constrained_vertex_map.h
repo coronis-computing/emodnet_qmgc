@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu)
+// Created by Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_CORNER_VERTICES_ARE_CONSTRAINED_VERTEX_MAP_H

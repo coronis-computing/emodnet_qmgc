@@ -103,7 +103,7 @@ int main( int argc, char** argv )
 
     cout << "- Reading input file..." ;
     is >> surface_mesh  ;
-    cout << "done." << endl ;
+    cout << " done." << endl ;
 
     Surface_mesh::Property_map<halfedge_descriptor,std::pair<Point_3, Point_3> > constrained_halfedges;
 
@@ -153,7 +153,7 @@ int main( int argc, char** argv )
     cout << "- Saving output file..." << flush ;
     std::ofstream os( outputFile ) ;
         os << surface_mesh ;
-    cout << "done." << endl ;
+    cout << " done." << endl ;
 
     // Check the
     if ( constrainVertices ) {

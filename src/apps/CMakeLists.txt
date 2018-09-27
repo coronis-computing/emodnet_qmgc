@@ -32,7 +32,7 @@ target_link_libraries(qm_tiler TinCreation
                                ${CGAL_LIBRARIES}
                                ${GDAL_LIBRARY})
 
-add_executable(dem2tin dem2tin.cpp)
+add_executable(dem2tin dem2tin.cpp ../cgal/detect_sharp_edges_without_borders.h ../cgal/extract_polylines_from_sharp_edges.h)
 #        ../TinCreation/tin_creation_delaunay_strategy.cpp
 #        ../TinCreation/tin_creation_simplification_lindstrom_turk_strategy.cpp
 #        ../TinCreation/tin_creation_remeshing_strategy.cpp
