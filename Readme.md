@@ -17,13 +17,19 @@ Also, Python is required to run the scripts provided.
 
 ## Compilation
 
-This project uses the typical cmake pipeline. Thus, assuming that all the libraries listed above are installed:
+This project uses the typical cmake pipeline. Thus, assuming that all the libraries listed above are installed, it should be as easy as:
 
 ```
 mkdir build
 cd build
 cmake ..
 make
+```
+
+Optionally, you can create the documentation using:
+
+```
+make doc
 ```
 
 ## Tools
@@ -100,9 +106,7 @@ ERROR 1: IReadBlock failed at X offset 0, Y offset 0
 terminate called after throwing an instance of 'ctb::CTBException'
 ```
     
-* If the case above raises, there are two solutions: 
-    * Create overviews of the data using the gdaladdo command: https://www.gdal.org/gdaladdo.html.
-    * Use the provided `qm_tiler_large_images.py` python script, which basically automates the solution proposed in Cesium Terrain Builder's documentation (https://github.com/geo-data/cesium-terrain-builder). 
+* If the case above raises, you can use the provided `qm_tiler_large_images.py` python script, which basically automates the solution proposed in Cesium Terrain Builder's documentation (https://github.com/geo-data/cesium-terrain-builder). 
 
 ## Acknowledgements
 

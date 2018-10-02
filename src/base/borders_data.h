@@ -15,18 +15,18 @@ struct BordersData
 {
     typedef TinCreation::Point_3 Point_3;
 
-    std::vector<Point_3> tileEastVertices;
-    std::vector<Point_3> tileWestVertices;
-    std::vector<Point_3> tileNorthVertices;
-    std::vector<Point_3> tileSouthVertices;
-    bool constrainNorthWestCorner;
-    bool constrainNorthEastCorner;
-    bool constrainSouthWestCorner;
-    bool constrainSouthEastCorner;
-    Point_3 northWestCorner;
-    Point_3 northEastCorner;
-    Point_3 southWestCorner;
-    Point_3 southEastCorner;
+    std::vector<Point_3> tileEastVertices; //!< Vertices to maintain for the eastern border of the tile
+    std::vector<Point_3> tileWestVertices; //!< Vertices to maintain for the western border of the tile
+    std::vector<Point_3> tileNorthVertices; //!< Vertices to maintain for the northern border of the tile
+    std::vector<Point_3> tileSouthVertices; //!< Vertices to maintain for the southern border of the tile
+    bool constrainNorthWestCorner; //!< Flag indicating whether the north-west corner should be constrained
+    bool constrainNorthEastCorner; //!< Flag indicating whether the north-east corner should be constrained
+    bool constrainSouthWestCorner; //!< Flag indicating whether the south-west corner should be constrained
+    bool constrainSouthEastCorner; //!< Flag indicating whether the north-east corner should be constrained
+    Point_3 northWestCorner; //!< The north-west corner to maintain (if constrainNorthWestCorner is set)
+    Point_3 northEastCorner; //!< The north-east corner to maintain (if constrainNorthEastCorner is set)
+    Point_3 southWestCorner; //!< The south-west corner to maintain (if constrainSouthWestCorner is set)
+    Point_3 southEastCorner; //!< The south-east corner to maintain (if constrainSouthEastCorner is set)
 
     /**
      * @brief Default constructor
@@ -47,6 +47,7 @@ struct BordersData
 
     /**
      * @brief Copy constructor
+     * @param bd BordersData structure to copy
      */
     BordersData(const BordersData& bd) {
         tileEastVertices = bd.tileEastVertices;

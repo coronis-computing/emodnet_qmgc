@@ -19,7 +19,6 @@ Byte GZipFileReader::readByte()
 
 
 
-//! Skips a given number of bytes
 void GZipFileReader::skipBytes( int numBytes ) {
     for ( int i = 0; i < numBytes; i++ ) {
         this->readByte() ;

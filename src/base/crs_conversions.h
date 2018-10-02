@@ -8,8 +8,17 @@
 #include <math.h>
 
 // Coordinate Reference System conversions
-namespace crs_conversions {
-
+namespace crs_conversions
+{
+    /**
+     * @brief Converts from Latitude Longitude to Earth-Centered Earth-Fixed coordinates
+     * @param lat Latitude (in degrees)
+     * @param lon Longitude (in degrees)
+     * @param h Height (in meters)
+     * @param x Earth-Centered Earth-Fixed X
+     * @param y Earth-Centered Earth-Fixed Y
+     * @param z Earth-Centered Earth-Fixed Z
+     */
     void llh2ecef( const double& lat, const double& lon, const double& h,
                    double& x, double& y, double& z )
     {
@@ -27,6 +36,15 @@ namespace crs_conversions {
         z = ( n*(1 - wgs84_e2 ) + h )*sin( latRad );   //ECEF z
     }
 
+    /**
+     * @brief Converts from Earth-Centered Earth-Fixed to Latitude Longitude coordinates
+     * @param x Earth-Centered Earth-Fixed X
+     * @param y Earth-Centered Earth-Fixed Y
+     * @param z Earth-Centered Earth-Fixed Z
+     * @param lat Latitude (in degrees)
+     * @param lon Longitude (in degrees)
+     * @param h Height (in meters)
+     */
     void ecef2llh( const double& x, const double& y, const double& z,
                    double& lat, double& lon, double& h )
     {
@@ -50,8 +68,6 @@ namespace crs_conversions {
         lon *= 180./M_PI;
         lat *= 180./M_PI;
     }
-
-
 };
 
 #endif // EMODNET_TOOLS_CRS_CONVERSIONS_H

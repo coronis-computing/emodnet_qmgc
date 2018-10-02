@@ -11,7 +11,10 @@
 #include "cgal/cgal_utils.h"
 #include <ctb.hpp>
 
-
+/**
+ * @class
+ * @brief Contains all the data of a Quantized-mesh
+ */
 class QuantizedMesh {
 
 public:
@@ -19,72 +22,72 @@ public:
     // (https://cesiumjs.org/data-and-assets/terrain/formats/quantized-mesh-1.0.html)
     struct Header
     {
-        // The center of the tile in Earth-centered Fixed coordinates.
-        double CenterX;
-        double CenterY;
-        double CenterZ;
+        // The center of the tile in Earth-centered Earth-Fixed coordinates
+        double CenterX; //!< Center of the tile in Earth-centered Earth-Fixed, coordinate X
+        double CenterY; //!< Center of the tile in Earth-centered Earth-Fixed, coordinate Y
+        double CenterZ; //!< Center of the tile in Earth-centered Earth-Fixed, coordinate Z
 
         // The minimum and maximum heights in the area covered by this tile.
         // The minimum may be lower and the maximum may be higher than
         // the height of any vertex in this tile in the case that the min/max vertex
         // was removed during mesh simplification, but these are the appropriate
         // values to use for analysis or visualization.
-        float MinimumHeight;
-        float MaximumHeight;
+        float MinimumHeight; //!< Minimum height possible for this tile
+        float MaximumHeight; //!< Maximum height possible for this tile
 
         // The tile’s bounding sphere.  The X,Y,Z coordinates are again expressed
         // in Earth-centered Fixed coordinates, and the radius is in meters.
-        double BoundingSphereCenterX;
-        double BoundingSphereCenterY;
-        double BoundingSphereCenterZ;
-        double BoundingSphereRadius;
+        double BoundingSphereCenterX; //!< Center of the bounding sphere of the tile in Earth-centered Earth-Fixed, coordinate X
+        double BoundingSphereCenterY; //!< Center of the bounding sphere of the tile in Earth-centered Earth-Fixed, coordinate Y
+        double BoundingSphereCenterZ; //!< Center of the bounding sphere of the tile in Earth-centered Earth-Fixed, coordinate Z
+        double BoundingSphereRadius;  //!< Radius of the bounding sphere of the tile in meters
 
         // The horizon occlusion point, expressed in the ellipsoid-scaled Earth-centered Fixed frame.
         // If this point is below the horizon, the entire tile is below the horizon.
         // See http://cesiumjs.org/2013/04/25/Horizon-culling/ for more information.
-        double HorizonOcclusionPointX;
-        double HorizonOcclusionPointY;
-        double HorizonOcclusionPointZ;
+        double HorizonOcclusionPointX; //!< X coordinate of the horizon occlusion point of the tile
+        double HorizonOcclusionPointY; //!< Y coordinate of the horizon occlusion point of the tile
+        double HorizonOcclusionPointZ; //!< Z coordinate of the horizon occlusion point of the tile
     };
 
     struct VertexData
     {
-        unsigned int vertexCount = 0;
-        std::vector<unsigned short> u ;
-        std::vector<unsigned short> v ;
-        std::vector<unsigned short> height ;
+        unsigned int vertexCount = 0; //!< Number of vertices
+        std::vector<unsigned short> u; //!< U coordinate of the vertex
+        std::vector<unsigned short> v; //!< v coordinate of the vertex
+        std::vector<unsigned short> height; //!< height coordinate of the vertex
     };
 
     struct IndexData
     {
-        unsigned int triangleCount ;
-        std::vector< unsigned int > indices ; // While they can be ints or shorts, we store them as ints
+        unsigned int triangleCount ; //!< Number of triangles in the tile
+        std::vector< unsigned int > indices ; //!< Indices of the triangles in the tile, size triangleCount*3. While they can be ints or shorts, we store them as ints
     };
 
     struct EdgeIndices
     {
-        unsigned int westVertexCount ;
-        std::vector<unsigned int> westIndices ;
+        unsigned int westVertexCount; //!< Number of vertices in the western border of the tile
+        std::vector<unsigned int> westIndices; //!< The indices of the vertices falling in the western border of the tile
 
-        unsigned int southVertexCount ;
-        std::vector<unsigned int> southIndices ;
+        unsigned int southVertexCount; //!< Number of vertices in the southern border of the tile
+        std::vector<unsigned int> southIndices; //!< The indices of the vertices falling in the southern border of the tile
 
-        unsigned int eastVertexCount;
-        std::vector<unsigned int> eastIndices ;
+        unsigned int eastVertexCount; //!< Number of vertices in the eastern border of the tile
+        std::vector<unsigned int> eastIndices; //!< The indices of the vertices falling in the eastern border of the tile
 
-        unsigned int northVertexCount;
-        std::vector<unsigned int> northIndices ;
+        unsigned int northVertexCount; //!< Number of vertices in the northern border of the tile
+        std::vector<unsigned int> northIndices; //!< The indices of the vertices falling in the northern border of the tile
     };
 
     struct VertexNormals
     {
-        std::vector<float> nx ;
-        std::vector<float> ny ;
-        std::vector<float> nz ;
+        std::vector<float> nx; //!< X coordinate of the normal
+        std::vector<float> ny; //!< Y coordinate of the normal
+        std::vector<float> nz; //!< Z coordinate of the normal
     };
 
     struct WaterMask {
-        std::vector<unsigned char> mask ; // Can be either a single value or 256x256
+        std::vector<unsigned char> mask ; //!< Water mask. Can be either a single value or 256x256
     };
 
     enum ExtensionIds {OCT_VERTEX_NORMALS = 1, WATER_MASK = 2};
@@ -224,11 +227,12 @@ private:
         }
     }
 
+    /// Returns -1 if negative, 1 otherwise
     inline float sign(float v) {
         return (v < 0.0f) ? -1.0f : 1.0f;
     }
 
-    ///
+    /// Decodes an unsigned char to a float (previously coded with float2uchar)
     float uchar2float( unsigned char u ) {
         return float(clamp(int(8) * (1.0f / float((uint64_t(1) << 7) - 1)), -1.0f, 1.0f));
     }
@@ -238,7 +242,7 @@ private:
         return (unsigned char)round(clamp(f, -1.0f, 1.0f) * ((uint64_t(1) << 7) - 1));
     }
 
-    // Clamps a value between low and hi limits
+    /// Clamps a value between low and hi limits
     inline float clamp(float val, float low, float hi) {
         if (val <= low) {
             return low;

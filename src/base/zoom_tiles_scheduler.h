@@ -7,9 +7,20 @@
 
 #include <ctb.hpp>
 
-// Note: this set of classes implement a Strategy Pattern
-
-// Strategy (algorithm interphase)
+/**
+ * @class ZoomTilesSchedulerStrategy
+ *
+ * An instance of a ZoomTilesSchedulerStrategy rules the desired order at which tiles in a given zoom should be processed (see derived classes for concrete strategies).
+ *
+ * Note that the order in this schedule will only be the actual order in which the tiles will be processed when using a single processing thread.
+ *
+ * When processing in parallel (numThreads > 1), the schedule will only be a "preferred order", since the tiles that can be processed at a given moment depend on the tiles being processed in the other threads.
+ * That is, when a tile is being processed, it prevents all its neighbors in an 8-connected vicinity from start processing. In those cases, the builder will select the closest one in the list of the scheduler that can be executed. Those which could not be executed are put on a waiting list, and they are processed as soon as possible.
+ *
+ * While a complete analysis of the implications of the parameters has not been performed, keep in mind that the number of threads used and the preferred order selected will have consequences on both the number of tiles that need to be stored in the cache to maintain already-built borders and the number of processes that can be spawned at a given moment during the execution of the pyramid builder.
+ *
+ * Note: this class is the algorithm interphase of an Strategy pattern.
+ */
 class ZoomTilesSchedulerStrategy
 {
 public:

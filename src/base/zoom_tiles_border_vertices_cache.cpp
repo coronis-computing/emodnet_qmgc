@@ -21,7 +21,7 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
     bool easternTileExists = m_mapTileToBorderVertices.count(easternTileInd);
     if ( easternTileExists ) {
         // ... and from the western border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[easternTileInd].getWesternVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[easternTileInd].getWesternVerticesAndDecreaseLife() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
@@ -41,7 +41,7 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
     bool westernTileExists = m_mapTileToBorderVertices.count(westernTileInd);
     if ( westernTileExists ) {
         // ... and from the eastern border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[westernTileInd].getEasternVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[westernTileInd].getEasternVerticesAndDecreaseLife() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
@@ -65,7 +65,7 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
 //        std::cout << "Get northern vertices" << std::endl;
 
         // ... and from the southern border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northernTileInd].getSouthernVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northernTileInd].getSouthernVerticesAndDecreaseLife() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
@@ -89,7 +89,7 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
 //        std::cout << "Get southern vertices" << std::endl;
 
         // ... and from the northern border of the previously-computed tile
-        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southernTileInd].getNorthernVertices() ;
+        std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southernTileInd].getNorthernVerticesAndDecreaseLife() ;
 
         // Conversion to 3D points
         for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
@@ -282,7 +282,7 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile( const in
 bool ZoomTilesBorderVerticesCache::canTileStartProcessing( const int& tileX, const int& tileY )
 {
     // Check that the 8! neighbors are either visited or not being processed
-    std::vector<std::pair<int,int>> eightConnNeigh ;
+    std::vector<std::pair<int,int>> eightConnNeigh;
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX+1, tileY-1));
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX+1, tileY+1));
     eightConnNeigh.emplace_back(std::pair<int,int>(tileX-1, tileY-1));
@@ -297,5 +297,5 @@ bool ZoomTilesBorderVerticesCache::canTileStartProcessing( const int& tileX, con
 //        if (isTileInBounds(*it) && !isTileVisited(*it) && isTileBeingProcessed(*it))
             return false;
     }
-    return true ;
+    return true;
 }

@@ -20,9 +20,9 @@
 /**
  * @class
  *
- * Contains the logic to create the pyramid of tiles for the quantized mesh format.
+ * Contains the logic to create the pyramid of tiles in quantized mesh format.
  * Since the quantized mesh format requires coherence between neighboring tiles, this class is the responsible
- * of maintaining this coherence and build the tiles by taking into account already built tiles.
+ * of maintaining this coherence and schedule the building of tiles by taking into account the ones already built.
  */
 class QuantizedMeshTilesPyramidBuilderParallel
 {
@@ -30,8 +30,6 @@ class QuantizedMeshTilesPyramidBuilderParallel
     typedef typename TinCreation::Point_3 Point_3;
 
 public:
-
-
 
 //    QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
 //                                      const ctb::TilerOptions& options,
@@ -46,9 +44,6 @@ public:
 
     QuantizedMeshTilesPyramidBuilderParallel(const std::vector<QuantizedMeshTiler>& qmTilers,
                                              const ZoomTilesScheduler& scheduler);
-
-//
-//    ~QuantizedMeshTilesPyramidBuilderParallel() ;
 
     /**
      * @brief Creates the tile pyramid in quantized-mesh format
@@ -66,13 +61,22 @@ public:
     void createTmsPyramidUnconstrainedBorders(const int &startZoom, const int &endZoom, const std::string &outDir, const std::string &debugDir = std::string("")) ;
 
     /**
-     * @brief Check that the tile folder (zoom/x) exists, and creates it otherwise.
+     * @brief Check if the tile folder (zoom/x) exists, and creates it otherwise.
      *
      * @return The path of the tile's file.
      */
     static std::string getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
                                                  const std::string &mainOutDir ) ;
 
+    /**
+     * @brief Create the required tile, in the given thread, and with the given data at the borders to maintain.
+     * The result is an output tile file created, and an updated BorderData structure with the data to maintain for neighboring tiles to be created.
+     * @param coord The tile coordinates
+     * @param numThread The thread number where the process will take place
+     * @param outDir The output directory where the output tile file will be generated
+     * @param bd The BordersData structure input. It contains the data to preserve at the borders as a result of previously generated tiles.
+     * @return It returns the data at the borders to be maintained for neighboring tiles to be generated in the future (i.e., what was already restricted in \p bd, plus the new borders created).
+     */
     BordersData createTile( const ctb::TileCoordinate& coord,
                             const int& numThread,
                             const std::string& outDir,
@@ -80,18 +84,14 @@ public:
 
     /**
      * Get the next tile to process in the current zoom
-     * @param tileXY
-     * @return
+     * @param tileXY The (x,y) coordinates of the tile to process within the current zoom
+     * @return Returns true if a tile to be processed was located in the queue, false otherwise
      */
     bool getNextTileToProcess(ctb::TilePoint& tileXY) ;
 
 private:
     // --- Attributes ---
-//    ctb::Grid m_grid ;
-//    QuantizedMeshTiler m_qmTiler ;
     int m_numThreads ;
-//    QuantizedMeshTiler **m_tilers ;
-//    QuantizedMeshTiler m_tiler ;
     std::vector<QuantizedMeshTiler> m_tilers ;
     ZoomTilesScheduler m_scheduler ;
     std::vector<ctb::TilePoint> m_tilesWaitingToProcess ;

@@ -14,37 +14,37 @@ public:
     // Typedefs
     typedef unsigned char Byte ;
 
-    //! Constructor
+    /// Constructor
     GZipFileWriter( const std::string &filePath ) ;
 
-    //! Check if the file is open
+    /// Check if the file is open
     bool isFileOpen() { return m_file != NULL ; }
 
-    //! Writes a byte
+    /// Writes a byte
     int writeByte( const Byte &b ) ;
 
-    //! Writes a double
+    /// Writes a double
     int writeDouble( const double &d ) ;
 
-    //! Writes a float
+    /// Writes a float
     int writeFloat( const float &f ) ;
 
-    //! Writes an int
+    /// Writes an int
     int writeInt( const int &i ) ;
 
-    //! Writes an unsigned int
+    /// Writes an unsigned int
     int writeUInt( const unsigned int &u ) ;
 
-    //! Writes a short
+    /// Writes a short
     int writeShort( const short &s ) ;
 
-    //! Writes an unsigned short
+    /// Writes an unsigned short
     int writeUShort( const unsigned short &u ) ;
 
-    //! Writes a char
+    /// Writes a char
     int writeChar( const char &c ) ;
 
-    //! Writes an unsigned char
+    /// Writes an unsigned char
     int writeUChar( const unsigned char &c ) ;
 
     /**
@@ -68,15 +68,15 @@ public:
         return bytesWritten ;
     }
 
-    //! Returns the position on the file (i.e., read byte counter)
+    /// Returns the position on the file (i.e., read byte counter)
     int getPos() { return m_pos ; }
 
-    //! Closes the file
+    /// Closes the file
     bool close() { return gzclose(m_file) ; }
 
 private:
-    gzFile m_file ; //! The file to read
-    int m_pos ;     //! The position on the file (byte index)
+    gzFile m_file ; //!< The file to read
+    int m_pos ;     //!< The position on the file (byte index)
 };
 
 

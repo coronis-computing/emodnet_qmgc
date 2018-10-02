@@ -51,10 +51,15 @@ public:
 
     // Each time we consult for a border, we update the number of times it has been consulted by decreasing the lifeCounter.
     // When it gets to zero, the information in this object will not be needed anymore and can be deleted (responsability of the cache object)
-    std::vector<BorderVertex> getEasternVertices() { m_lifeCounter-- ; return m_easternVertices ; }
-    std::vector<BorderVertex> getWesternVertices() { m_lifeCounter-- ; return m_westernVertices ; }
-    std::vector<BorderVertex> getNorthernVertices() { m_lifeCounter-- ; return m_northernVertices ; }
-    std::vector<BorderVertex> getSouthernVertices() { m_lifeCounter-- ; return m_southernVertices ; }
+    std::vector<BorderVertex> getEasternVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_easternVertices ; }
+    std::vector<BorderVertex> getWesternVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_westernVertices ; }
+    std::vector<BorderVertex> getNorthernVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_northernVertices ; }
+    std::vector<BorderVertex> getSouthernVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_southernVertices ; }
+
+    std::vector<BorderVertex> getEasternVertices() { return m_easternVertices ; }
+    std::vector<BorderVertex> getWesternVertices() { return m_westernVertices ; }
+    std::vector<BorderVertex> getNorthernVertices() { return m_northernVertices ; }
+    std::vector<BorderVertex> getSouthernVertices() { return m_southernVertices ; }
 
     bool isAlive() { return m_lifeCounter > 0 ; }
 

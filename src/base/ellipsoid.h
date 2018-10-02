@@ -7,13 +7,11 @@
 
 /**
  * @class
- *
  * @brief Describes an ellipsoid.
  *
  * A quadratic surface of the form (x / rx)^2 + (y / ry)^2 + (z / rz)^2 = 1.
  * The ellipsoid chosen has implications in the Quantized Mesh format, specially for computing the occlusion point of a
  * Quantized Mesh tile.
- *
  */
 class Ellipsoid
 {
@@ -29,7 +27,10 @@ public:
     /// Default constructor (all radius set to 0)
     Ellipsoid() : m_rx(0.0), m_ry(0.0), m_rz(0.0) {}
 
-    /// Copy constructor
+    /**
+     * @brief Copy constructor
+     * @param e The ellipsoid to copy
+     */
     Ellipsoid( const Ellipsoid& e ) {
         m_rx = e.getRadiusX() ;
         m_ry = e.getRadiusY() ;
@@ -55,10 +56,10 @@ public:
     void setRadiusZ(const double& rz) { m_rz = rz ; }
 
 protected:
-    double m_rx, m_ry, m_rz ; /// Radius in X, Y and Z defining the ellipsoid
+    double m_rx; //!< Radius of the ellipsoid in X
+    double m_ry; //!< Radius of the ellipsoid in Y
+    double m_rz; //!< Radius of the ellipsoid in Z
 };
-
-
 
 /**
  * @class
@@ -70,6 +71,9 @@ protected:
 class WGS84Ellipsoid : public Ellipsoid
 {
 public:
+    /**
+     * @brief Constructor
+     */
     WGS84Ellipsoid() : Ellipsoid(6378137.0, 6378137.0, 6356752.3142451793) {}
 };
 
