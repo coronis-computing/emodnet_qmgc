@@ -131,15 +131,15 @@ private:
     double m_borderSimpMaxLengthPercent; // We do not scale this length, as it is relative to the XY plane
     std::vector<double> m_borderSimpMaxDistPerZoom;
     std::vector<double> m_borderSimpMaxLengthPercentPerZoom;
-    unsigned int m_minFeaturePolylineSize ;
+    unsigned int m_minFeaturePolylineSize;
     CTXY m_cdt;
 
     /// Imposes the required constraints to the internal CDT structure. Simplified the border/feature polylines when needed
-    void imposeConstraints(Polyhedron& surface,
-                           const bool &constrainEasternVertices,
-                           const bool &constrainWesternVertices,
-                           const bool &constrainNorthernVertices,
-                           const bool &constrainSouthernVertices) ;
+    void imposeConstraintsAndSimplifyPolylines(Polyhedron& surface,
+                                               const bool &constrainEasternVertices,
+                                               const bool &constrainWesternVertices,
+                                               const bool &constrainNorthernVertices,
+                                               const bool &constrainSouthernVertices) ;
 
     // Precondition: poly.normalize_border() has been executed, and is valid
     // NOTE: The <X>BorderVertices variables include the corner points!

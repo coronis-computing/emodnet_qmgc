@@ -68,11 +68,13 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
     ptsToSimplify = simplify(ptsToSimplify);
 
     // Impose the constraints based on borders and features in the original mesh
-    imposeConstraints(surface,
-                      constrainEasternVertices,
-                      constrainWesternVertices,
-                      constrainNorthernVertices,
-                      constrainSouthernVertices);
+    imposeConstraintsAndSimplifyPolylines(surface,
+                                          constrainEasternVertices,
+                                          constrainWesternVertices,
+                                          constrainNorthernVertices,
+                                          constrainSouthernVertices);
+
+//    std::cout << "Constraints imposed and simplified" << std::endl;
 
     // Insert the simplified points in the constrained triangulation
     for( PointCloud::iterator it = ptsToSimplify.begin(); it != ptsToSimplify.end(); ++it ) {
@@ -96,7 +98,7 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
 
 void
 TinCreationSimplificationPointSet::
-imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintain will be removed from this list!
+imposeConstraintsAndSimplifyPolylines(Polyhedron& surface, // Note: points in the borders to maintain will be removed from this list!
                   const bool &constrainEasternVertices,
                   const bool &constrainWesternVertices,
                   const bool &constrainNorthernVertices,
@@ -113,6 +115,11 @@ imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintai
     PointCloud northernBorderVertices, southernBorderVertices, easternBorderVertices, westernBorderVertices ;
     Point_3 cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11;
     extractTileBordersFromPolyhedron<Polyhedron>(surface, easternBorderVertices, westernBorderVertices, northernBorderVertices, southernBorderVertices, cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11);
+
+//    std::cout << "easternBorderVertices.size() = " << easternBorderVertices.size() << std::endl;
+//    std::cout << "westernBorderVertices.size() = " << westernBorderVertices.size() << std::endl;
+//    std::cout << "northernBorderVertices.size() = " << northernBorderVertices.size() << std::endl;
+//    std::cout << "southernBorderVertices.size() = " << southernBorderVertices.size() << std::endl;
 
     // Sort the points in the borders
 
@@ -169,7 +176,8 @@ imposeConstraints(Polyhedron& surface, // Note: points in the borders to maintai
     typedef typename boost::graph_traits<Polyhedron>::edge_descriptor edge_descriptor;
     typedef typename std::map<edge_descriptor, bool> EdgeIsSharpMap;
     typedef typename boost::associative_property_map<EdgeIsSharpMap> EdgeIsSharpPropertyMap;
-    EdgeIsSharpPropertyMap eisMap;
+    EdgeIsSharpMap map;
+    EdgeIsSharpPropertyMap eisMap(map);
 
     // Detect sharp edges
     detect_sharp_edges_without_borders<Polyhedron, double, EdgeIsSharpPropertyMap, K>(surface, FT(60.0), eisMap);

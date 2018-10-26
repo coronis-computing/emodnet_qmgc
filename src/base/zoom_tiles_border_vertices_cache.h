@@ -26,7 +26,7 @@ public:
      * @param zoomBounds The bounds of the current zoom
      * @param tileMaxCoord The number of pixels in a tile
      */
-    ZoomTilesBorderVerticesCache( const ctb::TileBounds& zoomBounds, const int& tileMaxCoord, const bool& useSteinerVertices = false )
+    ZoomTilesBorderVerticesCache( const ctb::TileBounds& zoomBounds, const int& tileMaxCoord)
             : m_mapTileToBorderVertices()
             , m_zoomBounds(zoomBounds)
 //            , m_zoomBoundsStepsX( zoomBounds.getMaxX()-zoomBounds.getMinX()+1 )
@@ -129,7 +129,7 @@ private:
     int m_tileMaxCoord ;
     int m_numTiles ;
     int m_numProcessedTiles ;
-    std::unordered_map<std::pair<int,int>, TileBorderVertices, boost::hash<std::pair<int, int>>> m_mapTileToBorderVertices ;
+    std::unordered_map<std::pair<int,int>, TileBorderVertices, boost::hash<std::pair<int, int>>> m_mapTileToBorderVertices;
     std::unordered_map<std::pair<int,int>, bool, boost::hash<std::pair<int, int>>> m_tilesVisited;
     std::unordered_map<std::pair<int,int>, bool, boost::hash<std::pair<int, int>>> m_tilesBeingProcessed;
 //    std::vector<bool> m_tilesVisited ; // Linearly indexed tiles, to check if they were already visited

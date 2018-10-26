@@ -15,7 +15,7 @@ template<typename PolygonMesh,
         typename GT>
 void detect_sharp_edges_without_borders(PolygonMesh &pmesh,
                                         FT angle_in_deg,
-                                        EdgeIsSharpMap edge_is_sharp_map) {
+                                        EdgeIsSharpMap &edge_is_sharp_map) {
     FT cos_angle(std::cos(CGAL::to_double(angle_in_deg) * CGAL_PI / 180.));
 
     // Detect sharp edges
@@ -36,8 +36,9 @@ void detect_sharp_edges_without_borders(PolygonMesh &pmesh,
             const typename GT::Vector_3 &n2 = CGAL::Polygon_mesh_processing::compute_face_normal(f2, pmesh);
 
             // Check the dihedral angle between them, and mark it as a sharp edge if it is larger than the threshold
-            if (n1 * n2 <= cos_angle)
+            if (n1 * n2 <= cos_angle) {
                 put(edge_is_sharp_map, edge(he, pmesh), true);
+            }
         }
     }
 }

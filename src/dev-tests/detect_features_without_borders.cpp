@@ -45,12 +45,14 @@ int main( int argc, char** argv )
 {
     std::string inputFile, outputFile;
     double angle;
+    unsigned int minSize;
     po::options_description options("Detects sharp edges in a mesh without including border edges") ;
     options.add_options()
             ("help,h", "Produce help message")
             ("input,i", po::value<std::string>(&inputFile)->default_value(""), "Input mesh (OFF format)")
             ("output,o", po::value<std::string>(&outputFile)->default_value(""), "Output file containing a matlab script that creates the variable \"Edges\" (with the detected edges, one edge per line: x0 y0 z0 x1 y1 z1) and \"Polylines\" (the polylines derived from the edges, a cell array of a numPts x 3 matrices). When executed in matlab, it also plots the edges/polylines. If empty, the detected edges will be shown on screen with the same format.")
             ("angle,a", po::value<double>(&angle)->default_value(60), "Angle threshold (in degrees)")
+            ("min-size,m", po::value<unsigned int>(&minSize)->default_value(0), "Minimum size")
     ;
 
     po::positional_options_description positionalOptions;
@@ -100,13 +102,18 @@ int main( int argc, char** argv )
 
     // Output the detected sharp edges
     output << "Edges = [" << endl;
+    int numSharpEdges = 0;
     BOOST_FOREACH(edge_descriptor ed, edges(sm)) {
         bool isSharp = get(eisMap, ed);
-        if (isSharp)
+        if (isSharp) {
             // print the endpoints!
             output << sm.point(sm.vertex(ed, 0)) << " " << sm.point(sm.vertex(ed, 1)) << ";" << endl;
+            numSharpEdges++;
+        }
     }
     output << "];" << endl;
+
+    cout << "- Num. Sharp Edges = " << numSharpEdges << endl;
 
     // Trace the polylines from the detected edges
     std::vector<Polyline> polylines;
@@ -116,11 +123,13 @@ int main( int argc, char** argv )
     // Output the polylines
     output << "Polylines = {" << endl;
     for (Polylines::iterator itPolys = polylines.begin(); itPolys != polylines.end(); ++itPolys) {
-        output << "[" << endl;
-        for (Polyline::iterator itp = (*itPolys).begin(); itp != (*itPolys).end(); ++itp) {
-            output << *itp << ";" << endl;
+        if ((*itPolys).size() >= minSize) {
+            output << "[" << endl;
+            for (Polyline::iterator itp = (*itPolys).begin(); itp != (*itPolys).end(); ++itp) {
+                output << *itp << ";" << endl;
+            }
+            output << "]," << endl;
         }
-        output << "]," << endl;
     }
     output << "};" << endl;
 
