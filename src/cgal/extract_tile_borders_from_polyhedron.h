@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_CGAL_EXTRACT_TILE_BORDERS_FROM_POLYHEDRON_H

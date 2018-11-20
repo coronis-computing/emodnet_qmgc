@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (ricardcd@gmail.com)
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_CORNER_VERTICES_ARE_CONSTRAINED_VERTEX_MAP_H
@@ -15,7 +15,7 @@
  *
  * \brief BGL property map indicating whether a given vertex is one of the 4 corners of the tile.
  *
- * For Quantized Mesh tiles, we need to preserve these corners when simplifying.
+ * We need to preserve these corners when simplifying a tile.
  */
 template <class Polyhedron>
 struct CornerVerticesAreConstrainedVertexMap

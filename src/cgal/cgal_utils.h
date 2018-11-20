@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_CGAL_UTILS_H
@@ -75,7 +75,7 @@ void delaunayToOFF( const std::string &outFilePath, const Delaunay &dt )
 
 
 
-/// Check if a vertex in the polyhedron is in the border
+/// Checks if a vertex in the polyhedron is in the border
 template <class Polyhedron>
 bool isBorder(typename Polyhedron::Vertex_handle& v)
 {
@@ -106,7 +106,7 @@ bool isBorder(typename Polyhedron::Vertex_const_handle& v)
 
 
 
-/// Computes if a point \p p falls within the arc defined by the vectors  \p p0 - \p center and \p p1 - \p center
+/// Computes if a point \p query falls within the arc defined by the vectors  \p p0 - \p center and \p p1 - \p center
 template <class K>
 bool isPointInArc( const typename K::Point_2& query,
                    const typename K::Point_2& center,

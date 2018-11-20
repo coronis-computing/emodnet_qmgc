@@ -1,9 +1,7 @@
 /**
  * @file
- * @brief Reads a quantized mesh terrain file
- *
+ * @brief Parses a quantized mesh terrain file and outputs some information in plain text on screen.
  * @author Ricard Campos (rcampos@eia.udg.edu)
- *
  */
 
 // Boost

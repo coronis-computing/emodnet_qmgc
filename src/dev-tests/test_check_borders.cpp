@@ -1,6 +1,8 @@
-//
-// Created by Ricard Campos (rcampos@eia.udg.edu).
-//
+/**
+ * @file
+ * @brief Checks the consistency between neighboring tiles at borders
+ * @author Ricard Campos (ricardcd@gmail.com)
+ */
 
 // Boost
 #include <boost/program_options.hpp>
@@ -82,7 +84,7 @@ int main ( int argc, char **argv)
 {
     // Parse input parameters
     std::string inputDir;
-    po::options_description options("Check the consistency between neighboring tiles at borders");
+    po::options_description options("Checks the consistency between neighboring tiles at borders");
     bool displayTileInfo, displayTileStats, displayZoomStats;
     options.add_options()
             ("help,h", "Produce help message")

@@ -1,5 +1,5 @@
 //
-// Created by ricard on 17/08/17.
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_GZIP_FILE_READER_H
@@ -9,6 +9,10 @@
 #include <string>
 #include <cstring>
 
+/**
+ * @class GZipFileReader
+ * @brief Helper class to read a GZip file.
+ */
 class GZipFileReader {
 
 public:

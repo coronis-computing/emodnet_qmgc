@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_TIN_CREATION_UTILS_H
@@ -10,6 +10,15 @@
 
 namespace TinCreation {
 
+/**
+ * TODO: Explain the setting of parameters (here and in the tutorial)
+ *
+ * @tparam T Numeric type of the parameter
+ * @param thresholdsPerZoom Vector of thresholds per zoom. As explained above, it may contain a single parameter also.
+ * @param zoom Current zoom level.
+ * @param downScale Flag indicating whether the value of the parameter should be downScaled with zoom or, otherwise, upscaled
+ * @return
+ */
 template <class T>
 T standardHandlingOfThresholdPerZoom(const std::vector<T>& thresholdsPerZoom,
                                      const unsigned int& zoom,

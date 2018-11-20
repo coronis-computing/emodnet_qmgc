@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #include "quantized_mesh_tile.h"

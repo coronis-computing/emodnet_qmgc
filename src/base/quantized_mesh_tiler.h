@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu)
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_QUANTIZED_MESH_TILER_H
@@ -44,7 +44,6 @@ public:
     /**
      * @brief Constructor: instantiates a tiler with all required arguments
      *
-     * Note: We use a string instead of a GDALDataset*, as in ctb, because we want a new GDALDataset* to be opened for each tiler (they are not threadsafe!)
      */
     QuantizedMeshTiler(GDALDataset *dataset,
                        const ctb::Grid &grid,
@@ -95,6 +94,21 @@ public:
      */
     void setTinCreatorParamsForZoom(const unsigned int& zoom) { m_tinCreator.setParamsForZoom(zoom); }
 
+    /**
+     * @brief Get the heightmap values from the GDAL raster in normalized coordinates
+     *
+     * @param coord The coordinates of the tile
+     * @param bd Data falling in the borders of the tile. Note: this is not const because border vertices are input as tile coordinates, but are output in uvh coordinates
+     * @param[out] minHeight Min height on the tile from raster
+     * @param[out] maxHeight Max height on the tile from raster
+     * @param[out] tileBounds Output variable containing the tile bounds
+     * @return Vector of points in the heightmap
+     */
+    std::vector<Point_3> getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
+                                                BordersData& bd,
+                                                float& minHeight, float& maxHeight,
+                                                ctb::CRSBounds& tileBounds) const ;
+
 private:
     // --- Attributes ---
     QMTOptions m_options;
@@ -130,20 +144,7 @@ private:
 
     // --- The following private functions split the processing required to generate the tiles for better readability ---
 
-    /**
-     * @brief Get the heightmap values from the GDAL raster in normalized coordinates
-     *
-     * @param coord The coordinates of the tile
-     * @param bd Data falling in the borders of the tile. Note: this is not const because border vertices are input as tile coordinates, but are output in uvh coordinates
-     * @param[out] minHeight Min height on the tile from raster
-     * @param[out] maxHeight Max height on the tile from raster
-     * @param[out] tileBounds Output variable containing the tile bounds
-     * @return Vector of points in the heightmap
-     */
-    std::vector<Point_3> getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
-                                                BordersData& bd,
-                                                float& minHeight, float& maxHeight,
-                                                ctb::CRSBounds& tileBounds) const ;
+
 
     /**
      * @brief Compute the values of the header from the points in the simplified TIN

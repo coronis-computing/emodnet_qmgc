@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #include "tin_creation_greedy_insertion_strategy.h"
@@ -88,6 +88,7 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
             m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
         }
 //        std::cout << "m_dataPts.size() (after) = " << m_dataPts.size() << std::endl;
+//        std::cout << "m_dt num faces = " << m_dt.number_of_faces() << std::endl;
     } else {
         // Temporal triangulation with all the points
         DT tmpDt;
@@ -278,12 +279,14 @@ FT TinCreationGreedyInsertionStrategy::errorHeight(const Point_3 &p, const Trian
     const Point_3 *ip = boost::get<Point_3>(&*intersect);
 
     // Finally, compute the squared distance between the query point and the intersection
+//    std::cout << CGAL::squared_distance(p, *ip) << std::endl;
     return CGAL::squared_distance(p, *ip);
 }
 
 
 FT TinCreationGreedyInsertionStrategy::error3D(const Point_3 &p, const Triangle_3 &t) const {
-    return CGAL::squared_distance(p, t.supporting_plane());
+//    return CGAL::squared_distance(p, t.supporting_plane());
+    return CGAL::squared_distance(p, t);
 }
 
 
@@ -387,8 +390,9 @@ computeErrorAndUpdateHeap(FaceHandle fh) {
 FT
 TinCreationGreedyInsertionStrategy::
 error(const Point_3 &p, const Triangle_3 &t) const {
-    if (m_errorType == ErrorHeight)
+    if (m_errorType == ErrorHeight) {
         return errorHeight(p, t);
+    }
     else
         return error3D(p, t);
 }
@@ -418,11 +422,6 @@ TinCreationGreedyInsertionStrategy::eval(const Point_3& p, const Triangle_3&t) c
     // Finally, compute the squared distance between the query point and the intersection
     FT sqDist = CGAL::squared_distance(p, *ip);
     FT dist = CGAL::sqrt(sqDist);
-
-    // --- Debug (start) ---
-//    if (dist > 1000)
-//        std::cout << "Distance = " << dist << std::endl;
-    // --- Debug (end) ---
 
     if (p.z() > ip->z())
         dist = -dist;

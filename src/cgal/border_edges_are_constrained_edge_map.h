@@ -1,3 +1,7 @@
+//
+// Author: Ricard Campos (ricardcd@gmail.com)
+//
+
 #ifndef EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
 #define EMODNET_TOOLS_CGAL_SIMPLIFICATION_CONSTRAINED_BORDERS_H
 
@@ -6,13 +10,11 @@
 
 
 /**
- * \class WesternAndSouthernBorderEdgesAreConstrainedEdgeMap
+ * \class BorderEdgesAreConstrainedEdgeMap
  *
  * \brief BGL property map indicating whether an edge is marked as non-removable
  *
- * For the case of Quantized Meshes, and by the way they are constructed, we just need to mark as non-removable those
- * edges corresponding to border edges of already processed neighboring tiles.
- *
+ * We just need to mark as non-removable those edges corresponding to border edges of already processed neighboring tiles.
  */
 template <class Polyhedron>
 struct BorderEdgesAreConstrainedEdgeMap

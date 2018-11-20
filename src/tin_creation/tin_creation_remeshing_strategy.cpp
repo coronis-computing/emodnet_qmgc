@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #include "tin_creation_remeshing_strategy.h"
@@ -11,6 +11,8 @@
 #include <CGAL/config.h>
 #include "tin_creation_cgal_types.h"
 #include <limits>
+#include "cgal/extract_tile_borders_from_polyhedron.h"
+#include <CGAL/bounding_box.h>
 
 namespace TinCreation {
 
@@ -37,6 +39,12 @@ Polyhedron TinCreationRemeshingStrategy::create(const std::vector<Point_3> &data
         return surface;
     }
 
+    std::cout << "Saving data point set..." << std::flush;
+    std::ofstream ptsOf("./dataPts.off");
+    for (std::vector<Point_3>::const_iterator itp = dataPts.begin(); itp!=dataPts.end(); ++itp)
+        ptsOf << *itp << std::endl;
+    ptsOf.close();
+
     // Delaunay triangulation
     Delaunay dt(dataPts.begin(), dataPts.end());
 
@@ -45,39 +53,106 @@ Polyhedron TinCreationRemeshingStrategy::create(const std::vector<Point_3> &data
     PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builderDT(dt);
     surface.delegate(builderDT);
 
+    std::cout << "Saving mesh to be remeshed in UHV..." << std::flush;
+    std::ofstream off_file_uvh("./before_remeshing_uvh.off");
+    off_file_uvh << surface;
+
+    // Convert the points to metric, but preserve the connectivity provided by the 2D Delaunay
+    for (Polyhedron::Point_iterator it = surface.points_begin(); it != surface.points_end(); ++it)
+        *it = this->convertUVHToECEF(*it);
+
+//
+//    for (Polyhedron::Point_iterator it = surface.points_begin(); it != surface.points_end(); ++it)
+//        std::cout << *it << std::endl;
+
+    // Reset the origin of the points
+    K::Iso_cuboid_3 boundingBox = CGAL::bounding_box(surface.points_begin(), surface.points_end());
+////    std::transform(samples.begin(), samples.end(), samples.begin(),
+////                   [boundingBox](Point_3& p){
+////                       return Point_3(p.x()-boundingBox.xmin(),
+////                                      p.y()-boundingBox.ymin(),
+////                                      p.z()-boundingBox.zmin());
+////                   }
+////    );
+    for (Polyhedron::Point_iterator it = surface.points_begin(); it != surface.points_end(); ++it)
+        *it = Point_3((*it).x()-boundingBox.xmin(),
+                      (*it).y()-boundingBox.ymin(),
+                      (*it).z()-boundingBox.zmin());
+
+    std::cout << "Saving mesh to be remeshed..." << std::flush;
+    std::ofstream off_file("./before_remeshing.off");
+    off_file << surface ;
+
     surface.normalize_border(); // Needed to detect the borders
 
     // Create a vector with only one element: the pointer to the polyhedron.
     std::vector<Polyhedron *> polyPtrsVector(1, &surface);
 
-//    std::cout << "Creating the meshing domain" << std::endl ;
+    std::cout << "Creating the meshing domain" << std::endl;
 
     // Create a polyhedral domain, with only one polyhedron,
     // and no "bounding polyhedron", so the volumetric part of the domain will be
     // empty.
     MeshDomain domain(polyPtrsVector.begin(), polyPtrsVector.end());
 
-//    std::cout << "Detecting the border lines" << std::endl ;
+    std::cout << "Detecting the border lines" << std::endl;
 
-    // Get the border polylines to maintain
-    Polylines polylines = generateBorderFeaturesPolylines<Polyhedron>(surface,
-                                                                      constrainEasternVertices,
-                                                                      constrainWesternVertices,
-                                                                      constrainNorthernVertices,
-                                                                      constrainSouthernVertices);
-//    std::cout << "Adding features, imposing " << polylines.size() << " polylines" << std::endl ;
-    domain.add_features(polylines.begin(), polylines.end());
+//    // Get the border polylines to maintain
+//    Polylines polylines = generateBorderFeaturesPolylines<Polyhedron>(surface,
+//                                                                      constrainEasternVertices,
+//                                                                      constrainWesternVertices,
+//                                                                      constrainNorthernVertices,
+//                                                                      constrainSouthernVertices);
+    // Extract the vertices on the borders
+    PointCloud northernBorderVertices, southernBorderVertices, easternBorderVertices, westernBorderVertices ;
+    Point_3 cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11;
+    extractTileBordersFromPolyhedron<Polyhedron>(surface, easternBorderVertices, westernBorderVertices, northernBorderVertices, southernBorderVertices, cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11);
+    // Sort the vertices vertically/horizontally so they form a polyline
+    std::sort(easternBorderVertices.begin(), easternBorderVertices.end(), [](const Point_3& a, const Point_3& b) -> bool { return a.y() < b.y(); });
+    std::sort(westernBorderVertices.begin(), westernBorderVertices.end(), [](const Point_3& a, const Point_3& b) -> bool { return a.y() < b.y(); });
+    std::sort(northernBorderVertices.begin(), northernBorderVertices.end(), [](const Point_3& a, const Point_3& b) -> bool { return a.x() < b.x(); });
+    std::sort(southernBorderVertices.begin(), southernBorderVertices.end(), [](const Point_3& a, const Point_3& b) -> bool { return a.x() < b.x(); });
 
-//    for (int i = 0; i < polylines.size(); i++) {
-//        std::cout << "Polyline" << i << " = [" << std::endl ;
-//        for (int j = 0; j < polylines[i].size(); j++) {
-//            std::cout << polylines[i][j] ;
-//            if (j == polylines[i].size()-1)
-//                std::cout << "]" << std::endl ;
-//            else
-//                std::cout << "; " ;
+    Polylines polylines;
+    if (constrainEasternVertices) {
+        Polylines edges = this->borderPolylineToIndividualEdges(easternBorderVertices);
+        polylines.insert(polylines.end(), edges.begin(), edges.end() );
+    }
+    else {
+        polylines.push_back(easternBorderVertices);
+    }
+    if (constrainWesternVertices) {
+        Polylines edges = this->borderPolylineToIndividualEdges(westernBorderVertices);
+        polylines.insert(polylines.end(), edges.begin(), edges.end() );
+    }
+    else {
+        polylines.push_back(westernBorderVertices);
+    }
+    if (constrainNorthernVertices) {
+        Polylines edges = this->borderPolylineToIndividualEdges(northernBorderVertices);
+        polylines.insert(polylines.end(), edges.begin(), edges.end() );
+    }
+    else {
+        polylines.push_back(northernBorderVertices);
+    }
+    if (constrainSouthernVertices) {
+        Polylines edges = this->borderPolylineToIndividualEdges(southernBorderVertices);
+        polylines.insert(polylines.end(), edges.begin(), edges.end() );
+    }
+    else {
+        polylines.push_back(southernBorderVertices);
+    }
+
+    // Show polylines
+//    for (Polylines::iterator itPolys = polylines.begin(); itPolys != polylines.end(); ++itPolys) {
+//        std::cout << "A polyline: " << std::endl;
+//        for (Polyline::iterator it = (*itPolys).begin(); it != (*itPolys).end(); ++it) {
+//            std::cout << *it << std::endl;
 //        }
 //    }
+
+    std::cout << "Adding features, imposing " << polylines.size() << " polylines" << std::endl ;
+    domain.add_features(polylines.begin(), polylines.end());
 
     // Mesh criteria
     // WARNING: Manifold criteria in mesh_3 is an undocumented feature as of CGAL 4.9.
@@ -89,22 +164,26 @@ Polyhedron TinCreationRemeshingStrategy::create(const std::vector<Point_3> &data
                           CGAL::parameters::facet_distance = m_facetDistance,
                           CGAL::parameters::facet_topology = CGAL::MANIFOLD_WITH_BOUNDARY);
 
-//    std::cout << "Meshing criteria:" << std::endl ;
-//    std::cout << "    - edge_size = " << m_edgeSize << std::endl ;
-//    std::cout << "    - facet_angle = " << m_facetAngle << std::endl ;
-//    std::cout << "    - facet_size = " << m_facetSize << std::endl ;
-//    std::cout << "    - facet_distance = " << m_facetDistance << std::endl ;
-//    std::cout << "    - facet_topology = CGAL::MANIFOLD_WITH_BOUNDARY" << std::endl ;
+    std::cout << "Meshing criteria:" << std::endl ;
+    std::cout << "    - edge_size = " << m_edgeSize << std::endl ;
+    std::cout << "    - facet_angle = " << m_facetAngle << std::endl ;
+    std::cout << "    - facet_size = " << m_facetSize << std::endl ;
+    std::cout << "    - facet_distance = " << m_facetDistance << std::endl ;
+    std::cout << "    - facet_topology = CGAL::MANIFOLD_WITH_BOUNDARY" << std::endl ;
 
     // Mesh generation
-//    std::cout << "Meshing... " << std::flush ;
+    std::cout << "Meshing... " << std::flush ;
     C3T3 c3t3 = CGAL::make_mesh_3<C3T3>(domain, criteria, no_perturb(), no_exude());
-//    std::cout << "done." << std::endl ;
+    std::cout << "done." << std::endl ;
 
     // Extract the surface boundary as a polyhedron
     Polyhedron remeshedSurface;
     PolyhedronBuilderFromC3T3Boundary<C3T3, HalfedgeDS> builderC3T3Boundary(c3t3, 0);
     remeshedSurface.delegate(builderC3T3Boundary);
+
+    // Convert back the points to UVH
+    for (Polyhedron::Point_iterator it = remeshedSurface.points_begin(); it != remeshedSurface.points_end(); ++it)
+        *it = this->convertECEFToUVH(*it);
 
 //    // Output the facets of the c3t3 to an OFF file. The facets will not be oriented.
 ////    std::cout << "Saving resulting mesh (facets will not be oriented)..." << std::flush ;
@@ -141,5 +220,19 @@ std::vector<Point_3> TinCreationRemeshingStrategy::defaultPointsForPlanarTile() 
     return pts;
 }
 
+
+Polylines TinCreationRemeshingStrategy::borderPolylineToIndividualEdges(Polyline& poly)
+{
+    // Collect the edges along the polyline
+    Polylines edges;
+    for (int i = 0; i < (poly.size()-1); i++) {
+        Polyline edge;
+        edge.push_back(poly[i]);
+        edge.push_back(poly[i+1]);
+        edges.push_back(edge);
+    }
+
+    return edges;
+}
 
 } // End namespace TinCreation

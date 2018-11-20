@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_WLOP_H
@@ -9,10 +9,26 @@
 
 namespace TinCreation {
 
+/**
+ * @class TinCreationSimplificationPointSetWLOP
+ * @brief Creates a TIN using the Weighted Locally Optimal Projection (WLOP) algorithm
+ *
+ * We use the implementation of WLOP on the CGAL libraries, which are based on the following paper: <br>
+ * H. Huang, D. Li, H. Zhang, U. Ascher, and D. Cohen-Or. Consolidation of unorganized point clouds for surface reconstruction. ACM Transactions on Graphics, 28:176:1–176:78, 2009.
+ */
 class TinCreationSimplificationPointSetWLOP
         : public TinCreationSimplificationPointSet
 {
 public:
+    /**
+     * Constructor
+     * @param borderSimplificationMaxDistance Maximum error for polyline simplification
+     * @param borderSimplificationMaxLengthPercent Maximum length for an edge in the simplified polyline. This prevents oversimplification in planar tiles.
+     * @param minFeaturePolylineSize Minimum number of connected edges in a sharp feature polyline to consider it during processing
+     * @param retainPercentage Percentage of points to retain
+     * @param radius Spherical neighborhood radius
+     * @param iterNumber Number of iterations to solve the optimization problem
+     */
     TinCreationSimplificationPointSetWLOP(double borderSimplificationMaxDistance,
                                           double borderSimplificationMaxLength,
                                           unsigned int minFeaturePolylineSize,
@@ -27,6 +43,15 @@ public:
         setParamsForZoomConcreteStrategy(0);
     }
 
+    /**
+     * Constructor
+     * @param borderSimplificationMaxDistance Maximum error for polyline simplification per zoom
+     * @param borderSimplificationMaxLengthPercent Maximum length for an edge in the simplified polyline per zoom. This prevents oversimplification in planar tiles.
+     * @param minFeaturePolylineSize Minimum number of connected edges in a sharp feature polyline to consider it during processing
+     * @param retainPercentage Percentage of points to retain per zoom
+     * @param radius Spherical neighborhood radius per zoom
+     * @param iterNumber Number of iterations to solve the optimization problem per zoom
+     */
     TinCreationSimplificationPointSetWLOP(std::vector<double> borderSimplificationMaxDistancePerZoom,
                                           std::vector<double> borderSimplificationMaxLengthPerZoom,
                                           unsigned int minFeaturePolylineSize,

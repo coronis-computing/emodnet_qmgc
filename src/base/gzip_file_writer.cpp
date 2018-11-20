@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu)
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #include "gzip_file_writer.h"

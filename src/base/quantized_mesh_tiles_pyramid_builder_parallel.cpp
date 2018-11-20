@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #include "quantized_mesh_tiles_pyramid_builder_parallel.h"
@@ -116,7 +116,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
             zoomBounds = ctb::TileBounds(ll, ur);
         }
 
-//        std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
+        std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
 
         // Prepare a new borders' cache
         m_bordersCache = ZoomTilesBorderVerticesCache(zoomBounds, m_tilers[0].getOptions().HeighMapSamplingSteps-1);
@@ -155,7 +155,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
                           << ": x = " << tp.x << ", y = " << tp.y
                           << " (thread " << numThread << ")"
                           << "(num. cache entries = " << m_bordersCache.numCacheEntries() << ")"
-                          << std::endl ;
+                          << std::endl;
 
                 ctb::TileCoordinate coord(zoom, tp.x, tp.y);
                 coords.push_back(coord) ;
@@ -222,6 +222,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramidUnconstrainedBord
             ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
             zoomBounds = ctb::TileBounds(ll, ur);
         }
+
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
 
         // Get the preferred ordering of processing
@@ -249,9 +250,9 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramidUnconstrainedBord
 
                 // Launch thread
                 BordersData bd; // empty borders...
-                std::future<BordersData> f = std::async( std::launch::async,
-                                                         &QuantizedMeshTilesPyramidBuilderParallel::createTile, this,
-                                                         coord, numThread, outDir, bd ) ; // Note: Using std::ref(bd) does not work, as we use bd as the future return value...
+                std::future<BordersData> f = std::async(std::launch::async,
+                                                        &QuantizedMeshTilesPyramidBuilderParallel::createTile, this,
+                                                        coord, numThread, outDir, bd); // Note: Using std::ref(bd) does not work, as we use bd as the future return value...
 
                 futures.emplace_back(std::move(f)) ;
 
@@ -313,10 +314,6 @@ QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate&
 {
     // Note: Using std::ref(bd) does not work, as we use bd as the future return value... So we copy the borders data
     BordersData bdC(bd) ;
-//    bdC.tileEastVertices = bd.tileEastVertices;
-//    bdC.tileWestVertices = bd.tileWestVertices;
-//    bdC.tileNorthVertices = bd.tileNorthVertices;
-//    bdC.tileSouthVertices = bd.tileSouthVertices;
     QuantizedMeshTile terrainTile = m_tilers[numThread].createTile(coord, bdC) ;
 
     // Write the file to disk (should be thread safe, as every thread will write to a different file, but we don't risk and use a mutex)
@@ -330,9 +327,6 @@ QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate&
         terrainTile.exportToOFF(fileNameDebug);
     }
     m_diskWriteMutex.unlock();
-
-    // Free memory
-//    delete terrainTile;
 
     // Return borders data
     return bdC ;

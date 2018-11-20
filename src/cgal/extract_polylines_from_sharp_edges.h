@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (ricardcd@gmail.com)
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_POLYLINES_FROM_FEATURED_EDGES_H

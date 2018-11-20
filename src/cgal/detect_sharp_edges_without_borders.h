@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (ricardcd@gmail.com)
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_DETECT_SHARP_EDGES_WITHOUT_BORDERS_H

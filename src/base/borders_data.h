@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_BORDERS_DATA_H
@@ -8,7 +8,7 @@
 #include "tin_creation/tin_creation_cgal_types.h"
 
 /**
- * @class
+ * @class BordersData
  * @brief Structure storing the data for the borders of a tile. This includes the 4 east-west-north-south borders, as well as the corners.
  */
 struct BordersData

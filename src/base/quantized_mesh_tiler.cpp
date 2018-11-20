@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu)
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #include "quantized_mesh_tiler.h"
@@ -24,8 +24,8 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
     QuantizedMeshTile qmTile(coord, m_options.RefEllipsoid );
 //    QuantizedMeshTile* qmTile = new QuantizedMeshTile(coord, m_options.RefEllipsoid );
 
-    float minHeight, maxHeight ;
-    ctb::CRSBounds tileBounds ;
+    float minHeight, maxHeight;
+    ctb::CRSBounds tileBounds;
     std::vector<Point_3 > uvhPts = getUVHPointsFromRaster(coord, bd,
                                                           minHeight, maxHeight, tileBounds );
 

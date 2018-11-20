@@ -1,7 +1,7 @@
 /**
  * @file
  * @brief Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format.
- * @author Ricard Campos (rcampos@eia.udg.edu)
+ * @author Ricard Campos (ricardcd@gmail.com)
  */
 
 // Boost
@@ -14,6 +14,9 @@
 #include <tin_creation/tin_creation_simplification_point_set_grid.h>
 // GDAl
 #include "cpl_conv.h"
+#include <ogrsf_frmts.h>
+#include <ogr_api.h>
+#include <ogr_spatialref.h>
 // Project-specific
 #include "quantized_mesh_tiles_pyramid_builder_parallel.h"
 #include "zoom_tiles_scheduler.h"
@@ -32,9 +35,11 @@ using namespace std;
 using namespace TinCreation;
 namespace po = boost::program_options;
 
-// Adding ostream operator << to vectors. Required by boost::program_options to be able to define default values for vectors
 namespace std
 {
+    /**
+    * @brief Adding ostream operator << to vectors. Required by boost::program_options to be able to define default values for vectors
+    */
     std::ostream& operator<<(std::ostream &os, const std::vector<double> &vec)
     {
         for (auto item : vec)
@@ -68,7 +73,7 @@ int main ( int argc, char **argv)
     // Command line parser
     std::string inputFile, outDir, tinCreationStrategy, schedulerType, debugDir, configFile, greedyErrorType;
     int startZoom, endZoom;
-    double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize;
+    double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetAngle;
     float clippingHighValue, clippingLowValue, belowSeaLevelScaleFactor, aboveSeaLevelScaleFactor;
     int heighMapSamplingSteps, greedyInitGridSize;
     unsigned int psWlopIterNumber, psMinFeaturePolylineSize;
@@ -77,9 +82,9 @@ int main ( int argc, char **argv)
     // Parameters per zoom level
     std::vector<int> simpStopEdgesCount;
     std::vector<unsigned int> psHierMaxClusterSize;
-    std::vector<double> greedyErrorTol, psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
+    std::vector<double> greedyErrorTol, remeshingFacetDistance, remeshingFacetSize, remeshingEdgeSize, psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
 
-    po::options_description options("Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format\n(*) The parameters marked with this sing scan be specified multiple times to reflect the desired value per zoom level. When the required zoom is larger than the number of specified parameters, the last one is used. On the other hand, when a single parameter is specifyed, the value is assumed to represent the value for the root (i.e., 0) level of the pyramid, and the values for the lower levels will be halved (or doubled) for each deeper level.");
+    po::options_description options("qm_tiler options:");
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse (can be specified like this or as a positional parameter)" )
@@ -95,22 +100,23 @@ int main ( int argc, char **argv)
             ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)" )
             ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
             ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random (see documentation for further information)" )
-            ( "tc-greedy-error-tol", po::value<vector<double> >(&greedyErrorTol)->multitoken()->default_value(std::vector<double>{150000}), "Error tolerance for a tile to fulfill in the greedy insertion approach (*).")
+            ( "tc-greedy-error-tol", po::value<vector<double> >(&greedyErrorTol)->multitoken()->default_value(vector<double>{150000}), "Error tolerance for a tile to fulfill in the greedy insertion approach (*).")
             ( "tc-greedy-init-grid-size", po::value<int>(&greedyInitGridSize)->default_value(-1), "An initial grid of this size will be used as base mesh to start the insertion process. Defaults to the 4 corners of the tile if < 0")
             ( "tc-greedy-error-type", po::value<string>(&greedyErrorType)->default_value("height"), "The error computation type. Available: height, 3d.")
-            ( "tc-lt-stop-edges-count", po::value<vector<int> >(&simpStopEdgesCount)->multitoken()->default_value(std::vector<int>{500}), "Simplification stops when the number of edges is below this value (*)." )
+            ( "tc-lt-stop-edges-count", po::value<vector<int> >(&simpStopEdgesCount)->multitoken()->default_value(vector<int>{500}), "Simplification stops when the number of edges is below this value (*)." )
             ( "tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
             ( "tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
-//            ( "tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(0.2), "Remeshing facet distance." )
-//            ( "tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
-//            ( "tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(0.2), "Remeshing facet size." )
-//            ( "tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(0.2), "Remeshing edge size." )
-            ( "tc-ps-border-max-error", po::value<vector<double> >(&psBorderSimpMaxDist)->multitoken()->default_value(std::vector<double>{10000}), "Polyline simplification error at borders (*)." )
+// For the moment, we eliminate the remeshing mode for tiles generation
+//            ( "tc-remeshing-facet-distance", po::value<vector<double> >(&remeshingFacetDistance)->multitoken()->default_value(vector<double>{150000}), "Remeshing facet distance threshold." )
+//            ( "tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle threshold." )
+//            ( "tc-remeshing-facet-size", po::value<vector<double> >(&remeshingFacetSize)->multitoken()->default_value(vector<double>{150000}), "Remeshing facet size threshold." )
+//            ( "tc-remeshing-edge-size", po::value<vector<double> >(&remeshingEdgeSize)->multitoken()->default_value(vector<double>{150000}), "Remeshing edge size threshold." )
+            ( "tc-ps-border-max-error", po::value<vector<double> >(&psBorderSimpMaxDist)->multitoken()->default_value(vector<double>{10000}), "Polyline simplification error at borders (*)." )
             ( "tc-ps-border-max-length-xy-percent", po::value<vector<double> >(&psBorderSimpMaxLength)->multitoken()->default_value(std::vector<double>{20}), "Polyline simplification, maximum length of border edges when projected to the XY plane. Expressed as a percentage [0..100] (*)." )
             ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered." )
-            ( "tc-ps-hierarchy-cluster-size", po::value<vector<unsigned int> >(&psHierMaxClusterSize)->default_value(std::vector<unsigned int>{1000}), "Hierarchy point set simplification maximum cluster size (*)." )
-            ( "tc-ps-hierarchy-max-surface-variance", po::value<vector<double> >(&psHierMaxSurfaceVariance)->default_value(std::vector<double>{1000}), "Hierarchy point set simplification maximum surface variation (*)." )
+            ( "tc-ps-hierarchy-cluster-size", po::value<vector<unsigned int> >(&psHierMaxClusterSize)->default_value(vector<unsigned int>{1000}), "Hierarchy point set simplification maximum cluster size (*)." )
+            ( "tc-ps-hierarchy-max-surface-variance", po::value<vector<double> >(&psHierMaxSurfaceVariance)->default_value(vector<double>{1000}), "Hierarchy point set simplification maximum surface variation (*)." )
             ( "tc-ps-wlop-retain-percent", po::value<vector<double> >(&psWlopRetainPercentage)->multitoken()->default_value(vector<double>{1}), "Percentage of points to retain, [0..100] (*)." )
             ( "tc-ps-wlop-radius", po::value<vector<double> >(&psWlopRadius)->multitoken()->default_value(vector<double>{10000}), "PS WLOP simplification: radius." )
             ( "tc-ps-wlop-iter-number", po::value<unsigned int>(&psWlopIterNumber)->default_value(35), "PS WLOP simplification: number of iterations." )
@@ -141,7 +147,13 @@ int main ( int argc, char **argv)
     po::notify(vm);
 
     if (vm.count("help")) {
-        cout << options << "\n";
+        cout << "Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format\n\n"
+                "(*) The parameters marked with this sign can be specified multiple times to reflect the desired value per zoom level.\n"
+                "When the required zoom is larger than the number of specified parameters, the last one is used.\n"
+                "On the other hand, when a single parameter is specified, it is assumed to represent the value for the root level of the pyramid (i.e., zoom=0),\n"
+                "and the values for the deeper levels will be computed as value/2^zoom, for those parameters whose scale needs to be lowered at deeper levels,\n"
+                "or value*2^zoom, for those whose scale needs to grow with depth.\n\n"
+             << options << "\n";
         return 1;
     }
 
@@ -149,7 +161,7 @@ int main ( int argc, char **argv)
 
     // Setup all GDAL-supported raster drivers
     GDALAllRegister();
-    CPLSetConfigOption("VRT_SHARED_SOURCE", "0"); // Needed when accessing a single VRT from multiple files: http://gdal.org/gdal_vrttut.html#gdal_vrttut_mt
+    CPLSetConfigOption("VRT_SHARED_SOURCE", "0"); // Needed when accessing a single VRT from multiple threads: http://gdal.org/gdal_vrttut.html#gdal_vrttut_mt
 
     // --- Create as many tilers as required threads ---
     std::vector<QuantizedMeshTiler> tilers ;
@@ -160,7 +172,21 @@ int main ( int argc, char **argv)
         gdalDatasets.push_back( (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly) );
         if (gdalDatasets[i] == NULL) {
             cerr << "[Error] Could not open GDAL dataset" << endl;
-            return 1;
+            return EXIT_FAILURE;
+        }
+
+        // If using a point set simplification method, check the requirements
+        if (tinCreationStrategy.compare("ps-hierarchy") == 0 ||
+            tinCreationStrategy.compare("ps-wlop") == 0 ||
+            tinCreationStrategy.compare("ps-grid") == 0 ||
+            tinCreationStrategy.compare("ps-random") == 0) {
+            const char *proj = gdalDatasets[i]->GetProjectionRef();
+            OGRSpatialReference oSRS(proj);
+            if (strcmp(oSRS.GetAttrValue("geogcs"), "WGS 84") != 0) {
+                cerr << "[ERROR] When using a point set simplification procedure, we require the input dataset to be using the WGS 84 reference system."
+                     << endl;
+                return EXIT_FAILURE;
+            }
         }
 
         // Define the grid we are going to use
@@ -198,9 +224,9 @@ int main ( int argc, char **argv)
         else if (tinCreationStrategy.compare("greedy") == 0) {
             std::transform(greedyErrorType.begin(), greedyErrorType.end(), greedyErrorType.begin(), ::tolower);
             int et;
-            if (greedyErrorType.compare("height"))
+            if (greedyErrorType.compare("height") == 0)
                 et = TinCreationGreedyInsertionStrategy::ErrorHeight;
-            else if (greedyErrorType.compare("3d"))
+            else if (greedyErrorType.compare("3d") == 0)
                 et = TinCreationGreedyInsertionStrategy::Error3D;
             else {
                 std::cerr << "[ERROR] Unknown error type \"" << tinCreationStrategy << "\" for the Greedy TIN creation strategy" << std::endl;
@@ -214,18 +240,19 @@ int main ( int argc, char **argv)
 //        else if (tinCreationStrategy.compare("remeshing") == 0) {
 //            std::shared_ptr<TinCreationRemeshingStrategy> tcRemesh
 //                    = std::make_shared<TinCreationRemeshingStrategy>(remeshingFacetDistance,
-//                                                                   remeshingFacetAngle,
-//                                                                   remeshingFacetSize,
-//                                                                   remeshingEdgeSize);
+//                                                                     remeshingFacetAngle,
+//                                                                     remeshingFacetSize,
+//                                                                     remeshingEdgeSize);
 //            tinCreator.setCreator(tcRemesh);
 //        }
         else if (tinCreationStrategy.compare("ps-hierarchy") == 0) {
+            std::cout << "HEREEEEEE" << std::endl;
             std::shared_ptr<TinCreationSimplificationPointSetHierarchy> tcHier
                     = std::make_shared<TinCreationSimplificationPointSetHierarchy>(psBorderSimpMaxDist,
                                                                                    psBorderSimpMaxLength,
                                                                                    psMinFeaturePolylineSize,
-                                                                                 psHierMaxClusterSize,
-                                                                                 psHierMaxSurfaceVariance);
+                                                                                   psHierMaxClusterSize,
+                                                                                   psHierMaxSurfaceVariance);
             tinCreator.setCreator(tcHier);
         }
         else if (tinCreationStrategy.compare("ps-wlop") == 0) {
@@ -286,34 +313,34 @@ int main ( int argc, char **argv)
     }
     else if (schedulerType.compare("4connected") == 0) {
         std::shared_ptr<ZoomTilesSchedulerFourConnectedStrategy> fourConnectedStrategy
-                = std::make_shared<ZoomTilesSchedulerFourConnectedStrategy>() ;
+                = std::make_shared<ZoomTilesSchedulerFourConnectedStrategy>();
 //        std::shared_ptr<ZoomTilesSchedulerRecursiveFourConnectedStrategy> fourConnectedStrategy = std::make_shared<ZoomTilesSchedulerRecursiveFourConnectedStrategy>() ;
         scheduler.setScheduler(fourConnectedStrategy) ;
     }
     else if (schedulerType.compare("chessboard") == 0) {
         std::shared_ptr<ZoomTilesSchedulerChessboardStrategy> chessboardScheduler
-                = std::make_shared<ZoomTilesSchedulerChessboardStrategy>() ;
+                = std::make_shared<ZoomTilesSchedulerChessboardStrategy>();
         scheduler.setScheduler(chessboardScheduler);
     }
     else {
         std::cerr << "[ERROR] Unknown scheduler type \"" << schedulerType << "\"" << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Create the output directory, if needed
-    fs::path outDirPath( outDir ) ;
-    if ( !fs::exists( outDirPath ) && !fs::create_directory( outDirPath ) ) {
+    fs::path outDirPath(outDir) ;
+    if (!fs::exists(outDirPath) && !fs::create_directory(outDirPath)) {
         cerr << "[ERROR] Cannot create the output folder" << outDirPath << endl ;
-        return 1 ;
+        return EXIT_FAILURE;
     }
 
     // Create the tiles
-    QuantizedMeshTilesPyramidBuilderParallel qmtpb( tilers, scheduler ) ;
+    QuantizedMeshTilesPyramidBuilderParallel qmtpb(tilers, scheduler);
     auto start = std::chrono::high_resolution_clock::now();
     if (preserveBorders)
-        qmtpb.createTmsPyramid( startZoom, endZoom, outDir, debugDir ) ;
+        qmtpb.createTmsPyramid(startZoom, endZoom, outDir, debugDir);
     else
-        qmtpb.createTmsPyramidUnconstrainedBorders( startZoom, endZoom, outDir, debugDir ) ;
+        qmtpb.createTmsPyramidUnconstrainedBorders(startZoom, endZoom, outDir, debugDir);
     auto finish = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = finish - start;
@@ -327,5 +354,5 @@ int main ( int argc, char **argv)
         delete (*it);
     }
 
-    return 0 ;
+    return EXIT_SUCCESS;
 }

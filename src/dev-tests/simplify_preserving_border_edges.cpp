@@ -5,6 +5,7 @@
  *
  * This version provides more user parameters to tune.
  *
+ * @author Ricard Campos (ricardcd@gmail.com)
  */
 
 // STD

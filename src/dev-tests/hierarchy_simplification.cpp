@@ -1,6 +1,8 @@
-//
-// Created by Ricard Campos (rcampos@eia.udg.edu).
-//
+/**
+ * @file
+ * @brief Simplifies a mesh using CGAL maintaining the edges on the border
+ * @author Ricard Campos (ricardcd@gmail.com)
+ */
 
 #include <vector>
 #include <fstream>

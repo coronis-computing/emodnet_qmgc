@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_SURFACE_SIMPLIFICATION_VOID_CONCRETE_STRATEGY_H
@@ -10,7 +10,9 @@
 namespace TinCreation {
 
 /**
- * A Delaunay triangulation is created with the input points, no simplification is applied.
+ * @class TinCreationDelaunayStrategy
+ * @brief A Delaunay triangulation is created with the input points, no simplification is applied.
+ *
  * Also, the constrain<X>Vertices parameters are ignored. This creation strategy is useful to just triangulate regular
  * grids, where the vertices at the borders are always the same for neighboring tiles.
  */

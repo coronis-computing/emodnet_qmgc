@@ -1,5 +1,5 @@
 //
-// Created by ricard on 6/09/17.
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_QUANTIZED_MESH_H
@@ -95,56 +95,56 @@ public:
     // --- Functions ---
     /// Constructor
     QuantizedMesh() {
-        m_header = Header() ;
-        m_vertexData = VertexData() ;
-        m_indexData = IndexData() ;
-        m_edgeIndices = EdgeIndices() ;
-        m_vertexNormals = VertexNormals() ;
-        m_waterMask = WaterMask() ;
-        m_bytesPerIndex = 0 ;
+        m_header = Header();
+        m_vertexData = VertexData();
+        m_indexData = IndexData();
+        m_edgeIndices = EdgeIndices();
+        m_vertexNormals = VertexNormals();
+        m_waterMask = WaterMask();
+        m_bytesPerIndex = 0;
     }
 
     /// Constructor from file
-    QuantizedMesh( const std::string &filePath ) { readFile(filePath) ; }
+    QuantizedMesh(const std::string &filePath) { readFile(filePath); }
 
     /// Read the tile from a file
-    bool readFile( const std::string &filePath ) ;
+    bool readFile(const std::string &filePath);
 
     /// Write the tile to a file
-    bool writeFile( const std::string &filePath ) ;
+    bool writeFile(const std::string &filePath);
 
     /// Show the contents of the tile on screen
-    void print() ;
+    void print();
 
     /// Show the contents of the header of the tile on screen
-    void printHeader() ;
+    void printHeader();
 
     /// Set the header part of the quantized mesh structure
-    void setHeader( const Header& header ) { m_header = header ; }
+    void setHeader(const Header& header) { m_header = header; }
 
     /// Set the vertex data part of the quantized mesh structure
-    void setVertexData( const VertexData& vd ) { m_vertexData = vd ; }
+    void setVertexData(const VertexData& vd) { m_vertexData = vd; }
 
     /// Set the index data part of the quantized mesh structure
-    void setIndexData( const IndexData& id ) { m_indexData = id ; }
+    void setIndexData(const IndexData& id) { m_indexData = id; }
 
     /// Set the edge indices data part of the quantized mesh structure
-    void setEdgeIndices( const EdgeIndices& ei ) { m_edgeIndices = ei ; }
+    void setEdgeIndices(const EdgeIndices& ei) { m_edgeIndices = ei; }
 
     /// Set the vertices normal part of the quantized mesh structure
-    void setVertexNormals( const VertexNormals& vn ) { m_vertexNormals = vn ; }
+    void setVertexNormals(const VertexNormals& vn) { m_vertexNormals = vn; }
 
     /// Get the header part of the quantized mesh structure
-    Header getHeader() const { return m_header ; }
+    Header getHeader() const { return m_header; }
 
     /// Get the vertex data part of the quantized mesh structure
-    VertexData getVertexData() const { return m_vertexData ; }
+    VertexData getVertexData() const { return m_vertexData; }
 
     /// Get the index data of the quantized mesh structure
-    IndexData getIndexData() const { return m_indexData ; }
+    IndexData getIndexData() const { return m_indexData; }
 
     /// Get the vertex normals of the quantized mesh structure
-    VertexNormals getVertexNormals() const { return m_vertexNormals ; }
+    VertexNormals getVertexNormals() const { return m_vertexNormals; }
 
     /// Get the edge indices of the quantized mesh structure
     EdgeIndices getEdgeIndices() const { return m_edgeIndices; }

@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos
+// Author: Ricard Campos (ricardcd@gmail.com)
 // Reimplementation in C++ of the global_geodetic.py file from quantized_mesh_tile project
 // https://github.com/loicgasser/quantized-mesh-tile/blob/master/quantized_mesh_tile/global_geodetic.py
 //

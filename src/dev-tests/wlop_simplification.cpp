@@ -1,10 +1,8 @@
-//
-// Created by Ricard Campos (rcampos@eia.udg.edu).
-//
-
-//
-// Created by Ricard Campos (rcampos@eia.udg.edu).
-//
+/**
+ * @file
+ * @brief Simplifies the input point set using the WLOP algorithm, and triangulates it in the 2D plane.
+ * @author Ricard Campos (ricardcd@gmail.com)
+ */
 
 #include <vector>
 #include <fstream>
@@ -34,7 +32,7 @@ int main(int argc, char*argv[])
 {
     double percentToRetain, neighborRadius ;
     std::string inputFile, outputFile;
-    po::options_description options("Simplifies a mesh using CGAL maintaining the edges on the border") ;
+    po::options_description options("Simplifies the input point set using the WLOP algorithm, and triangulates it in the 2D plane") ;
     options.add_options()
             ("help,h", "Produce help message")
             ("input,i", po::value<std::string>(&inputFile), "Data points to create the mesh (they are supposed to be projectible to the XY plane, i.e., be an implicit function of the form f(x,y) = z).")

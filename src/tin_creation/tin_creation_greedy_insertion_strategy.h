@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_TIN_CREATION_GREEDY_INSERTION_H
@@ -16,7 +16,7 @@
 namespace TinCreation {
 
 /**
- * @class HeapNode
+ * @class GIHeapNode
  * @brief The information to be maintained in the heap structure
  */
 struct GIHeapNode {
@@ -27,6 +27,10 @@ struct GIHeapNode {
     GIHeapNode( const FT& e, const Point_3& c ) : error(e), candidate(c) {}
 };
 
+/**
+ * @class CompareGIHeapNodes
+ * @brief Comparison operator (less than) for GIHeapNodes
+ */
 struct CompareGIHeapNodes
 {
     bool operator()(const GIHeapNode& n1, const GIHeapNode& n2) const
@@ -38,10 +42,10 @@ struct CompareGIHeapNodes
 typedef boost::heap::fibonacci_heap<GIHeapNode, boost::heap::compare<CompareGIHeapNodes>> GIHeap ;
 typedef typename GIHeap::handle_type GIHeapNodeHandle ;
 
-/// Additional information associated to a face in a Delaunay triangulation required by the Greedy Insertion
-
-
-
+/**
+ * @class GIFaceInfo
+ * @brief Additional information associated to a face in a Delaunay triangulation required by the Greedy Insertion algorithm
+ */
 class GIFaceInfo {
 public:
     GIFaceInfo() : m_pointsInFacePtrs(), m_heapNodeHandle(), m_hasHeapNodeHandle(false) {}
@@ -66,14 +70,20 @@ private:
     bool m_hasHeapNodeHandle ;
 };
 
-
+/**
+ * @class TinCreationGreedyInsertionStrategy
+ * @brief Creates a TIN using the Greedy Insertion method.
+ *
+ * This class implements a slighly modified version of the method described in:
+ *
+ * M. Garland, P. S. Heckbert, Fast polygonal approximation of terrains and height Fields, Technical report CMU-CS-95-181, Carnegie Mellon University 575 (September 1995).
+ */
 class TinCreationGreedyInsertionStrategy : public TinCreationStrategy
 {
 public:
     // --- Typedefs ---
     typedef CGAL::Triangulation_vertex_base_2<Gt>                       Vb;
     typedef CGAL::Triangulation_face_base_with_info_2<GIFaceInfo, Gt>   Fb;
-//    typedef GIFaceBase<Gt>                                              Fb;
     typedef CGAL::Triangulation_data_structure_2<Vb, Fb>                Tds;
     typedef CGAL::Delaunay_triangulation_2<Gt, Tds>                     DT;
     typedef DT::Face_handle                                             FaceHandle;
@@ -87,12 +97,19 @@ public:
     typedef Gt::Rp::Intersect_3                                         Intersect_3;
 
 public:
-    enum ErrorType { ErrorHeight=0, Error3D } ;
+    enum ErrorType { ErrorHeight=0, Error3D } ; //! Types of errors to use
 
     // --- Public Methods ---
-    TinCreationGreedyInsertionStrategy( double rootApproxTolerance,
-                                        int initGridSamples = -1,
-                                        int errorType = ErrorHeight )
+
+    /**
+     * Constructor
+     * @param rootApproxTolerance Approximation tolerance (the error guiding the end of the process)
+     * @param initGridSamples Size of the fixed grid of samples to use. It effectively defines a minimum complexity on the mesh.
+     * @param errorType Type of error to use.
+     */
+    TinCreationGreedyInsertionStrategy(double rootApproxTolerance,
+                                       int initGridSamples = -1,
+                                       int errorType = ErrorHeight)
             : m_initGridSamples(initGridSamples)
             , m_errorType(errorType)
     {
@@ -100,9 +117,15 @@ public:
         setParamsForZoom(0);
     }
 
-    TinCreationGreedyInsertionStrategy( const std::vector<FT>& approxTolPerZoom,
-                                        int initGridSamples = -1,
-                                        int errorType = ErrorHeight )
+    /**
+     * Constructor
+     * @param rootApproxTolerance Approximation tolerances per zoom (the errors guiding the end of the process)
+     * @param initGridSamples Size of the fixed grid of samples to use. It effectively defines a minimum complexity on the mesh.
+     * @param errorType Type of error to use.
+     */
+    TinCreationGreedyInsertionStrategy(const std::vector<FT>& approxTolPerZoom,
+                                       int initGridSamples = -1,
+                                       int errorType = ErrorHeight)
             : m_initGridSamples(initGridSamples)
             , m_errorType(errorType)
             , m_approxTolPerZoom(approxTolPerZoom)
@@ -112,36 +135,14 @@ public:
 
     void setParamsForZoom(const unsigned int& zoom)
     {
-//        if (m_approxTolPerZoom.size() == 0) {
-//            std::cerr << "[WARNING::TinCreationGreedyInsertionStrategy] Input edges count per zoom vector is empty, using 1 (default value)" << std::endl;
-//            m_approxTol = 1;
-//        }
-//        else if (m_approxTolPerZoom.size() == 1) {
-//            // This means that only the root tolerance was specified, we will infer the tolerance at the desired zoom level by dividing by two the root number for each level
-//            if (zoom == 0)
-//                m_approxTol = m_approxTolPerZoom[0];
-//            else {
-//                m_approxTol = m_approxTolPerZoom[0] / pow(2, zoom);
-//            }
-//        }
-//        else if ( zoom < m_approxTolPerZoom.size()) {
-//            // Use the approximation tolerance corresponding to the zoom in the vector
-//            m_approxTol = m_approxTolPerZoom[zoom];
-//        }
-//        else {
-//            // Use the approximation tolerance corresponding to the last zoom specified in the vector
-//            m_approxTol = m_approxTolPerZoom.back();
-//        }
-
         m_approxTol = standardHandlingOfThresholdPerZoom(m_approxTolPerZoom, zoom);
-//        std::cout << "m_approxTol = " << m_approxTol << std::endl;
     }
 
-    Polyhedron create( const std::vector<Point_3>& dataPts,
-                       const bool& constrainEasternVertices,
-                       const bool& constrainWesternVertices,
-                       const bool& constrainNorthernVertices,
-                       const bool& constrainSouthernVertices ) ;
+    Polyhedron create(const std::vector<Point_3>& dataPts,
+                      const bool& constrainEasternVertices,
+                      const bool& constrainWesternVertices,
+                      const bool& constrainNorthernVertices,
+                      const bool& constrainSouthernVertices);
 private:
     // --- Attributes ---
     FT m_approxTol ;
@@ -158,31 +159,33 @@ private:
     void initialize(const bool& constrainEasternVertices,
                     const bool& constrainWesternVertices,
                     const bool& constrainNorthernVertices,
-                    const bool& constrainSouthernVertices) ;
+                    const bool& constrainSouthernVertices);
 
     /// Compute the error induced by a point w.r.t. a triangle
     /// \pre the triangle \param t is the closest to point p in the current approximation
-    FT error(const Point_3& p, const Triangle_3&t ) const ;
+    FT error(const Point_3& p, const Triangle_3&t) const;
 
     /// Compute the error given a point/triangle
-    /// \pre Point XY projection falls within triangle XY projection
-    FT errorHeight(const Point_3& p, const Triangle_3&t ) const ;
+    /// \pre Point's XY projection falls within triangle's XY projection
+    FT errorHeight(const Point_3& p, const Triangle_3&t) const;
 
     /// Compute the error given a point/triangle. Orthogonal distance.
-    /// \pre Point XY projection falls within triangle XY projection
-    FT error3D(const Point_3& p, const Triangle_3&t ) const ;
+    /// \pre Point's XY projection falls within triangle's XY projection
+    FT error3D(const Point_3& p, const Triangle_3&t) const;
 
+    /// Evaluate the height of a point in the current approximation. Just the XY part of \p p is used.
+    /// \pre Point's XY projection falls within triangle's XY projection
     FT eval(const Point_3& p, const Triangle_3&t) const;
 
     /// Contains all the steps to perform when inserting a new point in the triangulation
-    void insert( const Point_3& p ) ;
+    void insert(const Point_3& p);
 
     /**
      * Find the point falling in the face inducing the largest error and add it to the heap.
      * Also adds the reference to the introduced heap node in the face.
      * \pre The face has its internal points ptrs set using the findPointsInFace function
      */
-    void computeErrorAndUpdateHeap( FaceHandle fh ) ;
+    void computeErrorAndUpdateHeap(FaceHandle fh);
 };
 
 } // End namespace TinCreation

@@ -1,14 +1,18 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu)
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_CGAL_DEFINES_H
 #define EMODNET_TOOLS_CGAL_DEFINES_H
 
+/*! @namespace TinCreation
+    @brief This namespace contains all the types/classes/functions required to create a TIN out of a regularly gridded terrain
+*/
+
 /**
  * @brief Common types of CGAL used in the project.
  *
- * We decided to fix the types because we don't envision to change the Kernel, and also because doing so we avoid the
+ * We decided to fix the types because we don't envision changing the Kernel used, and also because doing so we avoid the
  * use of templated classes.
  */
 
@@ -95,9 +99,6 @@ typedef SMS::Count_stop_predicate<Polyhedron>               SimplificationStopPr
 
 // Polyline simplification related
 typedef PS::Stop_above_cost_threshold                       PSStopCost;
-//typedef PS::Stop_below_count_ratio_threshold                PSStopCountRatio;
-//typedef PS::Squared_distance_cost                           PSSqDistCost;
-//typedef PS::Scaled_squared_distance_cost                    PSScaledSqDistCost;
 
 #ifdef CGAL_LINKED_WITH_TBB
     typedef CGAL::Parallel_tag Concurrency_tag;

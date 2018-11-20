@@ -1,6 +1,8 @@
-//
-// Created by Ricard Campos (rcampos@eia.udg.edu)
-//
+/**
+ * @file
+ * @brief Reads a quantized mesh terrain file, writes it to disk, and reads it back.
+ * @author Ricard Campos (ricardcd@gmail.com)
+ */
 
 // Boost
 #include <boost/program_options.hpp>

@@ -1,5 +1,5 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
 
 #ifndef EMODNET_TOOLS_SURFACE_SIMPLIFICATION_LINDSTROM_TURK_STRATEGY_H
@@ -10,12 +10,24 @@
 namespace TinCreation {
 
 /**
- * Simplifies the surface using Lindstrom-Turk algorithm [1][2]
- * [1] P. Lindstrom and G. Turk. Fast and memory efficient polygonal simplification. In IEEE Visualization, pages 279–286, 1998.
+ * @class TinCreationSimplificationLindstromTurkStrategy
+ *
+ * @brief Creates a TIN using an edge-collapse simplification method
+ *
+ * This class uses a modified version of the Lindstrom-Turk algorithm [1][2]
+ *
+ * [1] P. Lindstrom and G. Turk. Fast and memory efficient polygonal simplification. In IEEE Visualization, pages 279–286, 1998. <br>
  * [2] P. Lindstrom and G. Turk. Evaluation of memoryless simplification. IEEE Transactions on Visualization and Computer Graphics, 5(2):98–115, slash 1999.
  */
 class TinCreationSimplificationLindstromTurkStrategy : public TinCreationStrategy {
 public:
+    /**
+     * Constructor
+     * @param stopEdgesCount Desired number of edges for the simplified mesh
+     * @param weightVolume Volume weight (see original reference)
+     * @param weightBoundary Boundary weight (see original reference)
+     * @param weightShape Shape weight (see original reference)
+     */
     TinCreationSimplificationLindstromTurkStrategy(int stopEdgesCount,
                                                    double weightVolume = 0.5,
                                                    double weightBoundary = 0.5,
@@ -26,6 +38,13 @@ public:
             , m_stopEdgesCountPerZoom(1, stopEdgesCount)
             , m_weightShape(weightShape) {}
 
+    /**
+     * Constructor
+     * @param stopEdgesCount Desired number of edges for the simplified mesh per zoom
+     * @param weightVolume Volume weight (see original reference)
+     * @param weightBoundary Boundary weight (see original reference)
+     * @param weightShape Shape weight (see original reference)
+     */
     TinCreationSimplificationLindstromTurkStrategy(std::vector<int> stopEdgesCountPerZoom,
                                                    double weightVolume = 0.5,
                                                    double weightBoundary = 0.5,

@@ -1,6 +1,7 @@
 //
-// Created by Ricard Campos (rcampos@eia.udg.edu).
+// Author: Ricard Campos (ricardcd@gmail.com)
 //
+
 
 #ifndef EMODNET_TOOLS_POLYHEDRONBUILDERFROMC3T3BOUNDARY_H
 #define EMODNET_TOOLS_POLYHEDRONBUILDERFROMC3T3BOUNDARY_H
