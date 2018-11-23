@@ -10,6 +10,7 @@
 #include <vector>
 #include "cgal/cgal_utils.h"
 #include <ctb.hpp>
+#include "misc_utils.h"
 
 /**
  * @class
@@ -170,12 +171,7 @@ public:
         return remap(value, 0, MAX_VERTEX_DATA, minOr, maxOr ) ;
     }
 
-    static double remap(const double& value, const double& minOr, const double& maxOr, const double& minDest, const double& maxDest) {
-        if ( maxOr-minOr == 0 ) // Avoid division by zero
-            return 0 ;
-        else
-            return ( (value-minOr)/(maxOr-minOr) ) * (maxDest-minDest) + minDest ;
-    }
+
 
 private:
 

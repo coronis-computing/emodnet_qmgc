@@ -52,7 +52,7 @@ public:
     {
         m_borderSimpMaxDistPerZoom = std::vector<FT>{borderSimplificationMaxDistance};
         m_borderSimpMaxLengthPercentPerZoom = std::vector<FT>{borderSimplificationMaxLengthPercent};
-        setParamsForZoom(0);
+//        setParamsForZoom(0);
     }
 
     /**
@@ -67,7 +67,7 @@ public:
             : m_borderSimpMaxDistPerZoom(borderSimplificationMaxDistance)
             , m_borderSimpMaxLengthPercentPerZoom(borderSimplificationMaxLengthPercent)
     {
-        setParamsForZoom(0);
+//        setParamsForZoom(0);
     }
 
     Polyhedron create(const std::vector<Point_3>& dataPts,
@@ -93,6 +93,7 @@ public:
         m_borderSimpMaxLengthPercent /= 100.0; // Convert to the range [0..1]
 
         // Set further parameters that are exclusive of each point set simplification strategy using setParamsForZoomConcreteStrategy(zoom); in derived classes
+        setParamsForZoomConcreteStrategy(zoom);
     }
 
     /**

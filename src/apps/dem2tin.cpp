@@ -10,6 +10,7 @@
 #include <chrono>
 // GDAL
 #include "gdal_priv.h"
+#include <ogrsf_frmts.h>
 // Boost
 #include <boost/program_options.hpp>
 // CGAL
@@ -48,7 +49,7 @@ int main ( int argc, char **argv) {
     int numThreads = 0;
     bool bathymetryFlag, verbose, resetOrigin;
 
-    po::options_description options("Creates a Triangulated Irregular Network (TIN) from a GDAL raster or from another TIN");
+    po::options_description options("dem2tin options:");
     options.add_options()
             ("help,h", "Produce help message")
             ("input,i", po::value<std::string>(&inputFile), "Input terrain file (GDAL raster)")
@@ -57,7 +58,7 @@ int main ( int argc, char **argv) {
             ("bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations (only for GDAL files)")
             ("clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold (only for GDAL files)")
             ("clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold (only for GDAL files)")
-            ("reset-origin", po::value<bool>(&resetOrigin)->default_value(true), "Resets the origin of the input samples to be minimum point of their bounding box")
+            ("reset-origin", po::value<bool>(&resetOrigin)->default_value(true), "Resets the origin of the input samples to be minimum point of their bounding box. Just used when the input is not a GDAL raster")
             ("export-new-origin", po::value<std::string>(&exportNewOrigin)->default_value(""), "Path where to export the new origin. Only use when reset-origin parameter is set to true. The format is the minimum X, Y, Z of the input vertices. Adding this values to the resulting vertices should get them in the original coordinates.")
             ("tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random, remeshing, (see documentation for the meaning of each)" )
             ("tc-greedy-error-tol", po::value<double>(&greedyErrorTol)->default_value(0.1), "Error tolerance for a tile to fulfill in the greedy insertion approach")
@@ -106,12 +107,15 @@ int main ( int argc, char **argv) {
     po::notify(vm);
 
     if (vm.count("help")) {
-        cout << options << "\n";
-        return 1;
+        cout << "Creates a Triangulated Irregular Network (TIN) from a GDAL raster or from another TIN"
+             << options << endl;
+        return EXIT_FAILURE;
     }
 
     // Read the input samples
     std::vector<Point_3> samples ;
+    double minX, minY, minHeight, maxX, maxY, maxHeight;
+    minX = minY = minHeight = maxX = maxY = maxHeight = 0.0;
     std::transform(inputType.begin(), inputType.end(), inputType.begin(), ::tolower);
     if (inputType.compare("gdal") == 0) {
         // Setup all GDAL-supported raster drivers
@@ -125,6 +129,20 @@ int main ( int argc, char **argv) {
             return 1;
         }
 
+        if (tinCreationStrategy.compare("ps-hierarchy") == 0 ||
+            tinCreationStrategy.compare("ps-wlop") == 0 ||
+            tinCreationStrategy.compare("ps-grid") == 0 ||
+            tinCreationStrategy.compare("ps-random") == 0 ||
+            tinCreationStrategy.compare("remeshing") == 0) {
+            const char *proj = gdalDataset->GetProjectionRef();
+            OGRSpatialReference oSRS(proj);
+            if (!oSRS.IsGeographic() || strcmp(oSRS.GetAttrValue("geogcs"), "WGS 84") != 0) {
+                cerr << "[ERROR] When using a remeshing or point set simplification procedure, we require the input dataset to be using the WGS 84 reference system."
+                     << endl;
+                return EXIT_FAILURE;
+            }
+        }
+
         // Copy the raster data into an array
         GDALRasterBand *heightsBand = gdalDataset->GetRasterBand(1);
         float *rasterHeights = new float[heightsBand->GetXSize() * heightsBand->GetYSize()];
@@ -133,10 +151,12 @@ int main ( int argc, char **argv) {
                                   heightsBand->GetXSize(), heightsBand->GetYSize(),
                                   GDT_Float32, 0, 0) != CE_None) {
             std::cerr << "\n[ERROR] Could not read heights from raster" << std::endl;
-            return 1;
+            return EXIT_FAILURE;
         }
 
         // Run over the array and create a
+        minHeight =  std::numeric_limits<float>::infinity() ;
+        maxHeight = -std::numeric_limits<float>::infinity() ;
         for (int i = 0; i < heightsBand->GetXSize(); i++) {
             for (int j = 0; j < heightsBand->GetYSize(); j++) {
                 int y = heightsBand->GetXSize() - 1 - j; // y coordinate within the tile.
@@ -157,10 +177,24 @@ int main ( int argc, char **argv) {
                 if (bathymetryFlag)
                     height = -height;
 
+                if (height < minHeight)
+                    minHeight = height;
+                if (height > maxHeight)
+                    maxHeight = height;
+
                 // In heightmap format
                 samples.push_back(Point_3(i, y, height));
             }
         }
+
+        double width = gdalDataset->GetRasterXSize();
+        double height = gdalDataset->GetRasterYSize();
+        double gt[6];
+        gdalDataset->GetGeoTransform(gt);
+        minX = gt[0];
+        minY = gt[3] + width*gt[4] + height*gt[5];
+        maxX = gt[0] + width*gt[1] + height*gt[2];
+        maxY = gt[3];
 
         // Delete the allocated memory that is not needed anymore
         delete rasterHeights;
@@ -194,11 +228,11 @@ int main ( int argc, char **argv) {
     }
     else {
         std::cerr << "\n[ERROR] Unknown input type \"" << inputType << "\", available options are \"gdal\", \"point-set\" or \"off\"" << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Recenter the samples
-    if (resetOrigin) {
+    if (inputType.compare("gdal") != 0 && resetOrigin) {
         if(verbose) cout << "Re-setting the origin of the samples..." << flush ;
         K::Iso_cuboid_3 boundingBox = CGAL::bounding_box(samples.begin(), samples.end());
         std::transform(samples.begin(), samples.end(), samples.begin(),
@@ -229,6 +263,9 @@ int main ( int argc, char **argv) {
     // Setup the TIN creator
     if(verbose) cout << "Creating the TIN..." << flush;
     TinCreator tinCreator;
+    if (inputType.compare("gdal") == 0)
+        tinCreator.setBounds(minX, minY, minHeight, maxX, maxY, maxHeight);
+
     std::transform(tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower);
     if (tinCreationStrategy.compare("lt") == 0) {
         std::shared_ptr<TinCreationSimplificationLindstromTurkStrategy> tcLT
@@ -319,5 +356,5 @@ int main ( int argc, char **argv) {
     of << poly;
     if(verbose) cout << " done." << endl ;
 
-    return 0;
+    return EXIT_SUCCESS;
 }

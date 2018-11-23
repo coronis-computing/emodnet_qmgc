@@ -15,8 +15,6 @@
 // GDAl
 #include "cpl_conv.h"
 #include <ogrsf_frmts.h>
-#include <ogr_api.h>
-#include <ogr_spatialref.h>
 // Project-specific
 #include "quantized_mesh_tiles_pyramid_builder_parallel.h"
 #include "zoom_tiles_scheduler.h"
@@ -84,7 +82,7 @@ int main ( int argc, char **argv)
     std::vector<unsigned int> psHierMaxClusterSize;
     std::vector<double> greedyErrorTol, remeshingFacetDistance, remeshingFacetSize, remeshingEdgeSize, psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
 
-    po::options_description options("qm_tiler options:");
+    po::options_description options("qm_tiler options");
     options.add_options()
             ( "help,h", "Produce help message" )
             ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse (can be specified like this or as a positional parameter)" )
@@ -182,7 +180,7 @@ int main ( int argc, char **argv)
             tinCreationStrategy.compare("ps-random") == 0) {
             const char *proj = gdalDatasets[i]->GetProjectionRef();
             OGRSpatialReference oSRS(proj);
-            if (strcmp(oSRS.GetAttrValue("geogcs"), "WGS 84") != 0) {
+            if (!oSRS.IsGeographic() || strcmp(oSRS.GetAttrValue("geogcs"), "WGS 84") != 0) {
                 cerr << "[ERROR] When using a point set simplification procedure, we require the input dataset to be using the WGS 84 reference system."
                      << endl;
                 return EXIT_FAILURE;
@@ -246,7 +244,6 @@ int main ( int argc, char **argv)
 //            tinCreator.setCreator(tcRemesh);
 //        }
         else if (tinCreationStrategy.compare("ps-hierarchy") == 0) {
-            std::cout << "HEREEEEEE" << std::endl;
             std::shared_ptr<TinCreationSimplificationPointSetHierarchy> tcHier
                     = std::make_shared<TinCreationSimplificationPointSetHierarchy>(psBorderSimpMaxDist,
                                                                                    psBorderSimpMaxLength,

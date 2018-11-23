@@ -45,5 +45,6 @@ add_executable(compute_statistics compute_statistics.cpp
                                   ../base/gzip_file_writer.cpp
                                   ../base/quantized_mesh.cpp
                                   ../../3rdParty/meshoptimizer/vcacheoptimizer.cpp
-                                  ../../3rdParty/meshoptimizer/vfetchoptimizer.cpp)
+                                  ../../3rdParty/meshoptimizer/vfetchoptimizer.cpp
+                                  ../base/crs_conversions.cpp)
 target_link_libraries(compute_statistics ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CTB_LIBRARY} ${GDAL_LIBRARY})

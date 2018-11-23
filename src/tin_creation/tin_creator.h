@@ -7,6 +7,7 @@
 
 #include <memory>
 #include "tin_creation_cgal_types.h"
+#include "base/misc_utils.h"
 
 // Note: this set of classes implement a Strategy Pattern
 namespace TinCreation {
@@ -189,6 +190,8 @@ public:
     void setBounds(const double& minX, const double& minY, const double& minZ,
                    const double& maxX, const double& maxY, const double& maxZ) {
         m_creator->setBounds(minX, minY, minZ, maxX, maxY, maxZ);
+        double scaleZ = remap( 1.0, 0.0, maxZ-minZ, 0.0, 1.0 );
+        setScaleZ(scaleZ);
     }
 
 private:

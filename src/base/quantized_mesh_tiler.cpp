@@ -17,6 +17,7 @@
 #include "crs_conversions.h"
 #include <sstream>
 #include <gdal.h>
+#include "misc_utils.h"
 
 QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord, BordersData& bd)
 {
@@ -106,10 +107,10 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 //    ofs << "];" << std::endl;
 
     // Set the scale of the units to the TinCreator (used by some of the methods to scale the parameters w.r.t. the tile units)
-    double scale = QuantizedMesh::remap( 1.0, 0.0, maxHeight-minHeight, 0.0, 1.0 );
+//    double scale = remap( 1.0, 0.0, maxHeight-minHeight, 0.0, 1.0 );
 //    double scaledThres = QuantizedMesh::remap( 292.969, 0.0, maxHeight-minHeight, 0.0, 1.0 );
 //    std::cout << "scaledThres = " << scaledThres << std::endl;
-    m_tinCreator.setScaleZ(scale);
+//    m_tinCreator.setScaleZ(scale);
     m_tinCreator.setBounds(tileBounds.getMinX(), tileBounds.getMinY(), minHeight,
                            tileBounds.getMaxX(), tileBounds.getMaxY(), maxHeight);
 
@@ -314,9 +315,9 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
     // conditioned for simplification
     std::vector< Point_3 > uvhPts ;
     for ( std::vector<Point_3>::iterator it = heightMapPoints.begin(); it != heightMapPoints.end(); ++it ) {
-        double u = QuantizedMesh::remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double v = QuantizedMesh::remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
-        double h = QuantizedMesh::remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
+        double u = remap( it->x(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double v = remap( it->y(), 0.0, m_options.HeighMapSamplingSteps-1, 0.0, 1.0 ) ;
+        double h = remap( it->z(), minHeight, maxHeight, 0.0, 1.0 ) ;
 
 //        std::cout << "u = " << u << " / v = " << v << " / h = " << h << std::endl;
 
@@ -618,9 +619,9 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
 
         // The data must be converted back to double before returning it to update the cache
         // This is because the ranges for height depend on min/max height for each tile and we need to add this vertices as part of the vertices of the new tile, in other bounds
-        double x = QuantizedMesh::remap( p0.x(), 0.0, 1.0, 0.0, m_options.HeighMapSamplingSteps - 1);
-        double y = QuantizedMesh::remap( p0.y(), 0.0, 1.0, 0.0, m_options.HeighMapSamplingSteps - 1);
-        double h = QuantizedMesh::remap( p0.z(), 0.0, 1.0, minHeight, maxHeight);
+        double x = remap( p0.x(), 0.0, 1.0, 0.0, m_options.HeighMapSamplingSteps - 1);
+        double y = remap( p0.y(), 0.0, 1.0, 0.0, m_options.HeighMapSamplingSteps - 1);
+        double h = remap( p0.z(), 0.0, 1.0, minHeight, maxHeight);
         Point_3 phm( x, y, h ) ; // Point in "heightmap" format
 
         if ( isCorner ) {

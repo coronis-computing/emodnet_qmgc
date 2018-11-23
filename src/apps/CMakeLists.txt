@@ -7,8 +7,7 @@ add_executable(qm_tiler qm_tiler.cpp
                         ../../3rdParty/meshoptimizer/vcacheoptimizer.cpp
                         ../../3rdParty/meshoptimizer/vfetchoptimizer.cpp
                         ../base/zoom_tiles_border_vertices_cache.cpp
-                        ../base/quantized_mesh_tiles_pyramid_builder_parallel.cpp
-                        ../base/crs_conversions.h)
+                        ../base/quantized_mesh_tiles_pyramid_builder_parallel.cpp)
 target_link_libraries(qm_tiler TinCreation
                                ${Boost_LIBRARIES}
                                ${ZLIB_LIBRARIES}
@@ -16,7 +15,7 @@ target_link_libraries(qm_tiler TinCreation
                                ${CGAL_LIBRARIES}
                                ${GDAL_LIBRARY})
 
-add_executable(dem2tin dem2tin.cpp ../cgal/detect_sharp_edges_without_borders.h ../cgal/extract_polylines_from_sharp_edges.h)
+add_executable(dem2tin dem2tin.cpp)
 target_link_libraries(dem2tin TinCreation ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${GDAL_LIBRARY})
 
 install(TARGETS qm_tiler dem2tin DESTINATION bin)
