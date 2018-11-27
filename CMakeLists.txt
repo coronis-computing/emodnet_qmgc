@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.6)
-project("EMODnet tools")
+project("EMODnet Quantized Mesh Generator for Cesium")
 
 # -----------------------------------------------------------------------------
 # Extent the module path
@@ -17,7 +17,7 @@ CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
 
 if(NOT MSVC)
   if(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -pthread")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   elseif(COMPILER_SUPPORTS_CXX0X)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -pthread")
   else()
@@ -28,6 +28,9 @@ endif()
 # -----------------------------------------------------------------------------
 # Required packages
 # -----------------------------------------------------------------------------
+
+# PThreads
+find_package(Threads REQUIRED)
 
 # Boost library
 find_package(Boost COMPONENTS program_options

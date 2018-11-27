@@ -1,95 +1,43 @@
+// Copyright (c) 2018 Coronis Computing S.L. (Spain)
+// All rights reserved.
+//
+// This file is part of EMODnet Quantized Mesh Generator for Cesium.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // Author: Ricard Campos (ricardcd@gmail.com)
-//
 
-#include "quantized_mesh_tiles_pyramid_builder_parallel.h"
+#include "quantized_mesh_tiles_pyramid_builder.h"
 #include <ctb.hpp>
 #include "zoom_tiles_border_vertices_cache.h"
 #include <future>
 
 
 
-
-//QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel( const std::string& inputFile,
-//                                  const ctb::TilerOptions &gdalTilerOptions,
-//                                  const QuantizedMeshTiler::QMTOptions &qmtOptions,
-//                                  const ZoomTilesScheduler& scheduler,
-//                                  const int& numThreads )
-//        : m_scheduler(scheduler)
-//        , m_numThreads(numThreads)
-//        , m_tilesWaitingToProcess()
-//        , m_bordersCache()
-//{
-////    int tileSize = 256 ; // TODO: Check if this is ok...
-////    ctb::Grid m_grid = ctb::GlobalGeodetic(tileSize);
-//
-//    const unsigned int numMaxThreads = std::thread::hardware_concurrency();
-//    if ( m_numThreads <= 0 )
-//        m_numThreads = numMaxThreads ;
-//
-//    // Create a tiler with its own pointer to the dataset for each thread
-////    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
-////    for ( int i = 0; i < m_numThreads; i++ ) {
-////        GDALDataset  *poDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
-////        if (poDataset == NULL) {
-////            std::cerr << "Error: could not open GDAL dataset" << std::endl;
-////            return;
-////        }
-////
-////        m_tilers[i] = new QuantizedMeshTiler(poDataset, m_grid, gdalTilerOptions, qmtOptions, ) ;
-////    }
-//}
-
-
-//QuantizedMeshTilesPyramidBuilderParallel::QuantizedMeshTilesPyramidBuilderParallel(const QuantizedMeshTiler& qmTiler,
-//                                                                                   const ZoomTilesScheduler& scheduler,
-//                                                                                   const int& numThreads )
-//        : m_scheduler(scheduler), m_numThreads(numThreads), m_tiler(qmTiler), m_debugMode(false), m_debugDir("")
-//{
-//    const unsigned int numMaxThreads = std::thread::hardware_concurrency();
-//    if ( m_numThreads <= 0 )
-//        m_numThreads = numMaxThreads ;
-//
-//    // Create a tiler with its own pointer to the dataset for each thread
-////    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
-////    for ( int i = 0; i < m_numThreads; i++ ) {
-////        m_tilers[i] = new QuantizedMeshTiler(qmTiler) ;
-////    }
-//}
-
-
-QuantizedMeshTilesPyramidBuilderParallel::
-QuantizedMeshTilesPyramidBuilderParallel(const std::vector<QuantizedMeshTiler>& qmTilers,
+QuantizedMeshTilesPyramidBuilder::
+QuantizedMeshTilesPyramidBuilder(const std::vector<QuantizedMeshTiler>& qmTilers,
                                          const ZoomTilesScheduler& scheduler)
     : m_scheduler(scheduler), m_numThreads(qmTilers.size()), m_tilers(qmTilers), m_debugMode(false), m_debugDir("")
 {
     const unsigned int numMaxThreads = std::thread::hardware_concurrency();
     if ( m_numThreads <= 0 )
         m_numThreads = numMaxThreads ;
-
-//    std::cout << "m_tilers.size() = " << m_tilers.size() << std::endl ;
-
-    // Create a tiler with its own pointer to the dataset for each thread
-//    m_tilers = new QuantizedMeshTiler *[m_numThreads] ;
-//    for ( int i = 0; i < m_numThreads; i++ ) {
-//        m_tilers[i] = new QuantizedMeshTiler(qmTiler) ;
-//    }
 }
 
 
-//
-//
-//QuantizedMeshTilesPyramidBuilderParallel::~QuantizedMeshTilesPyramidBuilderParallel()
-//{
-////    for ( int i = 0; i < m_numThreads; i++ )
-////    {
-////        delete m_tilers[i] ;
-////    }
-//}
 
-
-
-void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir, const std::string& debugDir )
+void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, const int &endZoom, const std::string &outDir, const std::string& debugDir )
 {
     // Set debug mode if needed
     if (!debugDir.empty()) {
@@ -171,7 +119,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
 //                std::cout << "bd.tileSouthVertices.size() = " << bd.tileSouthVertices.size() << std::endl;
 
                 std::future<BordersData> f = std::async( std::launch::async,
-                                                         &QuantizedMeshTilesPyramidBuilderParallel::createTile, this,
+                                                         &QuantizedMeshTilesPyramidBuilder::createTile, this,
                                                          coord, numThread, outDir, bd ) ; // Note: Using std::ref(bd) does not work, as we use bd as the future return value...
 
                 futures.emplace_back(std::move(f)) ;
@@ -196,7 +144,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramid(const int &start
 }
 
 
-void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramidUnconstrainedBorders(const int &startZoom,
+void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(const int &startZoom,
                                                                                     const int &endZoom,
                                                                                     const std::string &outDir,
                                                                                     const std::string &debugDir)
@@ -251,7 +199,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramidUnconstrainedBord
                 // Launch thread
                 BordersData bd; // empty borders...
                 std::future<BordersData> f = std::async(std::launch::async,
-                                                        &QuantizedMeshTilesPyramidBuilderParallel::createTile, this,
+                                                        &QuantizedMeshTilesPyramidBuilder::createTile, this,
                                                         coord, numThread, outDir, bd); // Note: Using std::ref(bd) does not work, as we use bd as the future return value...
 
                 futures.emplace_back(std::move(f)) ;
@@ -269,7 +217,7 @@ void QuantizedMeshTilesPyramidBuilderParallel::createTmsPyramidUnconstrainedBord
 
 
 
-bool QuantizedMeshTilesPyramidBuilderParallel::getNextTileToProcess(ctb::TilePoint& tileXY)
+bool QuantizedMeshTilesPyramidBuilder::getNextTileToProcess(ctb::TilePoint& tileXY)
 {
     // Prioritize the processing of those tiles waiting because of restrictions in neighboring tiles (allows to clear memory from the cache when not needed anymore)
     for ( std::vector<ctb::TilePoint>::iterator it = m_tilesWaitingToProcess.begin();
@@ -307,7 +255,7 @@ bool QuantizedMeshTilesPyramidBuilderParallel::getNextTileToProcess(ctb::TilePoi
 
 
 BordersData
-QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate& coord,
+QuantizedMeshTilesPyramidBuilder::createTile( const ctb::TileCoordinate& coord,
                                                       const int& numThread,
                                                       const std::string& outDir,
                                                       const BordersData& bd )
@@ -334,7 +282,7 @@ QuantizedMeshTilesPyramidBuilderParallel::createTile( const ctb::TileCoordinate&
 
 
 
-std::string QuantizedMeshTilesPyramidBuilderParallel::getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
+std::string QuantizedMeshTilesPyramidBuilder::getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
                                                                                 const std::string &mainOutDir )
 {
     // Check/create the tile folder (zoom/x)
@@ -353,7 +301,7 @@ std::string QuantizedMeshTilesPyramidBuilderParallel::getTileFileAndCreateDirs( 
 
 
 
-std::string QuantizedMeshTilesPyramidBuilderParallel::getDebugTileFileAndCreateDirs( const ctb::TileCoordinate &coord )
+std::string QuantizedMeshTilesPyramidBuilder::getDebugTileFileAndCreateDirs( const ctb::TileCoordinate &coord )
 {
 //    std::lock_guard<std::mutex> lock(m_diskWriteMutex);
 

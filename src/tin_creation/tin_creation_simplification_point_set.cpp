@@ -1,7 +1,22 @@
+// Copyright (c) 2018 Coronis Computing S.L. (Spain)
+// All rights reserved.
+//
+// This file is part of EMODnet Quantized Mesh Generator for Cesium.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // Author: Ricard Campos (ricardcd@gmail.com)
-//
-
 #include "tin_creation_simplification_point_set.h"
 #include <CGAL/convex_hull_2.h>
 #include <CGAL/Triangulation_conformer_2.h>
@@ -25,18 +40,16 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
     m_borderSimpMaxScaledSqDist = m_borderSimpMaxDist*this->getScaleZ();
     m_borderSimpMaxScaledSqDist *= m_borderSimpMaxScaledSqDist; // Squared value to ease distance computations
 
-    PointCloud ptsToSimplify ;
+    PointCloud ptsToSimplify;
 
     // Delaunay triangulation
     Delaunay dt( dataPts.begin(), dataPts.end() );
 
     // Translate to Polyhedron
-    Polyhedron surface ;
+    Polyhedron surface;
     PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builderDT(dt);
     surface.delegate(builderDT);
     surface.normalize_border();
-
-//    std::cout << "dataPts.size() = " << dataPts.size() << std::endl;
 
     // Simplification
     getAllNonBorderVertices(surface, ptsToSimplify); // Note that, because of the required pixel overlap for terrain tiles, this additional line of pixels go over the poles in extreme tiles when in ECEF and when converted back they get lat/lon on the other half of the globe... Since we treat border points differently, we don't have any problem. If you try to simplify ALL the points in the tile, the method will fail because of that reason!
@@ -111,11 +124,6 @@ imposeConstraintsAndSimplifyPolylines(Polyhedron& surface, // Note: points in th
     PointCloud northernBorderVertices, southernBorderVertices, easternBorderVertices, westernBorderVertices ;
     Point_3 cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11;
     extractTileBordersFromPolyhedron<Polyhedron>(surface, easternBorderVertices, westernBorderVertices, northernBorderVertices, southernBorderVertices, cornerPoint00, cornerPoint01, cornerPoint10, cornerPoint11);
-
-//    std::cout << "easternBorderVertices.size() = " << easternBorderVertices.size() << std::endl;
-//    std::cout << "westernBorderVertices.size() = " << westernBorderVertices.size() << std::endl;
-//    std::cout << "northernBorderVertices.size() = " << northernBorderVertices.size() << std::endl;
-//    std::cout << "southernBorderVertices.size() = " << southernBorderVertices.size() << std::endl;
 
     // Sort the points in the borders
 
@@ -200,13 +208,20 @@ imposeConstraintsAndSimplifyPolylines(Polyhedron& surface, // Note: points in th
 //
 //    std::cout << "Number of Polylines to simplify = " << polylinesToSimplify.size() << std::endl ;
 //
+
+//    std::cout << "m_cdt.number_of_vertices() = " << m_cdt.number_of_vertices() << std::endl;
+
     // Simplify the polylines
-    // Note that the m_borderSimpMaxLengthPercent is a percentage, so we divide it by 100 to have it between 0..1
-    std::size_t numRemoved = PS::simplify(m_cdt, PSSqDist3Cost(m_borderSimpMaxLengthPercent/100), PSStopCost(m_borderSimpMaxScaledSqDist), true);
+
+    std::size_t numRemoved = PS::simplify(m_cdt, PSSqDist3Cost(m_borderSimpMaxLengthPercent), PSStopCost(m_borderSimpMaxScaledSqDist), true);
+
+//    std::cout << "Num pts removed = " << numRemoved << std::endl;
 
 //    for ( Polylines::iterator it = polylinesSimp.begin(); it != polylinesSimp.end(); ++it ) {
 //        ptsToMaintain.insert( ptsToMaintain.end(), it->begin(), it->end() );
 //    }
+
+//    std::cout << "Polylines to maintain = " << polylinesToMaintain.size() << std::endl;
 
     // Finally, insert the border polylines that need to be maintained as they are
     for ( Polylines::iterator it = polylinesToMaintain.begin(); it != polylinesToMaintain.end(); ++it ) {
@@ -436,7 +451,7 @@ simplifyPolylines(const Polylines& polylines) const
     typedef CGAL::Constrained_Delaunay_triangulation_2<ProjTraitsXY,
             TDSXY, CGAL::Exact_predicates_tag>                               CDTXY;
     typedef CGAL::Constrained_triangulation_plus_2<CDTXY>                    CTXY;
-    typedef PS::Squared_distance_3_cost                                      PSSqDist3Cost;
+    typedef PS::PointSetFeaturesSimplificationCost                                      PSSqDist3Cost;
 
 //    // Check the degenerate case where all the points are at 0 elevation
 //    int i = 0;

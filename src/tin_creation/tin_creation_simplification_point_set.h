@@ -1,14 +1,30 @@
+// Copyright (c) 2018 Coronis Computing S.L. (Spain)
+// All rights reserved.
+//
+// This file is part of EMODnet Quantized Mesh Generator for Cesium.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // Author: Ricard Campos (ricardcd@gmail.com)
-//
 
-#ifndef EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_H
-#define EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_H
+#ifndef EMODNET_QMGC_TIN_CREATION_SIMPLIFICATION_POINT_SET_H
+#define EMODNET_QMGC_TIN_CREATION_SIMPLIFICATION_POINT_SET_H
 
 #include "tin_creator.h"
 #include "tin_creation_cgal_types.h"
 #include "cgal/Projection_traits_3_extended.h"
-#include "cgal/squared_distance_3_cost.h"
+#include "cgal/point_set_features_simplification_cost.h"
 #include "tin_creation_utils.h"
 
 namespace TinCreation {
@@ -36,7 +52,7 @@ class TinCreationSimplificationPointSet : public TinCreationStrategy
     typedef CGAL::Constrained_Delaunay_triangulation_2<ProjTraitsXY,
             TDSXY, CGAL::Exact_predicates_tag>                               CDTXY;
     typedef CGAL::Constrained_triangulation_plus_2<CDTXY>                    CTXY;
-    typedef PS::Squared_distance_3_cost                                      PSSqDist3Cost;
+    typedef PS::PointSetFeaturesSimplificationCost                                      PSSqDist3Cost;
 
 public:
     /**
@@ -90,7 +106,7 @@ public:
         m_borderSimpMaxDist = standardHandlingOfThresholdPerZoom(m_borderSimpMaxDistPerZoom, zoom);
 
         m_borderSimpMaxLengthPercent = standardHandlingOfThresholdPerZoom(m_borderSimpMaxLengthPercentPerZoom, zoom);
-        m_borderSimpMaxLengthPercent /= 100.0; // Convert to the range [0..1]
+        m_borderSimpMaxLengthPercent /= 100.0; // Note that the m_borderSimpMaxLengthPercent is a percentage, so we divide it by 100 to have it between 0..1, as expected by the CGAL::Polyline_simplification_2::simplify function
 
         // Set further parameters that are exclusive of each point set simplification strategy using setParamsForZoomConcreteStrategy(zoom); in derived classes
         setParamsForZoomConcreteStrategy(zoom);
@@ -143,4 +159,4 @@ private:
 
 } // End namespace TinCreation
 
-#endif //EMODNET_TOOLS_TIN_CREATION_SIMPLIFICATION_POINT_SET_H
+#endif //EMODNET_QMGC_TIN_CREATION_SIMPLIFICATION_POINT_SET_H

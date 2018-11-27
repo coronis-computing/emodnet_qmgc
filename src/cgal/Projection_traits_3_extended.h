@@ -1,9 +1,25 @@
+// Copyright (c) 2018 Coronis Computing S.L. (Spain)
+// All rights reserved.
+//
+// This file is part of EMODnet Quantized Mesh Generator for Cesium.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // Author: Ricard Campos (ricardcd@gmail.com)
-//
 
-#ifndef EMODNET_TOOLS_PROJECTION_TRAITS_3_EXTENDED_H
-#define EMODNET_TOOLS_PROJECTION_TRAITS_3_EXTENDED_H
+#ifndef EMODNET_QMGC_PROJECTION_TRAITS_3_EXTENDED_H
+#define EMODNET_QMGC_PROJECTION_TRAITS_3_EXTENDED_H
 
 #include <CGAL/internal/Projection_traits_3.h>
 
@@ -89,9 +105,11 @@ namespace internal {
         typedef Segment_2    Segment;
         typedef Triangle_2   Triangle;
 
-        // Add also the 3D versions of this stuff (needed in Squared_distance_3_cost class)
+        // Add also the 3D versions of this stuff (needed in PointSetFeaturesSimplificationCost class)
         typedef typename R::Point_3                                 Point_3;
         typedef typename R::Segment_3                               Segment_3;
+        typedef typename R::Vector_3                                Vector_3;
+        typedef typename R::Plane_3                                 Plane_3;
         typedef typename Rp::Construct_segment_3                    Construct_segment_3;
         typedef typename Rp::Compute_squared_distance_3             Compute_squared_distance_3;
 
@@ -136,4 +154,4 @@ class Projection_traits_yz_3_extended
 
 } // End namespace CGAL
 
-#endif //EMODNET_TOOLS_PROJECTION_TRAITS_3_EXTENDED_H
+#endif //EMODNET_QMGC_PROJECTION_TRAITS_3_EXTENDED_H

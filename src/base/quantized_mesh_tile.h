@@ -1,9 +1,25 @@
+// Copyright (c) 2018 Coronis Computing S.L. (Spain)
+// All rights reserved.
+//
+// This file is part of EMODnet Quantized Mesh Generator for Cesium.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program. If not, see <https://www.gnu.org/licenses/>.
 //
 // Author: Ricard Campos (ricardcd@gmail.com)
-//
 
-#ifndef EMODNET_TOOLS_QUANTIZEDMESHTILE_H
-#define EMODNET_TOOLS_QUANTIZEDMESHTILE_H
+#ifndef EMODNET_QMGC_QUANTIZED_MESH_TILE_H
+#define EMODNET_QMGC_QUANTIZED_MESH_TILE_H
 
 #include "quantized_mesh.h"
 #include "ellipsoid.h"
@@ -91,4 +107,4 @@ private:
     Ellipsoid m_ellipsoid ; //!< The reference ellipsoid
 };
 
-#endif //EMODNET_TOOLS_QUANTIZEDMESHTILE_H
+#endif //EMODNET_QMGC_QUANTIZED_MESH_TILE_H
