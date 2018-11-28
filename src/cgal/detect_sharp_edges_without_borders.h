@@ -24,7 +24,16 @@
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 
-
+/**
+ * @brief Detects sharp edges in a polygon without accounting for the borders (the original implementation in CGAL considers the borders as feature edges, and we do not want that).
+ * @tparam PolygonMesh Mesh type
+ * @tparam FT Float type
+ * @tparam EdgeIsSharpMap EdgeIsSharpMap type
+ * @tparam GT Geometric traits
+ * @param pmesh Polygon mesh
+ * @param angle_in_deg Angle threshold to consider an edge as sharp
+ * @param edge_is_sharp_map The output map where the detected sharp edges will be stored
+ */
 template<typename PolygonMesh,
         typename FT,
         typename EdgeIsSharpMap,

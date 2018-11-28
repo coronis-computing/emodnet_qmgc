@@ -27,7 +27,7 @@
 
 
 /**
- * @class
+ * @class QuantizedMeshTile
  * @brief Encapsulates a Tile in Quantized Mesh format *
  */
 class QuantizedMeshTile :

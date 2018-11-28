@@ -27,11 +27,14 @@
 #include <CGAL/boost/graph/split_graph_into_polylines.h>
 
 
-
+/**
+ * @brief Struct/functor that returns true if the edge is sharp (given a previously computed edgeIsSharp map)
+ * @tparam Surface_mesh
+ * @tparam EdgeIsSharpMap
+ */
 template<typename Surface_mesh, typename EdgeIsSharpMap>
 struct IsSharpEdge {
     typedef typename boost::graph_traits<Surface_mesh>::edge_descriptor edge_descriptor;
-//    typedef typename Surface_mesh::template Property_map<edge_descriptor, bool> EdgeIsSharpMap;
 
     IsSharpEdge() {} // required by boost::filtered_graph
 
@@ -44,12 +47,15 @@ struct IsSharpEdge {
     EdgeIsSharpMap m_eisMap;
 };
 
-
+/**
+ * @brief Visitor used by the extract_polylines_from_sharp_edges function
+ * @tparam Graph
+ * @tparam Polyline
+ */
 template<typename Graph,
          typename Polyline>
 struct ExtractPolylinesVisitor
 {
-//    typedef typename Surface_mesh::Polyhedron_type Polyhedron;
     std::vector<Polyline>& m_polylines;
     const Graph& m_graph;
 
@@ -92,7 +98,15 @@ struct ExtractPolylinesVisitor
     }
 };
 
-
+/**
+ * @brief Extracts polylines from a set of sharp edges in a surface mesh
+ * @tparam Surface_mesh Surface mesh type
+ * @tparam EdgeIsSharpMap EdgeIsSharpMap type
+ * @tparam Polyline Polyline type
+ * @param sm The input surface mesh
+ * @param eisMap Map indicating wether an edge in the surface mesh is sharp or not
+ * @param polylines The set of polylines extracted
+ */
 template <typename Surface_mesh, typename EdgeIsSharpMap, typename Polyline>
 void extract_polylines_from_sharp_edges(const Surface_mesh& sm,
                                         const EdgeIsSharpMap& eisMap,

@@ -29,9 +29,6 @@ simplify(const std::vector<Point_3> &pts) {
     // Convert to metric
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
-//    std::cout << "m_retainPercentage = " << m_retainPercentage << std::endl;
-//    std::cout << "m_radius = " << m_radius << std::endl;
-
     std::vector<Point_3> ptsSimpECEF;
     CGAL::wlop_simplify_and_regularize_point_set
             <Concurrency_tag>

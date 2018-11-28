@@ -26,7 +26,7 @@
 /**
  * @class ZoomTilesSchedulerStrategy
  *
- * An instance of a ZoomTilesSchedulerStrategy rules the desired order at which tiles in a given zoom should be processed (see derived classes for concrete strategies).
+ * @brief An instance of a ZoomTilesSchedulerStrategy rules the desired order at which tiles in a given zoom should be processed (see derived classes for concrete strategies).
  *
  * Note that the order in this schedule will only be the actual order in which the tiles will be processed when using a single processing thread.
  *
@@ -77,7 +77,10 @@ protected:
 
 
 
-// Context: Allows to change the algorithm at runtime
+/**
+ * @class ZoomTilesScheduler
+ * @brief Context class: Allows to change the algorithm at runtime
+ */
 class ZoomTilesScheduler
 {
 public:
@@ -90,7 +93,7 @@ public:
     /// Allows to change the scheduler algorithm at runtime
     void setScheduler(std::shared_ptr<ZoomTilesSchedulerStrategy> scheduler ) { m_scheduler = scheduler ;}
 
-    // Replication of the ZoomTilesSchedulerBase interphase
+    /// Replication of the ZoomTilesSchedulerBase interphase
     void initSchedule(const ctb::TileBounds& zoomBounds) { m_scheduler->initSchedule(zoomBounds) ; }
 
     void initRootSchedule() { m_scheduler->initRootSchedule(); }
@@ -106,7 +109,12 @@ private:
 
 // --- Concrete strategies ---
 
-// Row-wise strategy
+/**
+ * @class ZoomTilesSchedulerRowwiseStrategy
+ * @brief Row-wise scheduler
+ *
+ * Returns the indices of the tiles to be processed following a row-wise order.
+ */
 class ZoomTilesSchedulerRowwiseStrategy : public ZoomTilesSchedulerStrategy
 {
 public:
@@ -125,7 +133,12 @@ public:
 
 
 
-// Column-wise strategy
+/**
+ * @class ZoomTilesSchedulerColumnwiseStrategy
+ * @brief Column-wise scheduler
+ *
+ * Returns the indices of the tiles to be processed following a column-wise order.
+ */
 class ZoomTilesSchedulerColumnwiseStrategy : public ZoomTilesSchedulerStrategy
 {
 public:
@@ -145,7 +158,10 @@ public:
 
 
 /**
- * Chessboard strategy. Considering a linear ordering of tiles (row-wise), the odd tiles are processed before the even ones.
+ * @class ZoomTilesSchedulerChessboardStrategy
+ * @brief Chessboard scheduler
+ *
+ * Considering a linear ordering of tiles (row-wise), the odd tiles are processed before the even ones.
  * Note: This requires ALL the border vertices to be maintained in the cache until the even ones are processed,
  * which may result in large memory requirements for deep levels of the pyramid
  */
@@ -186,6 +202,12 @@ public:
 };
 
 
+/**
+ * @class ZoomTilesSchedulerRecursiveFourConnectedStrategy
+ * @brief Recursive scheduler
+ *
+ * Starting with the center tile, it recursively adds tiles using a 4-connected neighborhood.
+ */
 class ZoomTilesSchedulerRecursiveFourConnectedStrategy : public ZoomTilesSchedulerStrategy
 {
 public:
@@ -249,6 +271,12 @@ private:
 #include <queue>
 
 
+/**
+ * @class ZoomTilesSchedulerFourConnectedStrategy
+ * @brief Recursive scheduler
+ *
+ * Starting with the center tile, it adds tiles using a 4-connected neighborhood. It uses a queue instead of a recursive call as in ZoomTilesSchedulerRecursiveFourConnectedStrategy.
+ */
 class ZoomTilesSchedulerFourConnectedStrategy : public ZoomTilesSchedulerStrategy
 {
 public:

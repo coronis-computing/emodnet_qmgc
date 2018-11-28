@@ -22,7 +22,8 @@
 #define EMODNET_QMGC_POLYHEDRON_BUILDER_FROM_PROJECTED_TRIANGULATION_H
 
 /**
- * \brief A modifier creating a Polyhedron_3 structure with the incremental builder from a projected triangulation.
+ * @class PolyhedronBuilderFromProjectedTriangulation
+ * @brief A modifier creating a Polyhedron_3 structure with the incremental builder from a projected triangulation.
  * A "projected triangulation" is a Triangulation_2 with projection traits. That is, the triangulation was made on the plane, but the internal points are 3D.
  */
 template<class ProjectedTriangulation2, class HDS>

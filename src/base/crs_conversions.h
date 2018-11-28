@@ -23,7 +23,9 @@
 
 #include <math.h>
 
-// Coordinate Reference System conversions
+/*! @namespace crs_conversions
+    @brief Simple CRS conversions tools
+*/
 namespace crs_conversions
 {
     /**

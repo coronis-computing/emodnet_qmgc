@@ -34,7 +34,10 @@
 namespace fs = boost::filesystem ;
 
 
-
+/**
+ * @class QuantizedMeshTiler
+ * @brief Tiler of a terrain generating quantized-mesh tiles
+ */
 class QuantizedMeshTiler : public ctb::TerrainTiler
 {
     // --- Private Typedefs ---

@@ -22,7 +22,7 @@
 #define EMODNET_QMGC_ELLIPSOID_H
 
 /**
- * @class
+ * @class Ellipsoid
  * @brief Describes an ellipsoid.
  *
  * A quadratic surface of the form (x / rx)^2 + (y / ry)^2 + (z / rz)^2 = 1.
@@ -78,8 +78,7 @@ protected:
 };
 
 /**
- * @class
- *
+ * @class WGS84Ellipsoid
  * @brief The WGS84 ellipsoid
  *
  * An instance of the WGS84 ellipsoid

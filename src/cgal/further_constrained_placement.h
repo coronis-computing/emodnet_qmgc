@@ -31,9 +31,6 @@
 
 #include <CGAL/Surface_mesh_simplification/Detail/Common.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
-
-//using namespace CGAL ;
-//using namespace Surface_mesh_simplification ;
 #include <iostream>
 
 
@@ -42,6 +39,12 @@ namespace CGAL {
 
     namespace Surface_mesh_simplification {
 
+        /**
+         * @class FurtherConstrainedPlacement
+         *
+         * @brief Constrained placement class for CGAL::Surface_mesh_simplification, extending the normal constrained placement
+         * to allow maintaining border vertices as well as corners in a tile
+         */
         template<class BasePlacement, class EdgeIsConstrainedMap, class VertexIsConstrainedMap>
         class FurtherConstrainedPlacement : public BasePlacement {
         public:
@@ -67,21 +70,16 @@ namespace CGAL {
 
                 if ( isConstrainedV0 && isConstrainedV1 ) {
                     // Both vertices in the edge are constrained: the edge must remain as is, no placement possible
-//                    std::cout << "Both vertices in the edge are constrained: the edge must remain as is, no placement possible" << std::endl ;
                     return boost::optional<typename Profile::Point>();
                 }
                 else if ( isConstrainedV0 ) {
                     // v0 is constrained, return it as the placement
-//                    std::cout << "v0 is constrained, return it as the placement" << std::endl ;
                     typename Profile::Point p = get(aProfile.vertex_point_map(), aProfile.v0()) ;
-//                    std::cout << "v0 = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
                     return get(aProfile.vertex_point_map(), aProfile.v0()) ;
                 }
                 else if ( isConstrainedV1 ) {
-//                    // v1 is constrained, return it as the placement
-//                    std::cout << "v1 is constrained, return it as the placement" << std::endl ;
+                    // v1 is constrained, return it as the placement
                     typename Profile::Point p = get(aProfile.vertex_point_map(), aProfile.v1()) ;
-//                    std::cout << "v1 = " << p.x() << ", " << p.y() << ", " << p.z() << std::endl ;
                     return get(aProfile.vertex_point_map(), aProfile.v1()) ;
                 }
 
@@ -99,8 +97,6 @@ namespace CGAL {
                         return get(aProfile.vertex_point_map(),
                                    aProfile.v1());
                 }
-
-
 
                 return static_cast<const BasePlacement *>(this)->operator()(aProfile);
             }

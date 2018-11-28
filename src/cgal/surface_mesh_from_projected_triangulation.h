@@ -23,6 +23,10 @@
 
 #include <map>
 
+/**
+ * @brief Creates a SurfaceMesh from a projected triangulation.
+ * A "projected triangulation" is a Triangulation_2 with projection traits. That is, the triangulation was made on the plane, but the internal points are 3D.
+ */
 template<class ProjectedTriangulation2, class SurfaceMesh>
 SurfaceMesh surfaceMeshFromProjectedTriangulation(const ProjectedTriangulation2& tri)
 {

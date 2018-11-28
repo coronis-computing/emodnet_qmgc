@@ -25,6 +25,10 @@
 #include <string>
 #include <cstring>
 
+/**
+ * @class GZipFileWriter
+ * @brief Helper class to write a GZip file.
+ */
 class GZipFileWriter {
 public:
     // Typedefs

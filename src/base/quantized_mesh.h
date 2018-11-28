@@ -29,7 +29,7 @@
 #include "misc_utils.h"
 
 /**
- * @class
+ * @class QuantizedMesh
  * @brief Contains all the data of a Quantized-mesh
  */
 class QuantizedMesh {

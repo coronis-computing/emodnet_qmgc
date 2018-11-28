@@ -27,9 +27,9 @@
 
 
 /**
- * \class
+ * @struct CornerVerticesAreConstrainedVertexMap
  *
- * \brief BGL property map indicating whether a given vertex is one of the 4 corners of the tile.
+ * @brief BGL property map indicating whether a given vertex is one of the 4 corners of the tile.
  *
  * We need to preserve these corners when simplifying a tile.
  */

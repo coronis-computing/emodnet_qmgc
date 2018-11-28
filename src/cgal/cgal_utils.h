@@ -28,10 +28,15 @@
 #include <CGAL/Delaunay_triangulation_2.h>
 #include <CGAL/Triangulation_2.h>
 
+/**
+ * @file
+ * @brief Set of miscellaneous functions extending the functionality of the CGAL library
+ */
 
-
-/// Checks if a given halfedge is incident to a corner vertex in the tile
-/// Note that this check only works on our specific case...
+/**
+ * Checks if a given halfedge is incident to a corner vertex in the tile
+ * Note that this check only works on our specific case...
+ */
 template<class Polyhedron>
 bool isTileCorner( typename Polyhedron::Halfedge_const_handle e ) {
     typedef typename Polyhedron::Point_3 Point_3 ;
@@ -106,7 +111,7 @@ bool isBorder(typename Polyhedron::Vertex_handle& v)
 }
 
 
-
+/// Checks if a vertex in the polyhedron is in the border
 template <class Polyhedron>
 bool isBorder(typename Polyhedron::Vertex_const_handle& v)
 {

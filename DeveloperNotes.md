@@ -9,6 +9,7 @@
 
 * Decouple the tile limits from the tile simplifier. As it is now, the conversion ECEF coordinates needed by the point set simplification methods assumes that the input uses a lat/lon/height system. This is too restrictive, and should be generalized.
 * Find a way to sample large rasters without getting out of memory.
+* In dem2tin, it is not straightforward to use the point set methods with gdal rasters. In qm_tiler, since we use libctb for gathering the raster tiles, the tiles are already in the global geodetic SRS, so the transformations that we compute internally to ECEF coordinates assume that everything is in that SRS. However, because of how we have it implemented now, we don't have a straightforward way of computing this from a GDAL raster with an arbitrary SRS.
 
 ## Issues to take into account when implementing the quantized-mesh format
 * The vertices and indices need to be optimized for both cache and fetching to be suitable for highwatermark encoding. We use a slightly modified version of the meshoptimizer library (https://github.com/zeux/meshoptimizer) to perform these steps.

@@ -29,7 +29,12 @@
 #include "borders_data.h"
 
 
-
+/**
+ * @class ZoomTilesBorderVerticesCache
+ * @brief Cache to store/reuse the vertices at the borders for tiles that have been already constructed for a given zoom.
+ *
+ * Once the information of a tile is no longer required, it is erased from this cache.
+ */
 class ZoomTilesBorderVerticesCache
 {
     // --- Private typedefs ---
@@ -38,23 +43,18 @@ class ZoomTilesBorderVerticesCache
 public:
     /**
      * Constructor
-     *
      * @param zoomBounds The bounds of the current zoom
      * @param tileMaxCoord The number of pixels in a tile
      */
     ZoomTilesBorderVerticesCache( const ctb::TileBounds& zoomBounds, const int& tileMaxCoord)
             : m_mapTileToBorderVertices()
             , m_zoomBounds(zoomBounds)
-//            , m_zoomBoundsStepsX( zoomBounds.getMaxX()-zoomBounds.getMinX()+1 )
-//            , m_zoomBoundsStepsX( zoomBounds.getMaxX()-zoomBounds.getMinX() )
             , m_tileMaxCoord( tileMaxCoord )
             , m_numProcessedTiles(0)
             , m_tilesVisited()
             , m_tilesBeingProcessed()
     {
         m_numTiles = (zoomBounds.getMaxY()-zoomBounds.getMinY()+1)*(zoomBounds.getMaxX()-zoomBounds.getMinX()+1) ;
-//        m_tilesVisited = std::vector<bool>( m_numTiles, false ) ;
-//        m_tilesBeingProcessed = std::vector<bool>( m_numTiles, false ) ;
     }
 
     /**
@@ -63,7 +63,6 @@ public:
     ZoomTilesBorderVerticesCache()
             : m_mapTileToBorderVertices()
             , m_zoomBounds()
-//            , m_zoomBoundsStepsX(0)
             , m_tileMaxCoord(0)
             , m_numProcessedTiles(0)
             , m_numTiles(0)
@@ -109,20 +108,40 @@ public:
         return isTileVisited(tileInd) ;
     }
 
-    // WARNING: Does not perform bounds check for the tile
+    /**
+     * @brief Checks if a tile is visited
+     *
+     * WARNING: Does not perform bounds check for the tile
+     * @param tileInd Tile index (a pair)
+     * @return boolean indicating whether the tile was already visited
+     */
     bool isTileVisited( const std::pair<int, int>& tileInd ) {
         if (m_tilesVisited.count(tileInd) == 0)
             return false;
         else
-            return m_tilesVisited[tileInd] ;
+            return m_tilesVisited[tileInd];
     }
 
+    /**
+     * @brief Checks if a tile is being processed
+     *
+     * WARNING: Does not perform bounds check for the tile
+     * @param tileX X coordinate of the tile
+     * @param tileY Y coordinate of the tile
+     * @return boolean indicating whether the tile was already processed
+     */
     bool isTileBeingProcessed( const int& tileX, const int& tileY ) {
         std::pair<int,int> tileInd = std::make_pair( tileX, tileY ) ;
         return isTileBeingProcessed(tileInd) ;
     }
 
-    // WARNING: Does not perform bounds check for the tile
+    /**
+     * @brief Checks if a tile is being processed
+     *
+     * WARNING: Does not perform bounds check for the tile
+     * @param tileInd Tile index (a pair)
+     * @return boolean indicating whether the tile was already processed
+     */
     bool isTileBeingProcessed( const std::pair<int,int>& tileInd ) {
         if (m_tilesBeingProcessed.count(tileInd) == 0)
             return false;
@@ -130,64 +149,49 @@ public:
             return m_tilesBeingProcessed[tileInd] ;
     }
 
+    /**
+     * @brief Checks if a tile can start processing
+     * @param tileX X coordinate of the tile
+     * @param tileY Y coordinate of the tile
+     * @return boolean indicating whether a tile can start processing
+     */
     bool canTileStartProcessing( const int& tileX, const int& tileY ) ;
 
+    /**
+     * @brief Checks if all the tiles in the zoom have been processed
+     */
     bool allTilesProcessed() const { return m_numProcessedTiles >= m_numTiles ; }
 
+    /**
+     * @brief Gets the number of processed tiles
+     */
     int getNumProcessed() const { return m_numProcessedTiles ; }
 
+    /**
+     * @brief Gets the total amount of tiles to be processed in the zoom
+     */
     int getNumTiles() const { return m_numTiles ; }
 
 private:
     // --- Attributes ---
     ctb::TileBounds m_zoomBounds ;
-//    int m_zoomBoundsStepsX ; // For sub2ind transform of tile coordinates within the zoom
     int m_tileMaxCoord ;
     int m_numTiles ;
     int m_numProcessedTiles ;
     std::unordered_map<std::pair<int,int>, TileBorderVertices, boost::hash<std::pair<int, int>>> m_mapTileToBorderVertices;
     std::unordered_map<std::pair<int,int>, bool, boost::hash<std::pair<int, int>>> m_tilesVisited;
     std::unordered_map<std::pair<int,int>, bool, boost::hash<std::pair<int, int>>> m_tilesBeingProcessed;
-//    std::vector<bool> m_tilesVisited ; // Linearly indexed tiles, to check if they were already visited
-//    std::vector<bool> m_tilesBeingProcessed ; // Linearly indexed tiles, to check if they are being processed at the moment
 
-//    // --- Private Functions ---
-//    int linearInd( const int& tileX, const int& tileY ) const {
-////        std::cout << "-------------------------------------" << std::endl;
-////        std::cout << "tileX = " << tileX << std::endl;
-////        std::cout << "tileY = " << tileY << std::endl;
-////        std::cout << "m_zoomBounds.getMinY() = " << m_zoomBounds.getMinY() << std::endl;
-////        std::cout << "m_zoomBounds.getMinX() = " << m_zoomBounds.getMinX() << std::endl;
-////        std::cout << "m_zoomBoundsStepsX = " << m_zoomBoundsStepsX << std::endl;
-////        std::cout << "m_numTiles = " << m_numTiles << std::endl;
-//
-//        int localX = (tileX-m_zoomBounds.getMinX());
-//        if (localX < 0)
-//            return -1;
-//        int localY = (tileY-m_zoomBounds.getMinY());
-//        if (localY < 0)
-//            return -1;
-//
-//        int tileInd = localY*m_zoomBoundsStepsX + localX ;
-//
-////        std::cout << "tileInd = " << tileInd << std::endl;
-//        if (tileInd >= 0 && tileInd < m_numTiles) {
-////            std::cout << "ACCEPTED" << std::endl;
-//            return tileInd;
-//        }
-//        else
-//            return -1 ;
-//    }
-
+    /// Bounds check for a tile (pair)
     bool isTileInBounds( const std::pair<int, int>& tileInd ) const {
         return isTileInBounds(tileInd.first, tileInd.second);
     }
 
+    /// Bounds check for a tile (X/Y indices)
     bool isTileInBounds( const int& tileX, const int& tileY ) const {
         return (tileX >= m_zoomBounds.getMinX() && tileX <= m_zoomBounds.getMaxX() &&
                 tileY >= m_zoomBounds.getMinY() && tileY <= m_zoomBounds.getMaxY());
     }
-
 };
 
 #endif //EMODNET_QMGC_ZOOM_TILES_BORDER_VERTICES_CACHE_H

@@ -30,14 +30,14 @@
 
 
 /**
- * \brief A modifier creating a Polyhedron_3 structure with the incremental builder from the boundary in a C3T3
+ * @class PolyhedronBuilderFromC3T3Boundary
+ * @brief A modifier creating a Polyhedron_3 structure with the incremental builder from the boundary in a C3T3
  */
 template<class C3T3, class HDS>
 class PolyhedronBuilderFromC3T3Boundary : public CGAL::Modifier_base<HDS> {
 public:
     C3T3 m_c3t3 ;
     typename C3T3::Subdomain_index  m_index ;
-//    typedef typename C3T3::Point  Point_3; // This works on CGAL < 4.11...
     typedef typename C3T3::Point::Point  Point_3;
 
     PolyhedronBuilderFromC3T3Boundary( const C3T3& c,
@@ -57,8 +57,6 @@ public:
 
         std::size_t numVerts = 0;
         std::size_t numFacets = 0;
-//        cpp0x::array<std::size_t,3> indices={{0,0,0}};
-//        std::stringstream facet_buffer,vertex_buffer;
         for(typename C3T3::Facets_in_complex_iterator
                     fit = m_c3t3.facets_in_complex_begin(),
                     end = m_c3t3.facets_in_complex_end();
@@ -82,29 +80,16 @@ public:
                     if (res.second){
                         // The vertex was not in the map, add it to the Polygon
                         numVerts++;
-//                        B.add_vertex( res.first->first->point().point() );
                         vertices.push_back( res.first->first->point().point() );
-//                        vertex_buffer <<   res.first->first->point().point() <<"\n"; // DEBUG
                     }
                     indices[j++] = res.first->second;
                 }
             }
-//            if ( ( (cell_sd==m_index) == (fit->second%2 == 1) ) == true ) {// normals_point_outside_of_the_subdomain
-//                std::swap(indices[0],indices[1]);
-//            }
-
-//            std::cout << indices[0] <<" " << indices[1] <<" " << indices[2] << "\n";
-//            facet_buffer << "3" << " " << indices[0] <<" " << indices[1] <<" " << indices[2] << "\n";
             facesIndices.push_back(indices);
         }
 
         // Coherently orient the faces of the polyhedron
         CGAL::Polygon_mesh_processing::orient_polygon_soup(vertices, facesIndices);
-
-        // DEBUG
-//        std::cout << "OFF " << numVerts << " " << numFacets << " 0\n";
-//        std::cout << vertex_buffer.str() << std::endl ;
-//        std::cout << facet_buffer.str() << std::endl ;
 
         // Polyhedron_3 incremental builder
         CGAL::Polyhedron_incremental_builder_3<HDS> B( hds, true);

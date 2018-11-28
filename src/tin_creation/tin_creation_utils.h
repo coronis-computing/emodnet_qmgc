@@ -27,8 +27,12 @@
 namespace TinCreation {
 
 /**
- * TODO: Explain the setting of parameters (here and in the tutorial)
- *
+ * Some of the parameters are scale-dependant and, as such, they should depend on the zoom level of the pyramid.
+ * If we refer to a parameter for a zoom z as p_z, we allow the user to just set p_z and then we compute the values for other zooms as p_z = p_0/2^z, for those parameters whose scale needs to be lowered at deeper levels, or p_z = p_0*2^z, for those whose scale needs to grow with depth.
+ * The parameters marked with an asterisk (*) in the help of `qm_tiler` are using the setting proposed here.
+ * Basically, depending on the number of values in the \p thresholdsPerZoom vector, we can:
+ * * Set a single value: In this case, the value represents p_0, and the rest of values for the deeper zooms will be computed using the formulas presented in the previous paragraph.
+ * * Set multiple values (by entering the same parameter more than once): In this way we can set a parameter for each zoom. If the user inputs less parameters than the number of required zoom levels, the last value is used for all the rest of deeper zooms to create.
  * @tparam T Numeric type of the parameter
  * @param thresholdsPerZoom Vector of thresholds per zoom. As explained above, it may contain a single parameter also.
  * @param zoom Current zoom level.

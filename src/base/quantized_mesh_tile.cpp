@@ -55,7 +55,6 @@ bool QuantizedMeshTile::exportToOFF( const std::string &outFilePath, const bool&
     of << vertexData.vertexCount << " " << indexData.triangleCount << " 0" << std::endl ;
 
     // Vertices
-
     for ( int i = 0; i < vertexData.vertexCount; i++ )
     {
         // Convert to Lon/Lat/Height real values from U/V/Height stored in the quantized mesh

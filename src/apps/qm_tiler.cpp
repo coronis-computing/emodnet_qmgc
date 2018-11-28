@@ -193,20 +193,6 @@ int main ( int argc, char **argv)
             return EXIT_FAILURE;
         }
 
-        // If using a point set simplification method, check the requirements
-        if (tinCreationStrategy.compare("ps-hierarchy") == 0 ||
-            tinCreationStrategy.compare("ps-wlop") == 0 ||
-            tinCreationStrategy.compare("ps-grid") == 0 ||
-            tinCreationStrategy.compare("ps-random") == 0) {
-            const char *proj = gdalDatasets[i]->GetProjectionRef();
-            OGRSpatialReference oSRS(proj);
-            if (!oSRS.IsGeographic() || strcmp(oSRS.GetAttrValue("geogcs"), "WGS 84") != 0) {
-                cerr << "[ERROR] When using a point set simplification procedure, we require the input dataset to be using the WGS 84 reference system."
-                     << endl;
-                return EXIT_FAILURE;
-            }
-        }
-
         // Define the grid we are going to use
         int tileSize = 256;
         ctb::Grid grid = ctb::GlobalGeodetic(tileSize);

@@ -23,13 +23,17 @@
 
 #include <CGAL/internal/Projection_traits_3.h>
 
-// We had to modify the original CGAL's Projection_traits because they didn't implement the squared distance computation
-// between a Segment and a Point (required by the Polyline_2 simplification algorithm in)
 
 namespace CGAL {
 
 namespace internal {
 
+    /**
+     * @class Squared_distance_projected_3_extended
+     * @brief Class extending the functionality of CGAL::internal::Squared_distance_projected_3
+     * We had to modify the original CGAL's Projection_traits because they didn't implement the squared distance computation
+     * between a Segment and a Point (required by the Polyline_2 simplification algorithm)
+     */
     template <class R,int dim>
     class Squared_distance_projected_3_extended : public Squared_distance_projected_3<R,dim>
     {

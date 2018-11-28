@@ -34,9 +34,9 @@
 
 
 /**
- * @class
+ * @class QuantizedMeshTilesPyramidBuilder
+ * @brief Contains the logic to create the pyramid of tiles in quantized mesh format.
  *
- * Contains the logic to create the pyramid of tiles in quantized mesh format.
  * Since the quantized mesh format requires coherence between neighboring tiles, this class is the responsible
  * of maintaining this coherence and schedule the building of tiles by taking into account the ones already built.
  */

@@ -26,6 +26,9 @@
 
 
 /**
+ * @struct BorderVertex
+ * @brief Class storing a vertex on the border of a tile
+ *
  * Since for the border vertices one of the coordinates can be deduced depending on which border vertex they are, we
  * just store the variable coordinate and the height measure
  */
@@ -43,7 +46,10 @@ struct BorderVertex {
 };
 
 
-
+/**
+ * @class TileBorderVertices
+ * @brief Stores the vertices on the borders of a tile.
+ */
 class TileBorderVertices
 {
 public:

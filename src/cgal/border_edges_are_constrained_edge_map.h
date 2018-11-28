@@ -26,9 +26,9 @@
 
 
 /**
- * \class BorderEdgesAreConstrainedEdgeMap
+ * @class BorderEdgesAreConstrainedEdgeMap
  *
- * \brief BGL property map indicating whether an edge is marked as non-removable
+ * @brief BGL property map indicating whether an edge is marked as non-removable
  *
  * We just need to mark as non-removable those edges corresponding to border edges of already processed neighboring tiles.
  */

@@ -21,6 +21,15 @@
 #ifndef EMODNET_QMGC_MISC_UTILS_H
 #define EMODNET_QMGC_MISC_UTILS_H
 
+/**
+ * Remapping function. Changes a value in the range \p minOr \p maxOr to a value in the range \p minDest \p maxDest
+ * @param value Value to remap
+ * @param minOr Minium value in the original range
+ * @param maxOr Maximum value in the original range
+ * @param minDest Minimum value in the destination range
+ * @param maxDest Maximum value in the destination range
+ * @return Remapped value
+ */
 static double remap(const double& value, const double& minOr, const double& maxOr, const double& minDest, const double& maxDest) {
     if ( maxOr-minOr == 0 ) // Avoid division by zero
         return 0 ;

@@ -51,9 +51,6 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-//        ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
-//        ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
-//        ctb::TileBounds zoomBounds(ll, ur);
         ctb::TileBounds zoomBounds;
         if (zoom == 0) {
             zoomBounds = ctb::TileBounds(ctb::TileCoordinate(0,0,0), ctb::TileCoordinate(0,1,0));
@@ -81,13 +78,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
         int numLaunchedProcesses = 0 ; // Number of launched child processes in total
 
-//        std::cout << "minX = " << zoomBounds.getMinX() << ";\n";
-//        std::cout << "minY = " << zoomBounds.getMinY() << ";\n";
-//        std::cout << "processes = zeros(" << zoomBounds.getMaxX()-zoomBounds.getMinX()+1 << ", " << zoomBounds.getMaxY()-zoomBounds.getMinY()+1 << ");\n";
-//        std::cout << "batches = zeros(" << zoomBounds.getMaxX()-zoomBounds.getMinX()+1 << ", " << zoomBounds.getMaxY()-zoomBounds.getMinY()+1 << ");\n";
-//        int batch = 0;
         while (!m_bordersCache.allTilesProcessed()) {
-//            batch++;
             // Throw as many threads as possible to run in parallel
             int numThread = 0; // Number of threads thrown in this iteration
             std::vector<std::vector<Point_3>> tileEastVerticesVec, tileWestVerticesVec, tileNorthVerticesVec, tileSouthVerticesVec ;
@@ -96,9 +87,6 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
             ctb::TilePoint tp;
             while (numThread < m_numThreads && getNextTileToProcess(tp)) {
                 numLaunchedProcesses++ ;
-
-//                std::cout << "processes(" << tp.x-zoomBounds.getMinX()+1 << ", " << tp.y-zoomBounds.getMinY()+1 << ") = " << numLaunchedProcesses << ";" << std::endl;
-//                std::cout << "batches(" << tp.x-zoomBounds.getMinX()+1 << ", " << tp.y-zoomBounds.getMinY()+1 << ") = " << batch << ";" << std::endl;
                 std::cout << "Processing tile " << numLaunchedProcesses << "/" << m_scheduler.numTiles()
                           << ": x = " << tp.x << ", y = " << tp.y
                           << " (thread " << numThread << ")"
@@ -110,13 +98,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
                 // Get constraints at borders from cache
                 BordersData bd;
-//                std::vector<Point_3> tileEastVertices, tileWestVertices, tileNorthVertices, tileSouthVertices ;
                 m_bordersCache.getConstrainedBorderVerticesForTile(tp.x, tp.y, bd);
-
-//                std::cout << "bd.tileEastVertices.size() = " << bd.tileEastVertices.size() << std::endl;
-//                std::cout << "bd.tileWestVertices.size() = " << bd.tileWestVertices.size() << std::endl;
-//                std::cout << "bd.tileNorthVertices.size() = " << bd.tileNorthVertices.size() << std::endl;
-//                std::cout << "bd.tileSouthVertices.size() = " << bd.tileSouthVertices.size() << std::endl;
 
                 std::future<BordersData> f = std::async( std::launch::async,
                                                          &QuantizedMeshTilesPyramidBuilder::createTile, this,
@@ -174,10 +156,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
 
         // Get the preferred ordering of processing
-//        if (zoom == 0)
-//            m_scheduler.initRootSchedule(); // Special schedule for the root, forcing the two tiles to be built
-//        else
-            m_scheduler.initSchedule( zoomBounds ) ;
+        m_scheduler.initSchedule( zoomBounds ) ;
 
         int numLaunchedProcesses = 0 ; // Number of launched child processes in total
         while (!m_scheduler.finished()) {
@@ -303,8 +282,6 @@ std::string QuantizedMeshTilesPyramidBuilder::getTileFileAndCreateDirs( const ct
 
 std::string QuantizedMeshTilesPyramidBuilder::getDebugTileFileAndCreateDirs( const ctb::TileCoordinate &coord )
 {
-//    std::lock_guard<std::mutex> lock(m_diskWriteMutex);
-
     // Check/create the tile folder (zoom/x)
     fs::path mainOutDirPath(m_debugDir) ;
     fs::path tileFolder = mainOutDirPath / fs::path(std::to_string(coord.zoom)) / fs::path(std::to_string(coord.x)) ;

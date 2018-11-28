@@ -26,7 +26,11 @@
 
 
 
-/// \pre normalize_borders() has been called before this function and is still valid
+/**
+ * @brief Extracts the NSEW borders from a tile stored in Polyhedron form.
+ * \pre We assume the outer border of the polygon when projected to the XY plane to have a square (or at least a rectangular) shape.
+ * \pre normalize_borders() has been called before this function and is still valid
+ */
 template<class Polyhedron>
 bool extractTileBordersFromPolyhedron(const Polyhedron& poly,
                                       std::vector<typename Polyhedron::Point_3>& easternBorderPts,

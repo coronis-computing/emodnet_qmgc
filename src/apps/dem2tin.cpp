@@ -58,18 +58,16 @@ namespace po = boost::program_options;
 int main ( int argc, char **argv) {
     // Command line parser
     std::string inputFile, inputType, outputFile, tinCreationStrategy, schedulerType, debugDir, configFile, greedyErrorType, exportNewOrigin;
-    int startZoom, endZoom;
     double greedyErrorTol, simpWeightVolume, simpWeightBoundary, simpWeightShape,
-            remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize,
-            psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize,
-            psRandomRemovePercentage ;
+           remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize,
+           psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize,
+           psRandomRemovePercentage ;
     float clippingHighValue, clippingLowValue;
     int simpStopEdgesCount, heighMapSamplingSteps, greedyInitGridSize;
     unsigned int psHierMaxClusterSize, psWlopIterNumber, psMinFeaturePolylineSize;
-    int numThreads = 0;
     bool bathymetryFlag, verbose, resetOrigin;
 
-    po::options_description options("dem2tin options:");
+    po::options_description options("dem2tin options");
     options.add_options()
             ("help,h", "Produce help message")
             ("input,i", po::value<std::string>(&inputFile), "Input terrain file (GDAL raster)")
@@ -88,10 +86,11 @@ int main ( int argc, char **argv) {
             ("tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
             ("tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
             ("tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
-            ("tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(10), "Remeshing facet distance." )
-            ("tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
-            ("tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(10), "Remeshing facet size." )
-            ("tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(10), "Remeshing edge size." )
+// Remeshing is experimental, do not use yet...
+//            ("tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(10), "Remeshing facet distance." )
+//            ("tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
+//            ("tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(10), "Remeshing facet size." )
+//            ("tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(10), "Remeshing edge size." )
             ("tc-ps-border-max-error", po::value<double>(&psBorderSimpMaxDist)->default_value(0.01), "Polyline simplification error at borders" )
             ("tc-ps-border-max-length", po::value<double>(&psBorderSimpMaxLength)->default_value(0.1), "Polyline simplification, maximum length of border edges" )
             ("tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered" )
@@ -127,15 +126,27 @@ int main ( int argc, char **argv) {
     po::notify(vm);
 
     if (vm.count("help")) {
-        cout << "Creates a Triangulated Irregular Network (TIN) from a GDAL raster or from another TIN"
+        cout << "Creates a Triangulated Irregular Network (TIN) from a GDAL raster or from another TIN\n\n"
              << options << endl;
+        return EXIT_FAILURE;
+    }
+
+    bool usingAMethodRequiringECEF = tinCreationStrategy.compare("ps-hierarchy") == 0 ||
+                                     tinCreationStrategy.compare("ps-wlop") == 0 ||
+                                     tinCreationStrategy.compare("ps-grid") == 0 ||
+                                     tinCreationStrategy.compare("ps-random") == 0;
+                                     // tinCreationStrategy.compare("remeshing") == 0
+    if (usingAMethodRequiringECEF && inputType.compare("gdal") == 0) {
+        std::cout << "For the moment, using a point set processing method on a gdal raster is not possible.\n"
+                     "If you want to use these methods, please use an input point set or TIN in METRIC units\n"
+                     "Aborting..." << std::endl;
         return EXIT_FAILURE;
     }
 
     // Read the input samples
     std::vector<Point_3> samples ;
     double minX, minY, minHeight, maxX, maxY, maxHeight;
-    minX = minY = minHeight = maxX = maxY = maxHeight = 0.0;
+    minX = minY = minHeight = 0;//= maxX = maxY = maxHeight = 0.0;
     std::transform(inputType.begin(), inputType.end(), inputType.begin(), ::tolower);
     if (inputType.compare("gdal") == 0) {
         // Setup all GDAL-supported raster drivers
@@ -147,20 +158,6 @@ int main ( int argc, char **argv) {
         if (gdalDataset == NULL) {
             cerr << "\n[Error] could not open the GDAL dataset" << endl;
             return 1;
-        }
-
-        if (tinCreationStrategy.compare("ps-hierarchy") == 0 ||
-            tinCreationStrategy.compare("ps-wlop") == 0 ||
-            tinCreationStrategy.compare("ps-grid") == 0 ||
-            tinCreationStrategy.compare("ps-random") == 0 ||
-            tinCreationStrategy.compare("remeshing") == 0) {
-            const char *proj = gdalDataset->GetProjectionRef();
-            OGRSpatialReference oSRS(proj);
-            if (!oSRS.IsGeographic() || strcmp(oSRS.GetAttrValue("geogcs"), "WGS 84") != 0) {
-                cerr << "[ERROR] When using a remeshing or point set simplification procedure, we require the input dataset to be using the WGS 84 reference system."
-                     << endl;
-                return EXIT_FAILURE;
-            }
         }
 
         // Copy the raster data into an array
@@ -176,7 +173,7 @@ int main ( int argc, char **argv) {
 
         // Run over the array and create a
         minHeight =  std::numeric_limits<float>::infinity() ;
-        maxHeight = -std::numeric_limits<float>::infinity() ;
+        //maxHeight = -std::numeric_limits<float>::infinity() ;
         for (int i = 0; i < heightsBand->GetXSize(); i++) {
             for (int j = 0; j < heightsBand->GetYSize(); j++) {
                 int y = heightsBand->GetXSize() - 1 - j; // y coordinate within the tile.
@@ -251,41 +248,28 @@ int main ( int argc, char **argv) {
         return EXIT_FAILURE;
     }
 
-    // Recenter the samples
-    if (inputType.compare("gdal") != 0 && resetOrigin) {
-        if(verbose) cout << "Re-setting the origin of the samples..." << flush ;
+    // Compute Bounding Box for inputs other than GDAL rasters
+    if (inputType.compare("gdal") != 0) {
         K::Iso_cuboid_3 boundingBox = CGAL::bounding_box(samples.begin(), samples.end());
-        std::transform(samples.begin(), samples.end(), samples.begin(),
-                [boundingBox](Point_3& p){
-                        return Point_3(p.x()-boundingBox.xmin(),
-                                       p.y()-boundingBox.ymin(),
-                                       p.z()-boundingBox.zmin());
-                }
-        );
-        if(verbose) cout << " done" << std::endl ;
-
-        if (!exportNewOrigin.empty()) {
-            if(verbose) cout << "Saving the new origin of the samples to file..." << flush ;
-            ofstream ofOrig(exportNewOrigin);
-            ofOrig << boundingBox.xmin() << std::endl
-                   << boundingBox.ymin() << std::endl
-                   << boundingBox.zmin() << std::endl;
-            ofOrig.close();
-            if(verbose) cout << " done." << endl ;
-        }
+        minX = boundingBox.xmin();
+        minY = boundingBox.ymin();
+        minHeight = boundingBox.zmin();
+        maxX = boundingBox.xmax();
+        maxY = boundingBox.ymax();
+        maxHeight = boundingBox.zmax();
     }
-    else {
-        if (!exportNewOrigin.empty()) {
-            std::cerr << "[WARNING] The export-new-origin option should only be used when reset-origin is set to true (otherwise, the origin is not changed). We will ignore this parameter." << std::endl;
-        }
+
+    for (std::vector<Point_3>::iterator it = samples.begin(); it != samples.end(); ++it) {
+        double u = remap(it->x(), minX, maxX, 0.0, 1.0);
+        double v = remap(it->y(), minY, maxY, 0.0, 1.0);
+        double h = remap(it->z(), minHeight, maxHeight, 0.0, 1.0);
+
+        *it = Point_3(u, v, h);
     }
 
     // Setup the TIN creator
     if(verbose) cout << "Creating the TIN..." << flush;
     TinCreator tinCreator;
-    if (inputType.compare("gdal") == 0)
-        tinCreator.setBounds(minX, minY, minHeight, maxX, maxY, maxHeight);
-
     std::transform(tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower);
     if (tinCreationStrategy.compare("lt") == 0) {
         std::shared_ptr<TinCreationSimplificationLindstromTurkStrategy> tcLT
@@ -311,14 +295,14 @@ int main ( int argc, char **argv) {
                 = std::make_shared<TinCreationGreedyInsertionStrategy>(greedyErrorTol, greedyInitGridSize, et);
         tinCreator.setCreator(tcGreedy);
     }
-    else if (tinCreationStrategy.compare("remeshing") == 0) {
-        std::shared_ptr<TinCreationRemeshingStrategy> tcRemesh
-                = std::make_shared<TinCreationRemeshingStrategy>(remeshingFacetDistance,
-                                                                 remeshingFacetAngle,
-                                                                 remeshingFacetSize,
-                                                                 remeshingEdgeSize);
-        tinCreator.setCreator(tcRemesh);
-    }
+//    else if (tinCreationStrategy.compare("remeshing") == 0) {
+//        std::shared_ptr<TinCreationRemeshingStrategy> tcRemesh
+//                = std::make_shared<TinCreationRemeshingStrategy>(remeshingFacetDistance,
+//                                                                 remeshingFacetAngle,
+//                                                                 remeshingFacetSize,
+//                                                                 remeshingEdgeSize);
+//        tinCreator.setCreator(tcRemesh);
+//    }
     else if (tinCreationStrategy.compare("ps-hierarchy") == 0) {
         std::shared_ptr<TinCreationSimplificationPointSetHierarchy> tcHier
                 = std::make_shared<TinCreationSimplificationPointSetHierarchy>(psBorderSimpMaxDist,
@@ -363,12 +347,58 @@ int main ( int argc, char **argv) {
         std::cerr << "\n[ERROR] Unknown TIN creation strategy \"" << tinCreationStrategy << "\"" << std::endl;
         return 1;
     }
+
+    // Set the bounds of the "tile" if not using the remeshing or point set algorithm
+    tinCreator.setBounds(minX, minY, minHeight, maxX, maxY, maxHeight);
+
+    // Set parameters for zoom 0 (i.e., use the input parameters, since there will be no more zooms)
+    tinCreator.setParamsForZoom(0);
+
+    // Create the TIN and compute the time spent to do it
     auto start = std::chrono::high_resolution_clock::now();
     Polyhedron poly = tinCreator.create(samples);
     auto finish = std::chrono::high_resolution_clock::now();
 
     chrono::duration<double> elapsed = finish - start;
     if(verbose) cout << " done, " << elapsed.count() << " seconds." << endl ;
+
+    // Recover the real values for the coordinates
+    for (Polyhedron::Point_iterator it = poly.points_begin(); it != poly.points_end(); ++it) {
+        double x = remap(it->x(), 0.0, 1.0, minX, maxX);
+        double y = remap(it->y(), 0.0, 1.0, minY, maxY);
+        double z = remap(it->z(), 0.0, 1.0, minHeight, maxHeight);
+
+        *it = Point_3(x, y, z);
+    }
+
+    // Reset the origin of the samples for better stability during visualization in common 3D viewers
+    if (resetOrigin) {
+        if(verbose) cout << "Re-setting the origin of the samples..." << flush ;
+        K::Iso_cuboid_3 boundingBox = CGAL::bounding_box(poly.points_begin(), poly.points_end());
+        std::transform(poly.points_begin(), poly.points_end(), poly.points_begin(),
+                       [boundingBox](Point_3& p){
+                           return Point_3(p.x()-boundingBox.xmin(),
+                                          p.y()-boundingBox.ymin(),
+                                          p.z()-boundingBox.zmin());
+                       }
+        );
+        if(verbose) cout << " done" << std::endl ;
+
+        if (!exportNewOrigin.empty()) {
+            if(verbose) cout << "Saving the new origin of the samples to file..." << flush ;
+            ofstream ofOrig(exportNewOrigin);
+            ofOrig << boundingBox.xmin() << std::endl
+                   << boundingBox.ymin() << std::endl
+                   << boundingBox.zmin() << std::endl;
+            ofOrig.close();
+            if(verbose) cout << " done." << endl ;
+        }
+    }
+    else {
+        if (!exportNewOrigin.empty()) {
+            std::cerr << "[WARNING] The export-new-origin option should only be used when reset-origin is set to true (otherwise, the origin is not changed). We will ignore this parameter." << std::endl;
+        }
+    }
 
     // Save the results
     if(verbose) cout << "Saving the results..." << flush ;

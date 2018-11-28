@@ -134,27 +134,9 @@ private:
                                                const bool &constrainNorthernVertices,
                                                const bool &constrainSouthernVertices) ;
 
-    // Precondition: poly.normalize_border() has been executed, and is valid
-    // NOTE: The <X>BorderVertices variables include the corner points!
-//    void extractTileVerticesAtBorders(const Polyhedron& poly,
-//                                      PointCloud& easternBorderVertices,
-//                                      PointCloud& westernBorderVertices,
-//                                      PointCloud& northernBorderVertices,
-//                                      PointCloud& southernBorderVertices,
-//                                      Point_3& cornerVertex00,
-//                                      Point_3& cornerVertex01,
-//                                      Point_3& cornerVertex10,
-//                                      Point_3& cornerVertex11) const;
+    /// Gets all the vertices not on the borders of the polyhedron
+    /// Precondition: poly.normalize_border() has been executed, and is valid
     void getAllNonBorderVertices(const Polyhedron& poly, PointCloud& nonBorderPts) const ;
-
-    /// Simplify the north or south border points. Points are projected to the YZ plane and simplified there.
-    PointCloud simplifyEastOrWestBorder(const PointCloud& pts) const ;
-
-    /// Simplify the north or south border points. Points are projected to the XZ plane and simplified there.
-    PointCloud simplifyNorthOrSouthBorder(const PointCloud& pts) const ;
-
-    /// Simplify a set of polylines based on their elevation, while preserving the topology in the XY plane
-    Polylines simplifyPolylines(const Polylines& polylines) const ;
 };
 
 } // End namespace TinCreation

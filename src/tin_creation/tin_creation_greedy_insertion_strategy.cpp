@@ -41,17 +41,9 @@ Polyhedron TinCreationGreedyInsertionStrategy::create(const std::vector<Point_3>
     m_scaledSqApproxTol = m_approxTol*this->getScaleZ();
     m_scaledSqApproxTol *= m_scaledSqApproxTol; // Squared value to ease distance computations
 
-//    std::cout << "m_scaledSqApproxTol = " << m_scaledSqApproxTol << std::endl;
-
-//    std::cout << "Start m_heap.size() = " << m_heap.size() << std::endl ;
-//    std::cout << "max sq error = " << m_sqApproxTol << std::endl ;
-//    std::cout << "m_dataPts.size() = " << m_dataPts.size() << std::endl ;
-
     // Initialize the data structures
     initialize(constrainEasternVertices, constrainWesternVertices,
                constrainNorthernVertices, constrainSouthernVertices);
-
-//    std::cout << "Init m_heap.size() = " << m_heap.size() << std::endl ;
 
     // Try to perform one step
     while (!m_heap.empty()) {
@@ -59,13 +51,9 @@ Polyhedron TinCreationGreedyInsertionStrategy::create(const std::vector<Point_3>
         GIHeapNode nh = m_heap.top();
         // WARNING: do NOT pop the heap's top entry here, it will be effectively done in the insert function
 
-//        std::cout << "m_heap.size() = " << m_heap.size() << std::endl;
-
         // Insert the point and update the internal structures
         insert(nh.candidate);
     }
-
-//    std::cout << "Finished processing" << std::endl;
 
     // Translate to Polyhedron
     Polyhedron surface;
@@ -87,24 +75,13 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
         CGAL::convex_hull_2(m_dataPts.begin(), m_dataPts.end(), std::back_inserter(chPts),
                             CGAL::Projection_traits_xy_3<K>());
 
-//        m_screenOutputMutex.lock();
-//        std::cout << "Convex hull points = " << chPts.size() << std::endl;
-//        for (std::vector<Point_3>::iterator it = chPts.begin(); it!= chPts.end(); ++it ) {
-//            std::cout << *it << std::endl;
-//        }
-//        m_screenOutputMutex.unlock();
-
         // Insert them in the triangulation
         m_dt.insert(chPts.begin(), chPts.end());
 
         // Remove corner points from the data points to be considered
-//        std::cout << "m_dataPts.size() (before) = " << m_dataPts.size() << std::endl;
         for (std::vector<Point_3>::iterator it = chPts.begin(); it != chPts.end(); ++it) {
-//            std::cout << "Erasing point = " << *it << std::endl;
             m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
         }
-//        std::cout << "m_dataPts.size() (after) = " << m_dataPts.size() << std::endl;
-//        std::cout << "m_dt num faces = " << m_dt.number_of_faces() << std::endl;
     } else {
         // Temporal triangulation with all the points
         DT tmpDt;
@@ -126,46 +103,31 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
 
         // For each constrained border, add the points to the internal triangulation and remove the points from the data points
         if (constrainEasternVertices) {
-//            std::cout << "Eastern vertices" << std::endl ;
             m_dt.insert(easternBorderPts.begin(), easternBorderPts.end());
             for (std::vector<Point_3>::iterator it = easternBorderPts.begin(); it != easternBorderPts.end(); ++it) {
-//                std::cout << *it << std::endl ;
                 m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
             }
         }
         if (constrainWesternVertices) {
             m_dt.insert(westernBorderPts.begin(), westernBorderPts.end());
-//            std::cout << "Western vertices" << std::endl ;
             for (std::vector<Point_3>::iterator it = westernBorderPts.begin(); it != westernBorderPts.end(); ++it) {
-//                std::cout << *it << std::endl ;
                 m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
             }
         }
         if (constrainSouthernVertices) {
             m_dt.insert(southernBorderPts.begin(), southernBorderPts.end());
-//            std::cout << "Southern vertices" << std::endl ;
             for (std::vector<Point_3>::iterator it = southernBorderPts.begin();
                  it != southernBorderPts.end(); ++it) {
-//                std::cout << *it << std::endl ;
                 m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
             }
         }
         if (constrainNorthernVertices) {
             m_dt.insert(northernBorderPts.begin(), northernBorderPts.end());
-//            std::cout << "Northern vertices" << std::endl;
             for (std::vector<Point_3>::iterator it = northernBorderPts.begin();
                  it != northernBorderPts.end(); ++it) {
-//                std::cout << *it << std::endl ;
                 m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
             }
         }
-
-//        if (constrainEasternVertices) std::cout << "constrainEasternVertices" << std::endl;
-//        if (constrainWesternVertices) std::cout << "constrainWesternVertices" << std::endl;
-//        if (constrainSouthernVertices) std::cout << "constrainSouthernVertices" << std::endl;
-//        if (constrainNorthernVertices) std::cout << "constrainNorthernVertices" << std::endl;
-//
-//        std::cout << "Constraints added as base points" << std::endl;
 
         // If required, create the base grid
         if (m_initGridSamples > 0) {
@@ -174,11 +136,6 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
             FT endX = cornerPoint11.x();
             FT startY = cornerPoint00.y();
             FT endY = cornerPoint11.y();
-
-//            std::cout << "startX = " << startX << std::endl;
-//            std::cout << "endX = " << endX << std::endl;
-//            std::cout << "startY = " << startY << std::endl;
-//            std::cout << "endY = " << endY << std::endl;
 
             FT extX = endX - startX;
             FT extY = endY - startY;
@@ -199,9 +156,6 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
                     FT curY = startY + (j*stepY);
                     Point_3 p(curX, curY, 0.0);
 
-//                    std::cout << "curX = " << curX << std::endl;
-//                    std::cout << "curY = " << curY << std::endl;
-
                     // Detect in which triangle does the projection of this grid point falls
                     FaceHandle fh = tmpDt.locate(p);
                     if (tmpDt.is_infinite(fh))
@@ -212,8 +166,6 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
 
                     Point_3 pi(curX, curY, h);
 
-//                    std::cout << "Inserted steiner point = " << pi << std::endl;
-
                     m_dt.insert(pi);
 
                     insertedPts.push_back(pi);
@@ -221,16 +173,9 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
             }
 
             // Remove the inserted points in case they are part of the input data points
-//            std::cout << "m_dataPts.size() (before)= " << m_dataPts.size() << std::endl;
             for (std::vector<Point_3>::iterator it = insertedPts.begin(); it != insertedPts.end(); ++it) {
                 m_dataPts.erase(std::remove(m_dataPts.begin(), m_dataPts.end(), *it), m_dataPts.end());
             }
-//            std::cout << "m_dataPts.size() = " << m_dataPts.size() << std::endl;
-
-//            std::cout << "Triangulation vertices:" << std::endl;
-//            for (DT::Vertex_iterator vit = m_dt.vertices_begin(); vit != m_dt.vertices_end(); ++vit)
-//                std::cout << vit->point() << std::endl;
-
         }
         else {
             // Add the corner points if none of its adjacent borders is constrained
@@ -255,15 +200,12 @@ void TinCreationGreedyInsertionStrategy::initialize(const bool &constrainEastern
     // NOTE: From now on, the vector m_dataPts should not be modified again, as the GIFaceInfo class will maintain a list of pointers to this vector!
 
     // For all the points in the data set, check in which triangle they fall
-//    std::cout << "Evaluating the points falling on the initial faces" << std::endl;
     for (std::vector<Point_3>::iterator it = m_dataPts.begin(); it != m_dataPts.end(); ++it) {
         // Locate the triangle containing the current point
         FaceHandle fh = m_dt.locate(*it);
 
         // Add the point to the list of points in this triangle
         fh->info().addPointPtr(std::make_shared<Point_3>(*it));
-
-//        std::cout << *it << std::endl;
     }
 
     // Select the best candidate for each face
@@ -295,7 +237,6 @@ FT TinCreationGreedyInsertionStrategy::errorHeight(const Point_3 &p, const Trian
     const Point_3 *ip = boost::get<Point_3>(&*intersect);
 
     // Finally, compute the squared distance between the query point and the intersection
-//    std::cout << CGAL::squared_distance(p, *ip) << std::endl;
     return CGAL::squared_distance(p, *ip);
 }
 
@@ -309,22 +250,17 @@ FT TinCreationGreedyInsertionStrategy::error3D(const Point_3 &p, const Triangle_
 void
 TinCreationGreedyInsertionStrategy::
 insert(const Point_3 &p) {
-//    std::cout << "Inserting point = " << p << std::endl;
-
     // Get the conflict zone in the Delaunay triangulation for the point to be inserted
     std::vector<FaceHandle> facesInConflict;
     m_dt.get_conflicts(p, std::back_inserter(facesInConflict));
 
     if (facesInConflict.empty()) {
-//        // If no faces are in conflict, the point we are trying to add is already in the triangulation! (should not happen...)
+        // If no faces are in conflict, the point we are trying to add is already in the triangulation! (should not happen...)
         std::cout << "Point already in surface!!!!!!!!!!!!!" << std::endl;
         std::cout << "p = " << p << std::endl;
 //        m_heap.pop(); // Do not consider this point anymore
 //        return;
     }
-
-//    std::cout << "p = " << p << std::endl;
-//    std::cout << "facesInConflict = " << facesInConflict.size() << std::endl;
 
     // All the faces in the conflict zone will be changed
     // Thus, collect all the points falling in these faces and delete their corresponding entries in the heap
@@ -345,8 +281,7 @@ insert(const Point_3 &p) {
     }
 
     // Insert the point and modify the triangulation
-    VertexHandle vh = m_dt.insert(
-            p); // TODO: Use point location once to get a nearby face and then use this face as guess?
+    VertexHandle vh = m_dt.insert(p); // TODO: Use point location once to get a nearby face and then use this face as guess?
 
     // Check in which faces previously collected points fall
     // While there is no check in this regard, they are all supposed to be falling in the newly created faces that are now
@@ -394,10 +329,7 @@ computeErrorAndUpdateHeap(FaceHandle fh) {
         }
     }
     if (maxSqError > std::numeric_limits<double>::epsilon() && maxSqError > m_scaledSqApproxTol) {
-//        std::cout << "Error = " << maxSqError << std::endl;
-//        std::cout << "epsilon = " << std::numeric_limits<double>::epsilon() << std::endl;
         GIHeapNodeHandle nh = m_heap.push(GIHeapNode(maxSqError, best));
-//        std::cout << "Best point = " << best << std::endl;
         fh->info().setHeapNodeHandle(nh);
     }
 }

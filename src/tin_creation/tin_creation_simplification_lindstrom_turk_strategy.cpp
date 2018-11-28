@@ -57,12 +57,6 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                                                      m_weightShape ) ) ;
 
     // TODO: Find a way to provide an intuitive stop predicate based on cost...
-    //    SMS::Cost_and_count_stop_predicate<Polyhedron> cacsp(m_options.SimpStopCost,
-    //                                                         m_options.SimpStopEdgesCount) ;
-
-    //    typedef SMS::Constrained_placement<SimplificationPlacement, WesternAndSouthernBorderEdgesAreConstrainedEdgeMap > Placement;
-    //    Placement pl(wsbeac) ;
-
     int r = SMS::edge_collapse
             ( surface,
               SimplificationStopPredicate(m_stopEdgesCount),

@@ -32,7 +32,14 @@ class Constrained_triangulation_plus_2;
 namespace Polyline_simplification_2
 {
 
-/// This class is a cost function which calculates the cost as the square of the distance between the original and simplified polylines in R3. To be used with Projection_traits_xy_3 class.
+/**
+ * @class PointSetFeaturesSimplificationCost
+ * @brief Polyline simplification cost function used by point set simplification methods
+ *
+ * This class is a cost function which calculates the cost as the square of the distance between the original and simplified polylines in height.
+ * It also allows to fix a maximum length on the XY plane for simplified edges
+ * To be used with Projection_traits_xy_3 class.
+ */
 class PointSetFeaturesSimplificationCost
 {
 
@@ -87,17 +94,18 @@ public:
             return std::numeric_limits<double>::infinity();
         }
 
-        // Otherwise, check the cost using 3D distance
+        // Otherwise, check the cost
         Segment lP_R = construct_segment(lP, lR) ;
 
-    //    FT d1 = 0.0;
-    //    Points_in_constraint_iterator pp(vicp), rr(vicr);
-    //    ++pp;
-    //
-    //    for ( ;pp != rr; ++pp )
-    //      d1 = (std::max)(d1, compute_squared_distance( lP_R, *pp ) ) ;
+        // Using 3D distance
+        //    FT d1 = 0.0;
+        //    Points_in_constraint_iterator pp(vicp), rr(vicr);
+        //    ++pp;
+        //
+        //    for ( ;pp != rr; ++pp )
+        //      d1 = (std::max)(d1, compute_squared_distance( lP_R, *pp ) ) ;
 
-        // Check the cost using distance in height
+        // Using distance in height
         Vector_3 cpLineAndZAxis = CGAL::cross_product<typename Geom_traits::Rp>(lP_R.to_vector(), Vector_3(0,0,1));
         Vector_3 planeNml = CGAL::cross_product<typename Geom_traits::Rp>(lP_R.to_vector(), cpLineAndZAxis);
         Plane_3 lineAsAPlane = Plane_3(lP, planeNml);
