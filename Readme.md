@@ -41,7 +41,7 @@ The main functionality of the project is provided by the `qm_tiler` app. A simpl
 qm_tiler -i <input_raster> -o <output_tiles_dir>
 ```
 
-However, the method has many parameters that may be tuned, and that are explained in the [tutorial](https://bitbucket.org/ricardcd/emodnet/wiki/Tutorial). You can list them by running:
+However, the method has many parameters that may be tuned, and that are explained in the [tutorial](https://github.com/coronis-computing/emodnet_qmgc/wiki). You can list them by running:
 
 ```
 qm_tiler -h
@@ -51,7 +51,7 @@ After creating the TMS pyramid of tiles, use the script `create_layer_file.py` t
 
 Finally, in order to easily test the project, we also provide the `simple_tiles_server.py`, which creates a simple web server of tiles.
 
-Please refer to the [tutorial](https://bitbucket.org/ricardcd/emodnet/wiki/Tutorial) page in the wiki of this project for further information.
+Please refer to the [tutorial](https://github.com/coronis-computing/emodnet_qmgc/wiki) page in the wiki of this project for further information.
 
 ## Known issues
 
