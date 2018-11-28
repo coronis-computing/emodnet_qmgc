@@ -73,4 +73,4 @@ This project has been developed by Coronis Computing S.L. within the EMODnet Bat
 
 * EMODnet: http://www.emodnet.eu/
 * EMODnet (bathymetry): http://www.emodnet-bathymetry.eu/
-* Coronis: http://coronis.udg.edu/
+* Coronis: http://www.coronis.es
