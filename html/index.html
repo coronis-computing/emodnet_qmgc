@@ -79,12 +79,13 @@ $(function() {
 <h2>Compilation</h2>
 <p>This project uses the typical cmake pipeline. Thus, assuming that all the libraries listed above are installed, it should be as easy as:</p>
 <div class="fragment"><div class="line">mkdir build</div><div class="line">cd build</div><div class="line">cmake ..</div><div class="line">make</div></div><!-- fragment --><p>Optionally, you can create the documentation using:</p>
-<div class="fragment"><div class="line">make doc</div></div><!-- fragment --><h2>Usage</h2>
+<div class="fragment"><div class="line">make doc</div></div><!-- fragment --><p>An already compiled version of the documentation can be found in the <a href="https://coronis-computing.github.io/emodnet_qmgc/html/index.html">web of this project</a>.</p>
+<h2>Usage</h2>
 <p>The main functionality of the project is provided by the <code>qm_tiler</code> app. A simple usage is:</p>
-<div class="fragment"><div class="line">qm_tiler -i &lt;input_raster&gt; -o &lt;output_tiles_dir&gt;</div></div><!-- fragment --><p>However, the method has many parameters that may be tuned, and that are explained in the <a href="https://bitbucket.org/ricardcd/emodnet/wiki/Tutorial">tutorial</a>. You can list them by running:</p>
+<div class="fragment"><div class="line">qm_tiler -i &lt;input_raster&gt; -o &lt;output_tiles_dir&gt;</div></div><!-- fragment --><p>However, the method has many parameters that may be tuned, and that are explained in the <a href="https://github.com/coronis-computing/emodnet_qmgc/wiki">tutorial</a>. You can list them by running:</p>
 <div class="fragment"><div class="line">qm_tiler -h</div></div><!-- fragment --><p>After creating the TMS pyramid of tiles, use the script <code>create_layer_file.py</code> to create the <code>layer.json</code> file required by Cesium.</p>
 <p>Finally, in order to easily test the project, we also provide the <code>simple_tiles_server.py</code>, which creates a simple web server of tiles.</p>
-<p>Please refer to the <a href="https://bitbucket.org/ricardcd/emodnet/wiki/Tutorial">tutorial</a> page in the wiki of this project for further information.</p>
+<p>Please refer to the <a href="https://github.com/coronis-computing/emodnet_qmgc/wiki">tutorial</a> page in the wiki of this project for further information.</p>
 <h2>Known issues</h2>
 <ul>
 <li>As previously stated, this project depends on Cesium Terrain Builder library (<a href="https://github.com/geo-data/cesium-terrain-builder">https://github.com/geo-data/cesium-terrain-builder</a>), and thus it shares the same limitation when creating tiles at lower zoom levels from large DEMs. In this case, an error similar to the following one may raise:</li>
@@ -97,12 +98,12 @@ $(function() {
 <ul>
 <li>EMODnet: <a href="http://www.emodnet.eu/">http://www.emodnet.eu/</a></li>
 <li>EMODnet (bathymetry): <a href="http://www.emodnet-bathymetry.eu/">http://www.emodnet-bathymetry.eu/</a></li>
-<li>Coronis: <a href="http://coronis.udg.edu/">http://coronis.udg.edu/</a> </li>
+<li>Coronis: <a href="http://www.coronis.es">http://www.coronis.es</a> </li>
 </ul>
 </div></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
-Generated on Wed Nov 28 2018 16:46:09 for EMODnet Quantized Mesh Generator for Cesium by &#160;<a href="http://www.doxygen.org/index.html">
+Generated on Wed Nov 28 2018 17:13:12 for EMODnet Quantized Mesh Generator for Cesium by &#160;<a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/>
 </a> 1.8.13
 </small></address>
