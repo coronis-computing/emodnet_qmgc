@@ -33,6 +33,8 @@ Optionally, you can create the documentation using:
 make doc
 ```
 
+An already compiled version of the documentation can be found in the [web of this project](https://coronis-computing.github.io/emodnet_qmgc/html/index.html).
+
 ## Usage
 
 The main functionality of the project is provided by the `qm_tiler` app. A simple usage is:
