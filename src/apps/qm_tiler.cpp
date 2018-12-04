@@ -31,7 +31,7 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <tin_creation/tin_creation_simplification_point_set_grid.h>
+#include <future>
 // GDAl
 #include "cpl_conv.h"
 #include <ogrsf_frmts.h>
@@ -184,6 +184,8 @@ int main ( int argc, char **argv)
     // --- Create as many tilers as required threads ---
     std::vector<QuantizedMeshTiler> tilers ;
     std::vector<GDALDataset *> gdalDatasets ;
+    if (numThreads == 0)
+        numThreads = std::thread::hardware_concurrency();
     for ( int i = 0; i < numThreads; i++ ) {
         // Open the input dataset
         //GDALDataset *gdalDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
