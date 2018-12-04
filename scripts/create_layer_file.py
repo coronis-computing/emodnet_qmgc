@@ -25,7 +25,7 @@ if __name__ == '__main__':
     param = parser.parse_args()
 
     # Base layer.json data
-    data = {"tilejson": "2.1.0", "format": "quantized-mesh-1.0", "version": "1.2.0", "scheme": "tms", "tiles": ["{z}/{x}/{y}.terrain?v={version}"], "attribution": "Terrain Data,Author: Ricard Campos", "projection": "EPSG:4326", "bounds": [0.0,90.0,180.0,-90.0] }
+    data = {"tilejson": "2.1.0", "format": "quantized-mesh-1.0", "version": "1.2.0", "scheme": "tms", "tiles": ["{z}/{x}/{y}.terrain?v={version}"], "attribution": "Terrain Data,Author: Created using the EMODnet Quantized Mesh Generator for Cesium", "projection": "EPSG:4326", "bounds": [0.0,90.0,180.0,-90.0] }
 
     # Get the zoom levels
 
