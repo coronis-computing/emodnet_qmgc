@@ -10,7 +10,7 @@ This project depends on the following C++ libraries:
 * ZLib: https://www.zlib.net/
 * Cesium Terrain Builder (libctb): https://github.com/geo-data/cesium-terrain-builder
 * GDAL: http://www.gdal.org/
-* CGAL: https://www.cgal.org/
+* CGAL: https://www.cgal.org/ (tested with version 4.12.1)
 * meshoptimizer: https://github.com/zeux/meshoptimizer (with small modifications, source included in this project) 
 * JSON for modern C++: https://github.com/nlohmann/json (source included in this project)
 

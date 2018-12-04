@@ -26,13 +26,6 @@
 #include <iostream>
 #include <fstream>
 
-#include <GeographicLib/Geocentric.hpp>
-#include <GeographicLib/LocalCartesian.hpp>
-#include <GeographicLib/GeoCoords.hpp>
-#include <GeographicLib/UTMUPS.hpp>
-#include <GeographicLib/Geocentric.hpp>
-
-
 bool QuantizedMesh::readFile( const std::string &filePath ) {
     // Open the file
     GZipFileReader reader(filePath);

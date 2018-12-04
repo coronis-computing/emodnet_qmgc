@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 2.8)
 project("EMODnet Quantized Mesh Generator for Cesium")
 
 # -----------------------------------------------------------------------------
@@ -32,11 +32,20 @@ endif()
 # PThreads
 find_package(Threads REQUIRED)
 
+# CGAL library
+find_package(CGAL)
+include( ${CGAL_USE_FILE} )
+
 # Boost library
 find_package(Boost COMPONENTS program_options
                               filesystem
                               system
                               REQUIRED)
+if(NOT Boost_FOUND)
+    message(FATAL_ERROR "The boost library cannot be found on the system, required!")
+endif()
+
+message("Boost libs = ${Boost_LIBRARIES}")
 
 # ZLib library
 find_package(ZLIB)
@@ -45,16 +54,12 @@ if(NOT ZLIB_FOUND)
 endif()
 include_directories(${ZLIB_INCLUDE_DIRS})
 
-# CGAL library
-find_package(CGAL)
-include( ${CGAL_USE_FILE} )
-
 # Cesium-terrain-builder library
 find_package(CTB)
 if(NOT CTB_FOUND)
     message(FATAL_ERROR "Cesium-Terrain-Builder not found, required!")
 endif()
-include_directories(${CTB_INCLUDE_DIRS})
+include_directories(${CTB_INCLUDE_DIR})
 
 # GDAL library
 find_package(GDAL)

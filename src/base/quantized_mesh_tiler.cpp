@@ -19,7 +19,6 @@
 // Author: Ricard Campos (ricardcd@gmail.com)
 
 #include "quantized_mesh_tiler.h"
-#include <GeographicLib/Geocentric.hpp>
 #include <algorithm>
 #include "tin_creation/tin_creation_cgal_types.h"
 #include <CGAL/centroid.h>
