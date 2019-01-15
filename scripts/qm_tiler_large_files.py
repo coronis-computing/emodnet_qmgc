@@ -82,7 +82,7 @@ def main():
 
     # Create the tiles of the terrain for the deepest zoom levels (without intermediate tiffs)
     if param.start_zoom > param.start_zoom_tiff:
-        cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.start_zoom) + " --end-zoom " + str(param.start_zoom_tiff-1) + " " + further_options + param.input_file
+        cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.start_zoom) + " --end-zoom " + str(param.start_zoom_tiff+1) + " " + further_options + param.input_file
         print cmd
         os.system(cmd)
 
