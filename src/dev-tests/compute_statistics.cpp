@@ -171,8 +171,8 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
     BOOST_FOREACH(vertex_descriptor vd, vertices(meshRaster)){
                     Point_3 p = meshRaster.point(vd);
                     // From UV to lat/lon (height already in the correct units)
-                    double lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * p.y());
-                    double lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * p.x());
+                    double lat = tileBounds.getMinY() + fabs(tileBounds.getMaxY() - tileBounds.getMinY()) * p.y();
+                    double lon = tileBounds.getMinX() + fabs(tileBounds.getMaxX() - tileBounds.getMinX()) * p.x();
 
                     double tmpx, tmpy, tmpz;
                     crs_conversions::llh2ecef(lat, lon, p.z(), tmpx, tmpy, tmpz);
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
             ("zoom,z", po::value<int>(&zoom)->default_value(0), "Zoom level of the pyramid to extract the statistics from" )
             ("output,o", po::value<std::string>(&outMatlabFile)->default_value("out_stats_zoom.m"), "Output matlab file containing the per-tile results, along with the global statistics computed in this function")
             ("bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations" )
-            ("samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify." )
+            ("samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that the statistics will be computed with respect to this raster resolution." )
             ("clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold." )
             ("clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
             ("above-sea-level-scale-factor", po::value<float>(&aboveSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings above sea level (ignored if < 0)" )
