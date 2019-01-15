@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import sys
 
 class my_colors:
     Red = '\033[31m'
@@ -19,17 +20,25 @@ class my_colors:
     LightMagenta = '\033[95m'
     LightCyan = '\033[96m'
     ENDC = '\033[0m'
-    
-
 
 def print_step(step_name):
     header = "*** " + step_name + " ***"
     print "\n" + my_colors.Cyan + header + my_colors.ENDC
 
+def print_cmd(cmd, fancy_output):
+    if fancy_output:
+        print my_colors.Green + cmd + my_colors.ENDC
+    else:
+        print cmd
 
-
-def print_cmd(cmd):
-    print my_colors.Green + cmd + my_colors.ENDC
+def run_cmd(cmd):
+    # Run the command
+    failure = os.system(cmd)
+    # Check for failure
+    if failure:
+        print '[ERROR] Execution of command: "%s" FAILED!\nAborting...' % cmd
+        return False
+    return True
 
 
 
@@ -113,47 +122,42 @@ def main():
     if param.fancy_output: print_step("Create zooms without intermediate base Tiffs")
     if param.start_zoom > param.start_zoom_tiff:
         cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.start_zoom) + " --end-zoom " + str(param.start_zoom_tiff+1) + " " + further_options + param.input_file
-        if param.fancy_output:
-            print_cmd(cmd)
-        else:
-            print cmd
-        os.system(cmd)
+        print_cmd(cmd, param.fancy_output)
+        all_ok = run_cmd(cmd)
+        if not all_ok:
+            sys.exit(1)
 
     # Create the tiles of the terrain for the selected zooms using a base of tiff tiles of a deeper zoom in the pyramid
     if param.fancy_output: print_step("Create zooms using a base of Tiff tiles of a deeper zoom in the pyramid")
     for i in xrange(param.start_zoom_tiff+1, param.end_zoom_tiff, -1):
         # Create the GDAL tileset for this zoom level
         cmd = "ctb-tile --output-format GTiff --output-dir " + param.output_dir_tiff + " --start-zoom " + str(i) + " --end-zoom " + str(i) + " " + param.input_file
-        if param.fancy_output:
-            print_cmd(cmd)
-        else:
-            print cmd
-        os.system(cmd)
+        print_cmd(cmd, param.fancy_output)
+        all_ok = run_cmd(cmd)
+        if not all_ok:
+            sys.exit(1)
 
         # Build the VRT from this level
         cmd = "gdalbuildvrt " + param.output_dir_tiff + "/" + "zoom" + str(i) + ".vrt " + param.output_dir_tiff + "/" + str(i) + "/*/*.tif"
-        if param.fancy_output:
-            print_cmd(cmd)
-        else:
-            print cmd
-        os.system(cmd)
+        print_cmd(cmd, param.fancy_output)
+        all_ok = run_cmd(cmd)
+        if not all_ok:
+            sys.exit(1)
 
         # Construct the quantized mesh terrain tiles from the VRT of the previous zoom level
         cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(i-1) + " --end-zoom " + str(i-1) + " " + further_options +  param.output_dir_tiff + "/zoom" + str(i) + ".vrt"
-        if param.fancy_output:
-            print_cmd(cmd)
-        else:
-            print cmd
-        os.system(cmd)
+        print_cmd(cmd, param.fancy_output)
+        all_ok = run_cmd(cmd)
+        if not all_ok:
+            sys.exit(1)
 
     # Create the rest of zooms from the remaining zooms from the last tiff base
     if param.fancy_output: print_step("Create zooms using the last base Tiff")
     cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.end_zoom_tiff-1) + " --end-zoom " + str(param.end_zoom) + " " + further_options + param.output_dir_tiff + "/zoom" + str(param.end_zoom_tiff+1) + ".vrt"
-    if param.fancy_output:
-        print_cmd(cmd)
-    else:
-        print cmd
-    os.system(cmd)
+    print_cmd(cmd, param.fancy_output)
+    all_ok = run_cmd(cmd)
+    if not all_ok:
+        sys.exit(1)
 
 if __name__ == '__main__':
     main()
