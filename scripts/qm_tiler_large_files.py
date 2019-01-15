@@ -3,6 +3,34 @@
 import argparse
 import os
 
+class my_colors:
+    Red = '\033[31m'
+    Green = '\033[32m'
+    Yellow = '\033[33m'
+    Blue = '\033[34m'
+    Magenta = '\033[35m'
+    Cyan = '\033[36m'
+    LightGray = '\033[37m'
+    DarkGray = '\033[90m'
+    LightRed = '\033[91m'
+    LightGreen = '\033[92m'
+    LightYellow = '\033[93m'
+    LightBlue = '\033[94m'
+    LightMagenta = '\033[95m'
+    LightCyan = '\033[96m'
+    ENDC = '\033[0m'
+    
+
+
+def print_step(step_name):
+    header = "*** " + step_name + " ***"
+    print "\n" + my_colors.Cyan + header + my_colors.ENDC
+
+
+
+def print_cmd(cmd):
+    print my_colors.Green + cmd + my_colors.ENDC
+
 
 
 def main():
@@ -22,6 +50,7 @@ def main():
                         help="The zoom level at which we stop building tiff zooms. All the zooms from here to end-zoom will use this tiff zoom as base raster")
     parser.add_argument("--params", "-p", dest="qm_tiler_params", type=str, default="",
                         help="A string containing all the parameters to be passed to qm_tiler (put all them under \"\"). Remember that you can use an external config file to pass the parameters. In this later case, this parameter would be something like \"-c params.cfg\". Note that you should skip the -i, -o, -s and -e parameters in qm_tiler, because they must be specified using the corresponding parameters of this script.")
+    parser.add_argument("--fancy-output", "-f", dest="fancy_output", action='store_true', help="Activates fancy output of the progress, where the different steps of the script are shown in blue and the commands run in green")
     param = parser.parse_args()
 
     # Check input parameters
@@ -81,31 +110,49 @@ def main():
     further_options = " " + param.qm_tiler_params + " "
 
     # Create the tiles of the terrain for the deepest zoom levels (without intermediate tiffs)
+    if param.fancy_output: print_step("Create zooms without intermediate base Tiffs")
     if param.start_zoom > param.start_zoom_tiff:
         cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.start_zoom) + " --end-zoom " + str(param.start_zoom_tiff+1) + " " + further_options + param.input_file
-        print cmd
+        if param.fancy_output:
+            print_cmd(cmd)
+        else:
+            print cmd
         os.system(cmd)
 
     # Create the tiles of the terrain for the selected zooms using a base of tiff tiles of a deeper zoom in the pyramid
+    if param.fancy_output: print_step("Create zooms using a base of Tiff tiles of a deeper zoom in the pyramid")
     for i in xrange(param.start_zoom_tiff+1, param.end_zoom_tiff, -1):
         # Create the GDAL tileset for this zoom level
         cmd = "ctb-tile --output-format GTiff --output-dir " + param.output_dir_tiff + " --start-zoom " + str(i) + " --end-zoom " + str(i) + " " + param.input_file
-        print cmd
+        if param.fancy_output:
+            print_cmd(cmd)
+        else:
+            print cmd
         os.system(cmd)
 
         # Build the VRT from this level
         cmd = "gdalbuildvrt " + param.output_dir_tiff + "/" + "zoom" + str(i) + ".vrt " + param.output_dir_tiff + "/" + str(i) + "/*/*.tif"
-        print cmd
+        if param.fancy_output:
+            print_cmd(cmd)
+        else:
+            print cmd
         os.system(cmd)
 
         # Construct the quantized mesh terrain tiles from the VRT of the previous zoom level
         cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(i-1) + " --end-zoom " + str(i-1) + " " + further_options +  param.output_dir_tiff + "/zoom" + str(i) + ".vrt"
-        print cmd
+        if param.fancy_output:
+            print_cmd(cmd)
+        else:
+            print cmd
         os.system(cmd)
 
     # Create the rest of zooms from the remaining zooms from the last tiff base
+    if param.fancy_output: print_step("Create zooms using the last base Tiff")
     cmd = "qm_tiler --output-dir " + param.output_dir + " --start-zoom " + str(param.end_zoom_tiff-1) + " --end-zoom " + str(param.end_zoom) + " " + further_options + param.output_dir_tiff + "/zoom" + str(param.end_zoom_tiff+1) + ".vrt"
-    print cmd
+    if param.fancy_output:
+        print_cmd(cmd)
+    else:
+        print cmd
     os.system(cmd)
 
 if __name__ == '__main__':
