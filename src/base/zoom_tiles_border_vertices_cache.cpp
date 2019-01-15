@@ -102,7 +102,7 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
 
         // Free some memory from the cache if the tile's borders info is not needed anymore
         if( !m_mapTileToBorderVertices[southernTileInd].isAlive() )
-            m_mapTileToBorderVertices.erase(southernTileInd) ;
+            m_mapTileToBorderVertices.erase(southernTileInd);
     }
 
     // Special cases for the corners of the tile: when the 4-connected neighbors haven't been processed BUT some of the
@@ -113,7 +113,8 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
         std::pair<int, int> northWestTileInd = std::make_pair(tileX-1, tileY+1);
         if (m_mapTileToBorderVertices.count(northWestTileInd)) {
             // Take the corner, in this case we look for the (0, m_tileMaxCoord) corner of the north-west tile
-            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northWestTileInd].getSouthernVertices() ;
+//            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northWestTileInd].getSouthernVerticesAndDecreaseLife();
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northWestTileInd].getSouthernVertices();
             std::sort(borderCoords.begin(), borderCoords.end());
 
             // Which is the (0.0, m_tileMaxCoord) corner of the current tile
@@ -126,7 +127,8 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
         std::pair<int, int> northEastTileInd = std::make_pair(tileX+1, tileY+1);
         if (m_mapTileToBorderVertices.count(northEastTileInd)) {
             // Take the corner, in this case we look for the (0, 0) corner of the north-east tile
-            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northEastTileInd].getSouthernVertices() ;
+//            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northEastTileInd].getSouthernVerticesAndDecreaseLife();
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[northEastTileInd].getSouthernVertices();
             std::sort(borderCoords.begin(), borderCoords.end());
 
             // Which is the (m_tileMaxCoord, m_tileMaxCoord) corner of the current tile
@@ -139,7 +141,8 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
         std::pair<int, int> southWestTileInd = std::make_pair(tileX-1, tileY-1);
         if (m_mapTileToBorderVertices.count(southWestTileInd)) {
             // Take the corner, in this case we look for the (m_tileMaxCoord, m_tileMaxCoord) corner of the south-west tile
-            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southWestTileInd].getNorthernVertices() ;
+//            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southWestTileInd].getNorthernVerticesAndDecreaseLife();
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southWestTileInd].getNorthernVertices();
             std::sort(borderCoords.begin(), borderCoords.end());
 
             // Which is the (0.0, 0.0) corner of the current tile
@@ -148,11 +151,12 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
         }
     }
     if (!southernTileExists && !easternTileExists) {
-        // Check if south-west tile exists
+        // Check if south-east tile exists
         std::pair<int, int> southEastTileInd = std::make_pair(tileX+1, tileY-1);
         if (m_mapTileToBorderVertices.count(southEastTileInd)) {
             // Take the corner, in this case we look for the (0, m_tileMaxCoord) corner of the south-east tile
-            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southEastTileInd].getNorthernVertices() ;
+//            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southEastTileInd].getNorthernVerticesAndDecreaseLife();
+            std::vector<BorderVertex> borderCoords = m_mapTileToBorderVertices[southEastTileInd].getNorthernVertices();
             std::sort(borderCoords.begin(), borderCoords.end());
 
             // Which is the (m_tileMaxCoord, 0.0) corner of the current tile
@@ -201,6 +205,12 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile( const in
              it != northernVerticesToPreserve.end(); ++it ) {
             northernBorderVertices.push_back( BorderVertex( it->x(), it->z() ) ) ;
         }
+
+//        // Check for NE and NW tiles, if they still need to be constructed update the number of neighbors (defines the number of times the cache can be read before deletion)
+//        if ( isTileInBounds(tileX+1, tileY+1) && !isTileVisited(tileX+1, tileY+1) )
+//            numNeighsInBounds++;
+//        if ( isTileInBounds(tileX-1, tileY+1) && !isTileVisited(tileX-1, tileY+1) )
+//            numNeighsInBounds++;
     }
     if ( isTileInBounds(tileX, tileY-1) && !isTileVisited(tileX, tileY-1) ) {
         numNeighsInBounds++;
@@ -208,6 +218,12 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile( const in
              it != southernVerticesToPreserve.end(); ++it ) {
             southernBorderVertices.push_back( BorderVertex( it->x(), it->z() ) ) ;
         }
+
+//        // Check for SE and SW tiles, if they still need to be constructed update the number of neighbors (defines the number of times the cache can be read before deletion)
+//        if ( isTileInBounds(tileX+1, tileY-1) && !isTileVisited(tileX+1, tileY-1) )
+//            numNeighsInBounds++;
+//        if ( isTileInBounds(tileX-1, tileY-1) && !isTileVisited(tileX-1, tileY-1) )
+//            numNeighsInBounds++;
     }
 
     // Add the cache entry (if not empty)
@@ -218,6 +234,7 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile( const in
                                northernBorderVertices,
                                southernBorderVertices,
                                numNeighsInBounds);
+
         m_mapTileToBorderVertices[tileInd] = tbv ;
     }
 

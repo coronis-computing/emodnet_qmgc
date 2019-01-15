@@ -83,6 +83,8 @@ public:
     std::vector<BorderVertex> getNorthernVertices() { return m_northernVertices ; }
     std::vector<BorderVertex> getSouthernVertices() { return m_southernVertices ; }
 
+    void decreaseLife() { m_lifeCounter--; }
+
     bool isAlive() { return m_lifeCounter > 0 ; }
 
 private:
