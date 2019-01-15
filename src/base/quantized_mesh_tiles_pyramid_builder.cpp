@@ -98,7 +98,9 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
                 // Get constraints at borders from cache
                 BordersData bd;
+                std::cout << "Getting constrained border vertices" << std::endl;
                 m_bordersCache.getConstrainedBorderVerticesForTile(tp.x, tp.y, bd);
+                std::cout << "Getting constrained border vertices DONE" << std::endl;
 
                 std::future<BordersData> f = std::async( std::launch::async,
                                                          &QuantizedMeshTilesPyramidBuilder::createTile, this,
@@ -117,9 +119,11 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
             // Update cache for the next iteration
             for ( int i = 0; i < numThread; i++ ) {
                 BordersData bd = futures[i].get() ;
+                std::cout << "Setting constrained border vertices" << std::endl;
                 m_bordersCache.setConstrainedBorderVerticesForTile( coords[i].x, coords[i].y,
                                                                     bd.tileEastVertices, bd.tileWestVertices,
                                                                     bd.tileNorthVertices, bd.tileSouthVertices ) ;
+                std::cout << "Setting constrained border vertices DONE" << std::endl;
             }
         }
     }
