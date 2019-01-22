@@ -328,9 +328,9 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
         z = z < 0.0? 0.0 : z ;
         z = z > 1.0? 1.0 : z ;
 
-        unsigned short u = QuantizedMesh::remapToVertexDataValue( x, 0.0, 1.0 ) ;
-        unsigned short v = QuantizedMesh::remapToVertexDataValue( y, 0.0, 1.0 ) ;
-        unsigned short h = QuantizedMesh::remapToVertexDataValue( z, 0.0, 1.0 ) ;
+        unsigned short u = QuantizedMesh::remapToVertexDataValue(x, 0.0, 1.0);
+        unsigned short v = QuantizedMesh::remapToVertexDataValue(y, 0.0, 1.0);
+        unsigned short h = QuantizedMesh::remapToVertexDataValue(z, 0.0, 1.0);
 
         vertices.push_back(u) ;
         vertices.push_back(v) ;

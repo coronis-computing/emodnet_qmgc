@@ -98,9 +98,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
                 // Get constraints at borders from cache
                 BordersData bd;
-                std::cout << "Getting constrained border vertices" << std::endl;
                 m_bordersCache.getConstrainedBorderVerticesForTile(tp.x, tp.y, bd);
-                std::cout << "Getting constrained border vertices DONE" << std::endl;
 
                 std::future<BordersData> f = std::async( std::launch::async,
                                                          &QuantizedMeshTilesPyramidBuilder::createTile, this,
@@ -119,11 +117,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
             // Update cache for the next iteration
             for ( int i = 0; i < numThread; i++ ) {
                 BordersData bd = futures[i].get() ;
-                std::cout << "Setting constrained border vertices" << std::endl;
-                m_bordersCache.setConstrainedBorderVerticesForTile( coords[i].x, coords[i].y,
-                                                                    bd.tileEastVertices, bd.tileWestVertices,
-                                                                    bd.tileNorthVertices, bd.tileSouthVertices ) ;
-                std::cout << "Setting constrained border vertices DONE" << std::endl;
+                m_bordersCache.setConstrainedBorderVerticesForTile( coords[i].x, coords[i].y, bd ) ;
             }
         }
     }
@@ -227,10 +221,8 @@ bool QuantizedMeshTilesPyramidBuilder::getNextTileToProcess(ctb::TilePoint& tile
             m_tilesWaitingToProcess.push_back(tileXY);
     }
 
-    if ( found ) {
-        // We found a tile that can be processed
-        return true; // tileXY contains the following tile to process
-    }
+    if ( found )
+        return true; // We found a tile that can be processed: tileXY contains the following tile to process
     else
         return false ; // tileXY contains the last tile because we got to the end
 }

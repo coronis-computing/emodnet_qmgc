@@ -80,44 +80,44 @@ struct BordersData
         constrainSouthEastCorner = bd.constrainSouthEastCorner;
     }
 
-    /**
-     * @brief Check if the north-west corner is already constrained by one of the borders
-     * @return true if the northern or western borders are not empty, since the corner should be one of the points in the vector (not checked though)
-     */
-    bool isNorthWestCornerConstrainedByBorders() {
-        return !tileNorthVertices.empty() || !tileWestVertices.empty();
-    }
-
-    /**
-     * @brief Check if the north-east corner is already constrained by one of the borders
-     * @return true if the northern or eastern borders are not empty, since the corner should be one of the points in the vector (not checked though)
-     */
-    bool isNorthEastCornerConstrainedByBorders() {
-        return !tileNorthVertices.empty() || !tileEastVertices.empty();
-    }
-
-    /**
-     * @brief Check if the south-west corner is already constrained by one of the borders
-     * @return true if the southern or western borders are not empty, since the corner should be one of the points in the vector (not checked though)
-     */
-    bool isSouthWestCornerConstrainedByBorders() {
-        return !tileSouthVertices.empty() || !tileWestVertices.empty();
-    }
-
-    /**
-     * @brief Check if the south-east corner is already constrained by one of the borders
-     * @return true if the southern or eastern borders are not empty, since the corner should be one of the points in the vector (not checked though)
-     */
-    bool isSouthEastCornerConstrainedByBorders() {
-        return !tileSouthVertices.empty() || !tileEastVertices.empty();
-    }
+//    /**
+//     * @brief Check if the north-west corner is already constrained by one of the borders
+//     * @return true if the northern or western borders are not empty, since the corner should be one of the points in the vector (not checked though)
+//     */
+//    bool isNorthWestCornerConstrainedByBorders() {
+//        return !tileNorthVertices.empty() || !tileWestVertices.empty();
+//    }
+//
+//    /**
+//     * @brief Check if the north-east corner is already constrained by one of the borders
+//     * @return true if the northern or eastern borders are not empty, since the corner should be one of the points in the vector (not checked though)
+//     */
+//    bool isNorthEastCornerConstrainedByBorders() {
+//        return !tileNorthVertices.empty() || !tileEastVertices.empty();
+//    }
+//
+//    /**
+//     * @brief Check if the south-west corner is already constrained by one of the borders
+//     * @return true if the southern or western borders are not empty, since the corner should be one of the points in the vector (not checked though)
+//     */
+//    bool isSouthWestCornerConstrainedByBorders() {
+//        return !tileSouthVertices.empty() || !tileWestVertices.empty();
+//    }
+//
+//    /**
+//     * @brief Check if the south-east corner is already constrained by one of the borders
+//     * @return true if the southern or eastern borders are not empty, since the corner should be one of the points in the vector (not checked though)
+//     */
+//    bool isSouthEastCornerConstrainedByBorders() {
+//        return !tileSouthVertices.empty() || !tileEastVertices.empty();
+//    }
 
     /**
      * @brief Check wether north-west corner needs to be used
      * @return true if the validity flag for the north-west corner is set, and the northern-western borders are empty (otherwise, it will already be part of them)
      */
     bool useNorthWestCorner() {
-        return constrainNorthWestCorner && !isNorthWestCornerConstrainedByBorders();
+        return constrainNorthWestCorner; // && !isNorthWestCornerConstrainedByBorders();
     }
 
     /**
@@ -125,7 +125,7 @@ struct BordersData
      * @return true if the validity flag for the north-east corner is set, and the northern-eastern borders are empty (otherwise, it will already be part of them)
      */
     bool useNorthEastCorner() {
-        return constrainNorthEastCorner && !isNorthEastCornerConstrainedByBorders();
+        return constrainNorthEastCorner; // && !isNorthEastCornerConstrainedByBorders();
     }
 
     /**
@@ -133,7 +133,7 @@ struct BordersData
      * @return true if the validity flag for the south-west corner is set, and the southern-western borders are empty (otherwise, it will already be part of them)
      */
     bool useSouthWestCorner() {
-        return constrainSouthWestCorner && !isSouthWestCornerConstrainedByBorders();
+        return constrainSouthWestCorner; // && !isSouthWestCornerConstrainedByBorders();
     }
 
     /**
@@ -141,7 +141,7 @@ struct BordersData
      * @return true if the validity flag for the south-east corner is set, and the southern-eastern borders are empty (otherwise, it will already be part of them)
      */
     bool useSouthEastCorner() {
-        return constrainSouthEastCorner && !isSouthEastCornerConstrainedByBorders();
+        return constrainSouthEastCorner; // && !isSouthEastCornerConstrainedByBorders();
     }
 
 };
