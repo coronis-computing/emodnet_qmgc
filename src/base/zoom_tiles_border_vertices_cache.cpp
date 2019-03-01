@@ -30,9 +30,9 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
 
     // Check if the tile has an entry in the map
     std::pair<int,int> tileInd = std::make_pair( tileX, tileY ) ;
-    bool tileBorderDataExists = m_mapTileToBorderVertices.count(tileInd);
+    int tileBorderDataExists = m_mapTileToBorderVertices.count(tileInd);
 
-    if (!tileBorderDataExists) {
+    if (tileBorderDataExists == 0) {
         // Nothing to maintain, return an empty BordersData structure
         bd = BordersData();
         return false; // No border vertices to maintain
@@ -91,6 +91,8 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     // If these conditions hold, this means that the neighboring tile has not been built yet, so we store the border
     // constraints that correspond to this neighbor for later use. The borders stored here will be collected later in
     // getConstrainedBorderVerticesForTile(...) function
+
+    // TODO: Check if it is possible that a tile being processed is accessed here... should not be possible, but who knows...
 
     // The vertices to preserve in BorderVertex format
     std::shared_ptr<std::vector<BorderVertex>> easternBorderVertices, westernBorderVertices, northernBorderVertices, southernBorderVertices;
@@ -170,7 +172,7 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
             tbv.setWesternVertices(easternBorderVertices);
     }
 
-    // For the corners, visit the 8-neighbors (each corner needs to be transferred to 3 tiles!)
+    // For the corners, visit the 8-neighbors (each corner may need to be transferred to up to 3 tiles!)
     // NW corner from the current tile...
     // ... is SE corner of tile tileX-1, tileY+1 ...
     tileInd = std::make_pair(tileX-1, tileY+1);

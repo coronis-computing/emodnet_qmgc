@@ -102,10 +102,9 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
         qmPts.emplace_back(Point_3(u,v,height));
 //                    std::cout << u << " " << v << " " << height << std::endl;
     }
-    // Debug
-//                exportToXYZ("pts_from_tile.xyz", qmPts);
-
-
+    // --- Debug (begin) ---
+    exportToXYZ("pts_from_tile.xyz", qmPts);
+    // --- Debug  (end)  ---
 
     // Compute distances from points in the tile to the original raster values
     int numDists = 0;
@@ -180,18 +179,28 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
                     meshRaster.point(vd) = Point_3(tmpx, tmpy, tmpz);
                     ptsRaster.push_back(Point_3(tmpx, tmpy, tmpz));
                 }
+    // --- Debug (begin) ---
     ofstream ofMeshRaster("mesh_raster.off");
     ofMeshRaster << meshRaster;
     ofMeshRaster.close();
+
+//    cout << "Raster tile bounds = " << tileBounds.getMinX() << ", " << tileBounds.getMinY() << ", " << tileBounds.getMaxX() << ", " << tileBounds.getMaxY() << endl;
+    // --- Debug  (end)  ---
 
     // --> TIN mesh
     SurfaceMesh meshTin;
     std::map<int, SurfaceMesh::Vertex_index> indToVertIndMap;
     for ( int i = 0; i < vertexData.vertexCount; i++ ) {
         double lat, lon, height;
-        qmt.convertUVHToLonLatHeight(vertexData.u[i], vertexData.v[i], vertexData.height[i], lon, lat, height );
+//        qmt.convertUVHToLonLatHeight(vertexData.u[i], vertexData.v[i], vertexData.height[i], lon, lat, height );
+
+        lon = tileBounds.getMinX() + fabs( tileBounds.getMaxX() - tileBounds.getMinX() ) * (double)vertexData.u[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
+        lat = tileBounds.getMinY() + fabs( tileBounds.getMaxY() - tileBounds.getMinY() ) * (double)vertexData.v[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
+        height = qmt.getHeader().MinimumHeight + fabs( qmt.getHeader().MaximumHeight - qmt.getHeader().MinimumHeight ) * (double)vertexData.height[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
+
         double tmpx, tmpy, tmpz;
         crs_conversions::llh2ecef(lat, lon, height, tmpx, tmpy, tmpz);
+
         SurfaceMesh::Vertex_index vi = meshTin.add_vertex(Point_3(tmpx, tmpy, tmpz));
         indToVertIndMap.insert(std::pair<int, SurfaceMesh::Vertex_index>(i, vi));
     }
@@ -201,9 +210,11 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
                          indToVertIndMap[triIndices.indices[(3*i)+1]],
                          indToVertIndMap[triIndices.indices[(3*i)+2]]);
     }
+    // --- Debug (begin) ---
     ofstream ofMeshTin("mesh_tin.off");
     ofMeshTin << meshTin;
     ofMeshTin.close();
+    // --- Debug  (end)  ---
 
     // Bidirectional Hausdorff distance computation
     hausdorffDistRasterToTin = PMP::approximate_Hausdorff_distance<TAG>(meshRaster, meshTin,
@@ -444,8 +455,10 @@ int main(int argc, char **argv)
                 double height = minHeight + fabs(maxHeight - minHeight) * (*it).z();
                 *it = Point_3((*it).x(), (*it).y(), height);
             }
-            // Debug
-//                exportToXYZ("pts_from_raster.xyz", rasterPts);
+            // --- Debug (begin) ---
+            exportToXYZ("pts_from_raster.xyz", rasterPts);
+            // --- Debug  (end)  ---
+
             Delaunay dtRaster(rasterPts.begin(), rasterPts.end());
 
             if (!computeOnce) {
