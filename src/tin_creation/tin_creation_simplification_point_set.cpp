@@ -31,10 +31,10 @@
 namespace TinCreation {
 
 Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>& dataPts,
-                                                              const bool &constrainEasternVertices,
-                                                              const bool &constrainWesternVertices,
-                                                              const bool &constrainNorthernVertices,
-                                                              const bool &constrainSouthernVertices)
+                                                      const bool &constrainEasternVertices,
+                                                      const bool &constrainWesternVertices,
+                                                      const bool &constrainNorthernVertices,
+                                                      const bool &constrainSouthernVertices)
 {
     // Scale the parameters according to the tile
     m_borderSimpMaxScaledSqDist = m_borderSimpMaxDist*this->getScaleZ();
@@ -252,26 +252,28 @@ std::cout << "icsp: insert the border polylines that need to be maintained as th
 			m_cdt.insert(*it);
     }
 
-    // Create a property map storing if an edge is sharp or not (since the Polyhedron_3 does not have internal property_maps creation, we use a map container within a boost::associative_property_map)
-    typedef typename boost::graph_traits<Polyhedron>::edge_descriptor edge_descriptor;
-    typedef typename std::map<edge_descriptor, bool> EdgeIsSharpMap;
-    typedef typename boost::associative_property_map<EdgeIsSharpMap> EdgeIsSharpPropertyMap;
-    EdgeIsSharpMap map;
-    EdgeIsSharpPropertyMap eisMap(map);
+    if (m_preserveSharpEdges) {
+        // Create a property map storing if an edge is sharp or not (since the Polyhedron_3 does not have internal property_maps creation, we use a map container within a boost::associative_property_map)
+        typedef typename boost::graph_traits<Polyhedron>::edge_descriptor edge_descriptor;
+        typedef typename std::map<edge_descriptor, bool> EdgeIsSharpMap;
+        typedef typename boost::associative_property_map<EdgeIsSharpMap> EdgeIsSharpPropertyMap;
+        EdgeIsSharpMap map;
+        EdgeIsSharpPropertyMap eisMap(map);
 
-    // Detect sharp edges
-    detect_sharp_edges_without_borders<Polyhedron, double, EdgeIsSharpPropertyMap, K>(surface, FT(60.0), eisMap);
+        // Detect sharp edges
+        detect_sharp_edges_without_borders<Polyhedron, double, EdgeIsSharpPropertyMap, K>(surface, FT(60.0), eisMap);
 
-    // Trace the polylines from the detected edges
-    Polylines featurePolylines;
-    extract_polylines_from_sharp_edges(surface, eisMap, featurePolylines);
+        // Trace the polylines from the detected edges
+        Polylines featurePolylines;
+        extract_polylines_from_sharp_edges(surface, eisMap, featurePolylines);
 
-    for ( Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it ) {
-        if ((*it).size() > m_minFeaturePolylineSize) {
-    //	    std::cout << "A polyline to simplify:" << std::endl;
-    //	    for (Polyline::const_iterator itp = (*it).begin(); itp != (*it).end(); ++itp)
-    //		std::cout << *itp << std::endl;
-            m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+        for (Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it) {
+            if ((*it).size() > m_minFeaturePolylineSize) {
+                //	    std::cout << "A polyline to simplify:" << std::endl;
+                //	    for (Polyline::const_iterator itp = (*it).begin(); itp != (*it).end(); ++itp)
+                //		std::cout << *itp << std::endl;
+                m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+            }
         }
     }
 

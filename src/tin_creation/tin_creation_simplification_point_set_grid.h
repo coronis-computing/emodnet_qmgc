@@ -46,10 +46,12 @@ public:
     TinCreationSimplificationPointSetGrid(double borderSimplificationMaxDistance,
                                           double borderSimplificationMaxLength,
                                           unsigned int minFeaturePolylineSize,
+                                          bool preserveSharpEdges,
                                           double cellSize)
             : TinCreationSimplificationPointSet(borderSimplificationMaxDistance,
                                                 borderSimplificationMaxLength,
-                                                minFeaturePolylineSize)
+                                                minFeaturePolylineSize,
+                                                preserveSharpEdges)
     {
         m_cellSizePerZoom = std::vector<double>{m_cellSize};
         setParamsForZoomConcreteStrategy(0);
@@ -65,10 +67,12 @@ public:
     TinCreationSimplificationPointSetGrid(const std::vector<double>& borderSimplificationMaxDistancePerZoom,
                                           const std::vector<double>& borderSimplificationMaxLengthPerZoom,
                                           unsigned int minFeaturePolylineSize,
+                                          bool preserveSharpEdges,
                                           const std::vector<double>& cellSizePerZoom)
             : TinCreationSimplificationPointSet(borderSimplificationMaxDistancePerZoom,
                                                 borderSimplificationMaxLengthPerZoom,
-                                                minFeaturePolylineSize),
+                                                minFeaturePolylineSize,
+                                                preserveSharpEdges),
               m_cellSizePerZoom(cellSizePerZoom)
     {
         setParamsForZoomConcreteStrategy(0);

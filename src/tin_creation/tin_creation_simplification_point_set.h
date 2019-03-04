@@ -63,8 +63,10 @@ public:
      */
     TinCreationSimplificationPointSet(double borderSimplificationMaxDistance,
                                       double borderSimplificationMaxLengthPercent,
-                                      unsigned int minFeaturePolylineSize)
+                                      unsigned int minFeaturePolylineSize,
+                                      bool preserveSharpEdges = true)
             : m_minFeaturePolylineSize(minFeaturePolylineSize)
+            , m_preserveSharpEdges(preserveSharpEdges)
     {
         m_borderSimpMaxDistPerZoom = std::vector<FT>{borderSimplificationMaxDistance};
         m_borderSimpMaxLengthPercentPerZoom = std::vector<FT>{borderSimplificationMaxLengthPercent};
@@ -79,9 +81,11 @@ public:
      */
     TinCreationSimplificationPointSet(const std::vector<double>& borderSimplificationMaxDistance,
                                       const std::vector<double>& borderSimplificationMaxLengthPercent,
-                                      unsigned int minFeaturePolylineSize)
+                                      unsigned int minFeaturePolylineSize,
+                                      bool preserveSharpEdges = true)
             : m_borderSimpMaxDistPerZoom(borderSimplificationMaxDistance)
             , m_borderSimpMaxLengthPercentPerZoom(borderSimplificationMaxLengthPercent)
+            , m_preserveSharpEdges(preserveSharpEdges)
     {
 //        setParamsForZoom(0);
     }
@@ -126,6 +130,7 @@ private:
     std::vector<double> m_borderSimpMaxLengthPercentPerZoom;
     unsigned int m_minFeaturePolylineSize;
     CTXY m_cdt;
+    bool m_preserveSharpEdges;
 
     /// Imposes the required constraints to the internal CDT structure. Simplified the border/feature polylines when needed
     void imposeConstraintsAndSimplifyPolylines(Polyhedron& surface,

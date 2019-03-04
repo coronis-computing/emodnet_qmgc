@@ -95,8 +95,8 @@ int main ( int argc, char **argv)
     float clippingHighValue, clippingLowValue, belowSeaLevelScaleFactor, aboveSeaLevelScaleFactor;
     int heighMapSamplingSteps, greedyInitGridSize;
     unsigned int psWlopIterNumber, psMinFeaturePolylineSize;
-    int numThreads = 0 ;
-    bool bathymetryFlag ;
+    int numThreads = 0;
+    bool bathymetryFlag, psPreserveSharpEdges;
     // Parameters per zoom level
     std::vector<int> simpStopEdgesCount;
     std::vector<unsigned int> psHierMaxClusterSize;
@@ -132,6 +132,7 @@ int main ( int argc, char **argv)
 //            ( "tc-remeshing-edge-size", po::value<vector<double> >(&remeshingEdgeSize)->multitoken()->default_value(vector<double>{150000}), "Remeshing edge size threshold." )
             ( "tc-ps-border-max-error", po::value<vector<double> >(&psBorderSimpMaxDist)->multitoken()->default_value(vector<double>{10000}), "Polyline simplification error at borders (*)." )
             ( "tc-ps-border-max-length-xy-percent", po::value<vector<double> >(&psBorderSimpMaxLength)->multitoken()->default_value(std::vector<double>{20}), "Polyline simplification, maximum length of border edges when projected to the XY plane. Expressed as a percentage [0..100] (*)." )
+            ( "tc-ps-preserve-sharp-edges", po::value<bool>(&psPreserveSharpEdges)->default_value(true), "Preserve and simplify the sharp edges present in the terrain (dihedral angle between incident faces > 60 degrees)." )
             ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered." )
             ( "tc-ps-hierarchy-cluster-size", po::value<vector<unsigned int> >(&psHierMaxClusterSize)->default_value(vector<unsigned int>{1000}), "Hierarchy point set simplification maximum cluster size (*)." )
             ( "tc-ps-hierarchy-max-surface-variance", po::value<vector<double> >(&psHierMaxSurfaceVariance)->default_value(vector<double>{1000}), "Hierarchy point set simplification maximum surface variation (*)." )
@@ -256,6 +257,7 @@ int main ( int argc, char **argv)
                     = std::make_shared<TinCreationSimplificationPointSetHierarchy>(psBorderSimpMaxDist,
                                                                                    psBorderSimpMaxLength,
                                                                                    psMinFeaturePolylineSize,
+                                                                                   psPreserveSharpEdges,
                                                                                    psHierMaxClusterSize,
                                                                                    psHierMaxSurfaceVariance);
             tinCreator.setCreator(tcHier);
@@ -265,6 +267,7 @@ int main ( int argc, char **argv)
                     = std::make_shared<TinCreationSimplificationPointSetWLOP>(psBorderSimpMaxDist,
                                                                               psBorderSimpMaxLength,
                                                                               psMinFeaturePolylineSize,
+                                                                              psPreserveSharpEdges,
                                                                               psWlopRetainPercentage,
                                                                               psWlopRadius,
                                                                               psWlopIterNumber);
@@ -275,6 +278,7 @@ int main ( int argc, char **argv)
                     = std::make_shared<TinCreationSimplificationPointSetGrid>(psBorderSimpMaxDist,
                                                                               psBorderSimpMaxLength,
                                                                               psMinFeaturePolylineSize,
+                                                                              psPreserveSharpEdges,
                                                                               psGridCellSize);
             tinCreator.setCreator(tcGrid);
         }
@@ -283,6 +287,7 @@ int main ( int argc, char **argv)
                     = std::make_shared<TinCreationSimplificationPointSetRandom>(psBorderSimpMaxDist,
                                                                                 psBorderSimpMaxLength,
                                                                                 psMinFeaturePolylineSize,
+                                                                                psPreserveSharpEdges,
                                                                                 psRandomRemovePercentage);
             tinCreator.setCreator(tcRand);
         }

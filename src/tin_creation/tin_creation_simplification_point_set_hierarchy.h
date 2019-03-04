@@ -48,11 +48,13 @@ public:
     TinCreationSimplificationPointSetHierarchy(double borderSimplificationMaxDistance,
                                                double borderSimplificationMaxLength,
                                                unsigned int minFeaturePolylineSize,
+                                               bool preserveSharpEdges,
                                                unsigned int maxClusterSize,
                                                double maxSurfaceVariance)
             : TinCreationSimplificationPointSet(borderSimplificationMaxDistance,
                                                 borderSimplificationMaxLength,
-                                                minFeaturePolylineSize)
+                                                minFeaturePolylineSize,
+                                                preserveSharpEdges)
     {
         m_maxClusterSizePerZoom = std::vector<unsigned int>{maxClusterSize};
         m_maxSurfaceVariancePerZoom = std::vector<double>{maxSurfaceVariance};
@@ -70,11 +72,13 @@ public:
     TinCreationSimplificationPointSetHierarchy(const std::vector<double>& borderSimplificationMaxDistancePerZoom,
                                                const std::vector<double>& borderSimplificationMaxLengthPerZoom,
                                                unsigned int minFeaturePolylineSize,
+                                               bool preserveSharpEdges,
                                                const std::vector<unsigned int>& maxClusterSizePerZoom,
                                                const std::vector<double>& maxSurfaceVariancePerZoom)
             : TinCreationSimplificationPointSet(borderSimplificationMaxDistancePerZoom,
                                                 borderSimplificationMaxLengthPerZoom,
-                                                minFeaturePolylineSize)
+                                                minFeaturePolylineSize,
+                                                preserveSharpEdges)
             , m_maxClusterSizePerZoom(maxClusterSizePerZoom)
             , m_maxSurfaceVariancePerZoom(maxSurfaceVariancePerZoom)
     {
