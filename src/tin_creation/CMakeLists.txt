@@ -7,8 +7,8 @@ add_library(TinCreation SHARED tin_creator.cpp
                                tin_creation_simplification_point_set_grid.cpp
                                tin_creation_simplification_point_set_hierarchy.cpp
                                tin_creation_simplification_point_set_random.cpp
-                               tin_creation_simplification_point_set_wlop.cpp
-                               ../base/crs_conversions.cpp)
+                               tin_creation_simplification_point_set_wlop.cpp)
+                               #../base/crs_conversions.cpp)
 
 set_target_properties(TinCreation PROPERTIES PUBLIC_HEADER tin_creator.h
                                                            tin_creation_cgal_types.h

@@ -19,7 +19,9 @@
 // Author: Ricard Campos (ricardcd@gmail.com)
 
 #include "tin_creator.h"
-#include "crs_conversions.h"
+//#include "crs_conversions.h"
+#include <GeographicLib/Geocentric.hpp>
+
 
 namespace TinCreation {
 
@@ -72,9 +74,11 @@ Point_3 TinCreationStrategy::convertUVHToECEF(const Point_3& p) const
     double lon = this->getMinX() + ((this->getMaxX() - this->getMinX()) * p.x());
     double h = this->getMinZ() + ((this->getMaxZ() - this->getMinZ()) * p.z());
 
+    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     double tmpx, tmpy, tmpz;
-    crs_conversions::llh2ecef(lat, lon, h,
-                              tmpx, tmpy, tmpz);
+//    crs_conversions::llh2ecef(lat, lon, h,
+//                              tmpx, tmpy, tmpz);
+    earth.Forward(lat, lon, h, tmpx, tmpy, tmpz);
 
     return Point_3(tmpx, tmpy, tmpz);
 }
@@ -89,9 +93,12 @@ Point_3 TinCreationStrategy::convertECEFToUVH(const Point_3& p) const
     }
 
     // From ECEF to lat/lon/height
+    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     double lat, lon, height;
-    crs_conversions::ecef2llh(p.x(), p.y(), p.z(),
-                              lat, lon, height);
+//    crs_conversions::ecef2llh(p.x(), p.y(), p.z(),
+//                              lat, lon, height);
+    earth.Reverse(p.x(), p.y(), p.z(),
+                  lat, lon, height);
 
     // Scale to local U/V/H
     double u = (lon - this->getMinX()) / (this->getMaxX() - this->getMinX());

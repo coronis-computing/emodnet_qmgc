@@ -25,7 +25,8 @@
 #include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <cmath>
 #include "meshoptimizer/meshoptimizer.h"
-#include "crs_conversions.h"
+//#include "crs_conversions.h"
+#include <GeographicLib/Geocentric.hpp>
 #include <sstream>
 #include <gdal.h>
 #include "misc_utils.h"
@@ -238,10 +239,13 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
     double maxEcefY = -std::numeric_limits<double>::infinity();
     double minEcefZ = std::numeric_limits<double>::infinity();
     double maxEcefZ = -std::numeric_limits<double>::infinity();
+    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     for (int i = 0; i < latLonPoints.size(); i++) {
         double tmpx, tmpy, tmpz;
-        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
-                                  tmpx, tmpy, tmpz);
+//        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
+//                                  tmpx, tmpy, tmpz);
+        earth.Forward(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
+                      tmpx, tmpy, tmpz);
 
         ecefPoints.push_back(Point_3(tmpx, tmpy, tmpz));
 

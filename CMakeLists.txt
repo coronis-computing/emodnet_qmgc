@@ -68,6 +68,12 @@ if(NOT GDAL_FOUND)
 endif()
 include_directories(${GDAL_INCLUDE_DIRS})
 
+find_package(GeographicLib REQUIRED)
+if (CMAKE_VERSION VERSION_LESS 2.8.11)
+    include_directories (${GeographicLib_INCLUDE_DIRS})
+    add_definitions (${GeographicLib_DEFINITIONS})
+endif ()
+
 # Doxygen for documentation
 find_package(Doxygen)
 if(DOXYGEN_FOUND)

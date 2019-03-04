@@ -14,7 +14,8 @@ target_link_libraries(qm_tiler TinCreation
                                ${ZLIB_LIBRARIES}
                                ${CTB_LIBRARY}
                                ${CGAL_LIBRARIES}
-                               ${GDAL_LIBRARY})
+                               ${GDAL_LIBRARY}
+                               ${GeographicLib_LIBRARIES})
 
 if(THREADS_HAVE_PTHREAD_ARG)
     target_compile_options(qm_tiler PUBLIC "-pthread")
@@ -25,7 +26,7 @@ endif()
 
 # dem2tin app
 add_executable(dem2tin dem2tin.cpp)
-target_link_libraries(dem2tin TinCreation ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${GDAL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(dem2tin TinCreation ${Boost_LIBRARIES} ${CGAL_LIBRARIES} ${GDAL_LIBRARY} ${CMAKE_THREAD_LIBS_INIT} ${GeographicLib_LIBRARIES})
 
 if(THREADS_HAVE_PTHREAD_ARG)
     target_compile_options(dem2tin PUBLIC "-pthread")
