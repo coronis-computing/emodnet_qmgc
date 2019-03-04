@@ -101,6 +101,13 @@ Point_3 TinCreationStrategy::convertECEFToUVH(const Point_3& p) const
                height - this->getMinZ()
                : (height - this->getMinZ()) / (this->getMaxZ() - this->getMinZ());
 
+    if (u < 0.0 || v < 0.0 || u > 1.0 || v > 1.0) {
+        std::cout << "[ERROR] ECEF converted point not in the 0..1 range" << std::endl;
+        std::cout << "        ECEF point = " << p << std::endl;
+        std::cout << "        lat/lon/height point = " << lat << ", " << lon << ", " << height << std::endl;
+        std::cout << "        u/v/h point = " << u << ", " << v << ", " << h << std::endl;
+    }
+
     return Point_3(u, v, h);
 }
 
