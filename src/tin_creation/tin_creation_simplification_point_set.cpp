@@ -64,6 +64,11 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
 
     // Insert the simplified points in the constrained triangulation
     for( PointCloud::iterator it = ptsToSimplify.begin(); it != ptsToSimplify.end(); ++it ) {
+        // Error check
+        if (it->x() < 0.0 || it->y() < 0.0 || it->x() > 1.0 || it->y() > 0.0)
+            std::cout << "[ERROR] point to insert not on the 0..1 range: " << *it << std::endl;
+
+        // Insert the point
         m_cdt.insert(*it);
     }
 
