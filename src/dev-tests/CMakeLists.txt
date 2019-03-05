@@ -38,6 +38,18 @@ target_link_libraries(test_check_borders ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${
 add_executable(detect_features_without_borders detect_features_without_borders.cpp)
 target_link_libraries(detect_features_without_borders ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
 
+# OpenMP
+find_package(OpenMP)
+if(OPENMP_FOUND)
+    message(STATUS "OpenMP found in the system, enabling OpenMP support for some dev-tests")
+    set(USE_OPENMP TRUE)
+    add_definitions("-DUSE_OPENMP")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+else()
+    message(STATUS "Disabling OpenMP support")
+endif()
+
 add_executable(compute_statistics compute_statistics.cpp
                                   ../base/quantized_mesh_tile.cpp
                                   ../base/quantized_mesh_tiler.cpp

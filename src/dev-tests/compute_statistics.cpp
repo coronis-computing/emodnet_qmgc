@@ -46,6 +46,10 @@
 // Boost
 #include <boost/program_options.hpp>
 #include <boost/foreach.hpp>
+// OpenMP
+#ifdef USE_OPENMP
+#include <omp.h>
+#endif
 
 #if defined(CGAL_LINKED_WITH_TBB)
 #define TAG CGAL::Parallel_tag
@@ -289,6 +293,10 @@ int main(int argc, char **argv)
     int heighMapSamplingSteps, zoom;
     float clippingHighValue, clippingLowValue, aboveSeaLevelScaleFactor, belowSeaLevelScaleFactor;
     bool bathymetryFlag, verbose;
+#ifdef USE_OPENMP
+    int numThreads ;
+#endif
+
     po::options_description options("Options:");
     options.add_options()
             ("help,h", "Produce help message")
@@ -304,7 +312,11 @@ int main(int argc, char **argv)
             ("below-sea-level-scale-factor", po::value<float>(&belowSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings below sea level (ignored if < 0)" )
             ("config,c", po::value<string>(&configFile)->default_value(""), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
             ("verbose", po::value<bool>(&verbose)->default_value(true), "Activate/deactivate output on the screen")
+#ifdef USE_OPENMP
+            ("num-threads", po::value<int>(&numThreads)->default_value(0), "Number of threads used (0=max_threads)")
+#endif
         ;
+
 
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
@@ -428,11 +440,21 @@ int main(int argc, char **argv)
 
     // Visit each tile in the zoom
     int numDispDigits = ceil(log10(numTiles));
+    bool breakCondition = false;
+#ifdef USE_OPENMP
+    const unsigned int numMaxThreads = omp_get_max_threads() ;
+    if ( numThreads <= 0 ) omp_set_num_threads( numMaxThreads ) ;
+    else omp_set_num_threads( numThreads ) ;
+    #pragma omp parallel for ordered schedule(dynamic) collapse(2)
+#endif
     for (int x = startX; x <= endX; x++) {
         for (int y = startY; y <= endY; y++) {
-
-//                cout << "\r- Processing tile " << setw(numDispDigits) << curNumTiles << "/" << numTiles << flush;
-            cout << "- Processing tile " << setw(numDispDigits) << curNumTiles << "/" << numTiles << endl;
+#ifdef USE_OPENMP
+            #pragma omp critical(show_progress)
+#endif
+            {
+                cout << "- Processing tile " << setw(numDispDigits) << curNumTiles << "/" << numTiles << endl;
+            }
 
             // Load the tile
             std::ostringstream ss;
@@ -441,7 +463,11 @@ int main(int argc, char **argv)
             QuantizedMeshTile qmt(coord);
             if (!qmt.readFile(ss.str())) {
                 cerr << "[ERROR] Cannot read the input file" << endl;
-                return 1;
+                // "break" the loop and finish
+                breakCondition = true;
+                x = endX;
+                y = endY;
+                continue;
             }
 
             // Create the mesh from the raster tile
@@ -502,6 +528,11 @@ int main(int argc, char **argv)
             hausdorffDistTinToRasterPerTile.push_back(hausdorffDistTinToRaster);
             symmetricHausdorffDistancePerTile.push_back(hausdorffDist);
         }
+    }
+
+    if (breakCondition) {
+        cerr << "[ERROR] Aborting" << endl;
+        return EXIT_FAILURE;
     }
 
     cout << "\n----- Statistics for tiles in zoom " << zoom << " -----" << endl;
