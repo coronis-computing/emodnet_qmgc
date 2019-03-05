@@ -109,6 +109,10 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     // constraints that correspond to this neighbor for later use. The borders stored here will be collected later in
     // getConstrainedBorderVerticesForTile(...) function
 
+    // --- Debug (start) ---
+    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
+    // --- Debug  (end)  ---
+
     // TODO: Check if it is possible that a tile being processed is accessed here... should not be possible, but who knows...
 
     // The vertices to preserve in BorderVertex format
@@ -278,6 +282,10 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
 
     // Remove from the list of tiles being processed
     setBeingProcessed(tileX, tileY, false);
+
+    // --- Debug (start) ---
+    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
+    // --- Debug  (end)  ---
 
     return true;
 }
