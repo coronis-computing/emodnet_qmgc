@@ -110,7 +110,7 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     // getConstrainedBorderVerticesForTile(...) function
 
     // --- Debug (start) ---
-    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
+//    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
     // --- Debug  (end)  ---
 
     // TODO: Check if it is possible that a tile being processed is accessed here... should not be possible, but who knows...
@@ -284,7 +284,7 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     setBeingProcessed(tileX, tileY, false);
 
     // --- Debug (start) ---
-    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
+//    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
     // --- Debug  (end)  ---
 
     return true;
