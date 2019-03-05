@@ -19,6 +19,7 @@
 // Author: Ricard Campos (ricardcd@gmail.com)
 
 #include "tin_creator.h"
+#include <math.h>       /* isnan */
 //#include "crs_conversions.h"
 #include <GeographicLib/Geocentric.hpp>
 
@@ -37,12 +38,13 @@ convertUVHToECEF(const std::vector<Point_3> &pts) const {
     std::vector<Point_3> ecefPoints;
     ecefPoints.reserve(pts.size());
     for (std::vector<Point_3>::const_iterator it = pts.begin(); it != pts.end(); ++it) {
-        ecefPoints.emplace_back(convertUVHToECEF(*it));
+        Point_3 p = convertUVHToECEF(*it);
+        if (!isnan(p.x()))
+            ecefPoints.push_back(p);
     }
 
     return ecefPoints;
 }
-
 
 std::vector<Point_3>
 TinCreationStrategy::
@@ -69,16 +71,32 @@ Point_3 TinCreationStrategy::convertUVHToECEF(const Point_3& p) const
         return p;
     }
 
+//    std::cout << "UVHToECEF" << std::endl;
+//    std::cout << "uvh" << std::endl;
+//    std::cout << p << std::endl;
+
     // From UVH to lat/lon/height
     double lat = this->getMinY() + ((this->getMaxY() - this->getMinY()) * p.y());
     double lon = this->getMinX() + ((this->getMaxX() - this->getMinX()) * p.x());
     double h = this->getMinZ() + ((this->getMaxZ() - this->getMinZ()) * p.z());
+
+//    // Requirement of the GeographicLib::Geocentric::Forward function, and makes sense too...
+//    if (lat > 90)
+//        lat = 90;
+//    else if (lat < -90)
+//        lat = -90;
+
+//    std::cout << "lat/lon/height" << std::endl;
+//    std::cout << lat << ", " << lon << ", " << h << std::endl;
 
     GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     double tmpx, tmpy, tmpz;
 //    crs_conversions::llh2ecef(lat, lon, h,
 //                              tmpx, tmpy, tmpz);
     earth.Forward(lat, lon, h, tmpx, tmpy, tmpz);
+
+//    std::cout << "ECEF" << std::endl;
+//    std::cout << tmpx << ", " << tmpy << ", " << tmpz << std::endl;
 
     return Point_3(tmpx, tmpy, tmpz);
 }
@@ -92,6 +110,10 @@ Point_3 TinCreationStrategy::convertECEFToUVH(const Point_3& p) const
         return p;
     }
 
+//    std::cout << "ECEFToUVH" << std::endl;
+//    std::cout << "ECEF" << std::endl;
+//    std::cout << p << std::endl;
+
     // From ECEF to lat/lon/height
     GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     double lat, lon, height;
@@ -100,6 +122,12 @@ Point_3 TinCreationStrategy::convertECEFToUVH(const Point_3& p) const
     earth.Reverse(p.x(), p.y(), p.z(),
                   lat, lon, height);
 
+//    std::cout << "lat/lon/height" << std::endl;
+//    std::cout << lat << ", " << lon << ", " << height << std::endl;
+
+//    std::cout << "(this->getMaxX() - this->getMinX()) = " << (this->getMaxX() - this->getMinX()) << std::endl;
+//    std::cout << "(this->getMaxY() - this->getMinY()) = " << (this->getMaxY() - this->getMinY()) << std::endl;
+
     // Scale to local U/V/H
     double u = (lon - this->getMinX()) / (this->getMaxX() - this->getMinX());
     double v = (lat - this->getMinY()) / (this->getMaxY() - this->getMinY());
@@ -107,6 +135,9 @@ Point_3 TinCreationStrategy::convertECEFToUVH(const Point_3& p) const
                ? // Avoid division by 0 ((this->getMaxZ() - this->getMinZ()) == 0 in flat tiles!)
                height - this->getMinZ()
                : (height - this->getMinZ()) / (this->getMaxZ() - this->getMinZ());
+
+//    std::cout << "uvh" << std::endl;
+//    std::cout << u << ", " << v << ", " << h << std::endl;
 
     if (u < 0.0 || v < 0.0 || u > 1.0 || v > 1.0) {
         std::cout << "[ERROR] ECEF converted point not in the 0..1 range" << std::endl;

@@ -160,10 +160,12 @@ public:
     int getNumTiles() const { return m_numTiles ; }
 
     // Simple internal drawing function for debugging purposes
-    void showStatus() const {
-        for (int i = m_zoomBounds.getMinX(); i < m_zoomBounds.getMaxX(); i++) {
-            for (int j = m_zoomBounds.getMinY(); j < m_zoomBounds.getMaxY(); j++) {
-                if (isTileBeingProcessed(i, j))
+    void showStatus(int curX = -1, int curY = -1) const {
+        for (int i = m_zoomBounds.getMinX(); i < m_zoomBounds.getMaxX()+1; i++) {
+            for (int j = m_zoomBounds.getMinY(); j < m_zoomBounds.getMaxY()+1; j++) {
+                if (curX == i && curY == j)
+                    std::cout << "X";
+                else if (isTileBeingProcessed(i, j))
                     std::cout << "V";
                 else if (isTileVisited(i, j))
                     std::cout << "P";
