@@ -76,8 +76,25 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
         bd.constrainSouthEastCorner = true;
     }
 
+    // --- Debug (start) ---
+    std::cout << "Constrained border vertices for tile:" << std::endl;
+    std::cout << "- EastVertices = " << bd.tileEastVertices.size() << std::endl;
+    std::cout << "- WestVertices = " << bd.tileWestVertices.size() << std::endl;
+    std::cout << "- NorthVertices = " << bd.tileNorthVertices.size() << std::endl;
+    std::cout << "- SouthVertices = " << bd.tileSouthVertices.size() << std::endl;
+    std::cout << "- constrainNorthWestCorner = " << bd.constrainNorthWestCorner << std::endl;
+    std::cout << "- constrainNorthEastCorner = " << bd.constrainNorthEastCorner << std::endl;
+    std::cout << "- constrainSouthWestCorner = " << bd.constrainSouthWestCorner << std::endl;
+    std::cout << "- constrainSouthEastCorner = " << bd.constrainSouthEastCorner << std::endl;
+    std::cout << "m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
+    // --- Debug  (end)  ---
+
     // Delete the borders data entry for the current tile
     m_mapTileToBorderVertices.erase(tileInd);
+
+    // --- Debug (start) ---
+    std::cout << "m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
+    // --- Debug  (end)  ---
 
     return true;
 }
