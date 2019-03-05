@@ -112,7 +112,7 @@ public:
      * @param tileInd Tile index (a pair)
      * @return boolean indicating whether the tile was already visited
      */
-    bool isTileVisited( const int& tileX, const int& tileY ) {
+    bool isTileVisited( const int& tileX, const int& tileY ) const {
         return m_tilesVisited[tileX-m_zoomBounds.getMinX()][tileY-m_zoomBounds.getMinY()];
     }
 
@@ -124,7 +124,7 @@ public:
      * @param tileY Y coordinate of the tile
      * @return boolean indicating whether the tile was already processed
      */
-    bool isTileBeingProcessed( const int& tileX, const int& tileY ) {
+    bool isTileBeingProcessed( const int& tileX, const int& tileY ) const {
         return m_tilesBeingProcessed[tileX-m_zoomBounds.getMinX()][tileY-m_zoomBounds.getMinY()];
     }
 
@@ -158,6 +158,29 @@ public:
      * @brief Gets the total amount of tiles to be processed in the zoom
      */
     int getNumTiles() const { return m_numTiles ; }
+
+    // Simple internal drawing function for debugging purposes
+    void showStatus() const {
+        for (int i = m_zoomBounds.getMinX(); i < m_zoomBounds.getMaxX(); i++) {
+            for (int j = m_zoomBounds.getMinY(); j < m_zoomBounds.getMaxY(); j++) {
+                if (isTileBeingProcessed(i, j))
+                    std::cout << "V";
+                else if (isTileVisited(i, j))
+                    std::cout << "P";
+                else {
+                    std::pair<int,int> tileInd = std::make_pair(i, j) ;
+                    int tileBorderDataExists = m_mapTileToBorderVertices.count(tileInd);
+                    if (tileBorderDataExists)
+                        std::cout << "C";
+                    else
+                        std::cout << "·";
+                }
+
+            }
+            std::cout << std::endl;
+        }
+        std::cout << std::endl;
+    }
 
 private:
     // --- Attributes ---

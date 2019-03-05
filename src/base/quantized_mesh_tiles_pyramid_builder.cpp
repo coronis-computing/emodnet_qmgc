@@ -119,6 +119,8 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
                 BordersData bd = futures[i].get() ;
                 m_bordersCache.setConstrainedBorderVerticesForTile( coords[i].x, coords[i].y, bd ) ;
             }
+
+            m_bordersCache.showStatus();
         }
     }
 }
