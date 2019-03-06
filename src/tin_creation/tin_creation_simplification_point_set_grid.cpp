@@ -29,6 +29,9 @@ simplify(const std::vector<Point_3> &pts) {
     // Convert to metric
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
+    if (ptsToSimpECEF.size() == 0)
+        return std::vector<Point_3>();
+
     // Simplify using grid simplification (erase-remove idiom)
     ptsToSimpECEF.erase(CGAL::grid_simplify_point_set(ptsToSimpECEF.begin(),
                                                       ptsToSimpECEF.end(),

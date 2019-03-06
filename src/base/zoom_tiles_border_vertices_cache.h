@@ -27,7 +27,8 @@
 #include "tile_border_vertices.h"
 #include "tin_creation/tin_creation_cgal_types.h"
 #include "borders_data.h"
-
+#include <chrono>
+#include <thread>
 
 /**
  * @class ZoomTilesBorderVerticesCache
@@ -159,30 +160,12 @@ public:
      */
     int getNumTiles() const { return m_numTiles ; }
 
-    // Simple internal drawing function for debugging purposes
-    void showStatus(int curX = -1, int curY = -1) const {
-        for (int i = m_zoomBounds.getMinX(); i < m_zoomBounds.getMaxX()+1; i++) {
-            for (int j = m_zoomBounds.getMinY(); j < m_zoomBounds.getMaxY()+1; j++) {
-                if (curX == i && curY == j)
-                    std::cout << "X";
-                else if (isTileBeingProcessed(i, j))
-                    std::cout << "V";
-                else if (isTileVisited(i, j))
-                    std::cout << "P";
-                else {
-                    std::pair<int,int> tileInd = std::make_pair(i, j) ;
-                    int tileBorderDataExists = m_mapTileToBorderVertices.count(tileInd);
-                    if (tileBorderDataExists)
-                        std::cout << "C";
-                    else
-                        std::cout << "·";
-                }
-
-            }
-            std::cout << std::endl;
-        }
-        std::cout << std::endl;
-    }
+    /**
+     * Simple internal drawing function for debugging purposes. Shows the state of the cache
+     * @param curX The currently built tile X coordinate
+     * @param curY The currently built tile Y coordinate
+     */
+    void showStatus(int curX = -1, int curY = -1, bool drawUnixTerminalColors = false) const;
 
 private:
     // --- Attributes ---

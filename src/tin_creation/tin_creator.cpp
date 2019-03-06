@@ -20,8 +20,8 @@
 
 #include "tin_creator.h"
 #include <math.h>       /* isnan */
-//#include "crs_conversions.h"
-#include <GeographicLib/Geocentric.hpp>
+#include "crs_conversions.h"
+//#include <GeographicLib/Geocentric.hpp>
 
 
 namespace TinCreation {
@@ -39,10 +39,11 @@ convertUVHToECEF(const std::vector<Point_3> &pts) const {
     ecefPoints.reserve(pts.size());
     for (std::vector<Point_3>::const_iterator it = pts.begin(); it != pts.end(); ++it) {
         Point_3 p = convertUVHToECEF(*it);
-        if (!isnan(p.x()))
+//        if (!isnan(p.x()))
+        if (p.x()<90 && p.x()>-90)
             ecefPoints.push_back(p);
-        else
-            std::cout << "Point not converted to ECEF: " << p << std::endl;
+//        else
+//            std::cout << "Point not converted to ECEF: " << *it << std::endl;
     }
 
     return ecefPoints;
@@ -91,11 +92,11 @@ Point_3 TinCreationStrategy::convertUVHToECEF(const Point_3& p) const
 //    std::cout << "lat/lon/height" << std::endl;
 //    std::cout << lat << ", " << lon << ", " << h << std::endl;
 
-    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
+//    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     double tmpx, tmpy, tmpz;
-//    crs_conversions::llh2ecef(lat, lon, h,
-//                              tmpx, tmpy, tmpz);
-    earth.Forward(lat, lon, h, tmpx, tmpy, tmpz);
+    crs_conversions::llh2ecef(lat, lon, h,
+                              tmpx, tmpy, tmpz);
+//    earth.Forward(lat, lon, h, tmpx, tmpy, tmpz);
 
 //    std::cout << "ECEF" << std::endl;
 //    std::cout << tmpx << ", " << tmpy << ", " << tmpz << std::endl;
@@ -117,12 +118,12 @@ Point_3 TinCreationStrategy::convertECEFToUVH(const Point_3& p) const
 //    std::cout << p << std::endl;
 
     // From ECEF to lat/lon/height
-    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
+//    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     double lat, lon, height;
-//    crs_conversions::ecef2llh(p.x(), p.y(), p.z(),
-//                              lat, lon, height);
-    earth.Reverse(p.x(), p.y(), p.z(),
-                  lat, lon, height);
+    crs_conversions::ecef2llh(p.x(), p.y(), p.z(),
+                              lat, lon, height);
+//    earth.Reverse(p.x(), p.y(), p.z(),
+//                  lat, lon, height);
 
 //    std::cout << "lat/lon/height" << std::endl;
 //    std::cout << lat << ", " << lon << ", " << height << std::endl;

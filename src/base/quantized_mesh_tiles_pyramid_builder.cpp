@@ -93,7 +93,8 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
                           << "(num. cache entries = " << m_bordersCache.numCacheEntries() << ")"
                           << std::endl;
 
-                m_bordersCache.showStatus(tp.x, tp.y);
+                // Debug: the following line should be uncommented to show the current state of the processing graphically
+                //m_bordersCache.showStatus(tp.x, tp.y, true);
 
                 ctb::TileCoordinate coord(zoom, tp.x, tp.y);
                 coords.push_back(coord) ;
@@ -104,25 +105,28 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
                 std::future<BordersData> f = std::async( std::launch::async,
                                                          &QuantizedMeshTilesPyramidBuilder::createTile, this,
-                                                         coord, numThread, outDir, bd ) ; // Note: Using std::ref(bd) does not work, as we use bd as the future return value...
+                                                         coord, numThread, outDir, bd ); // Note: Using std::ref(bd) does not work, as we use bd as the future return value...
 
-                futures.emplace_back(std::move(f)) ;
+                futures.emplace_back(std::move(f));
 
-                numThread++ ;
+                numThread++;
             }
 
             // Join the threads with the main thread and wait for the results to be ready
             for(auto &f : futures) {
-                f.wait() ;
+                f.wait();
             }
 
             // Update cache for the next iteration
             for ( int i = 0; i < numThread; i++ ) {
-                BordersData bd = futures[i].get() ;
-                m_bordersCache.setConstrainedBorderVerticesForTile( coords[i].x, coords[i].y, bd ) ;
+                BordersData bd = futures[i].get();
+                m_bordersCache.setConstrainedBorderVerticesForTile( coords[i].x, coords[i].y, bd );
             }
 
         }
+
+        // Debug: the following line should be uncommented to show the current state of the processing graphically
+        //m_bordersCache.showStatus(-1, -1, true);
     }
 }
 

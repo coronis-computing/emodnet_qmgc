@@ -77,23 +77,23 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
     }
 
     // --- Debug (start) ---
-    std::cout << "Constrained border vertices for tile:" << std::endl;
-    std::cout << "- EastVertices = " << bd.tileEastVertices.size() << std::endl;
-    std::cout << "- WestVertices = " << bd.tileWestVertices.size() << std::endl;
-    std::cout << "- NorthVertices = " << bd.tileNorthVertices.size() << std::endl;
-    std::cout << "- SouthVertices = " << bd.tileSouthVertices.size() << std::endl;
-    std::cout << "- constrainNorthWestCorner = " << bd.constrainNorthWestCorner << std::endl;
-    std::cout << "- constrainNorthEastCorner = " << bd.constrainNorthEastCorner << std::endl;
-    std::cout << "- constrainSouthWestCorner = " << bd.constrainSouthWestCorner << std::endl;
-    std::cout << "- constrainSouthEastCorner = " << bd.constrainSouthEastCorner << std::endl;
-    std::cout << "m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
+//    std::cout << "Constrained border vertices for tile:" << std::endl;
+//    std::cout << "- EastVertices = " << bd.tileEastVertices.size() << std::endl;
+//    std::cout << "- WestVertices = " << bd.tileWestVertices.size() << std::endl;
+//    std::cout << "- NorthVertices = " << bd.tileNorthVertices.size() << std::endl;
+//    std::cout << "- SouthVertices = " << bd.tileSouthVertices.size() << std::endl;
+//    std::cout << "- constrainNorthWestCorner = " << bd.constrainNorthWestCorner << std::endl;
+//    std::cout << "- constrainNorthEastCorner = " << bd.constrainNorthEastCorner << std::endl;
+//    std::cout << "- constrainSouthWestCorner = " << bd.constrainSouthWestCorner << std::endl;
+//    std::cout << "- constrainSouthEastCorner = " << bd.constrainSouthEastCorner << std::endl;
+//    std::cout << "m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
     // --- Debug  (end)  ---
 
     // Delete the borders data entry for the current tile
     m_mapTileToBorderVertices.erase(tileInd);
 
     // --- Debug (start) ---
-    std::cout << "m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
+//    std::cout << "m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
     // --- Debug  (end)  ---
 
     return true;
@@ -110,7 +110,7 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     // getConstrainedBorderVerticesForTile(...) function
 
     // --- Debug (start) ---
-    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
+//    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size before = " << m_mapTileToBorderVertices.size() << std::endl;
     // --- Debug  (end)  ---
 
     // TODO: Check if it is possible that a tile being processed is accessed here... should not be possible, but who knows...
@@ -284,7 +284,7 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     setBeingProcessed(tileX, tileY, false);
 
     // --- Debug (start) ---
-    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
+//    std::cout << "setConstrainedBorderVerticesForTile: m_mapTileToBorderVertices.size after = " << m_mapTileToBorderVertices.size() << std::endl;
     // --- Debug  (end)  ---
 
     return true;
@@ -310,4 +310,46 @@ bool ZoomTilesBorderVerticesCache::canTileStartProcessing( const int& tileX, con
             return false;
     }
     return true;
+}
+
+
+
+void ZoomTilesBorderVerticesCache::showStatus(int curX, int curY, bool drawUnixTerminalColors) const {
+    for (int j = m_zoomBounds.getMinY(); j < m_zoomBounds.getMaxY()+1; j++) {
+        for (int i = m_zoomBounds.getMinX(); i < m_zoomBounds.getMaxX()+1; i++) {
+            if (curX == i && curY == j)
+                if (drawUnixTerminalColors)
+                    std::cout << "\033[1;41m \033[0m";
+                else
+                    std::cout << "X";
+            else if (isTileBeingProcessed(i, j))
+                if (drawUnixTerminalColors)
+                    std::cout << "\033[1;43m \033[0m";
+                else
+                    std::cout << "V";
+            else if (isTileVisited(i, j))
+                if (drawUnixTerminalColors)
+                    std::cout << "\033[1;42m \033[0m";
+                else
+                    std::cout << "P";
+            else {
+                std::pair<int,int> tileInd = std::make_pair(i, j) ;
+                int tileBorderDataExists = m_mapTileToBorderVertices.count(tileInd);
+                if (tileBorderDataExists)
+                    if (drawUnixTerminalColors)
+                        std::cout << "\033[1;46m \033[0m";
+                    else
+                        std::cout << "C";
+                else
+                if (drawUnixTerminalColors)
+                    std::cout << "\033[1;47m \033[0m";
+                else
+                    std::cout << "·";
+            }
+
+        }
+        std::cout << std::endl;
+    }
+    std::cout << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
 }
