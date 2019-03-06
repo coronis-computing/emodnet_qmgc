@@ -41,6 +41,8 @@ convertUVHToECEF(const std::vector<Point_3> &pts) const {
         Point_3 p = convertUVHToECEF(*it);
         if (!isnan(p.x()))
             ecefPoints.push_back(p);
+        else
+            std::cout << "Point not converted to ECEF: " << p << std::endl;
     }
 
     return ecefPoints;

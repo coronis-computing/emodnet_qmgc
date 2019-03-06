@@ -27,6 +27,8 @@ namespace TinCreation {
 std::vector<Point_3>
 TinCreationSimplificationPointSetHierarchy::
 simplify(const std::vector<Point_3> &pts) {
+    std::cout << "pts.size() = " << pts.size() << std::endl;
+
     // Convert to metric
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
