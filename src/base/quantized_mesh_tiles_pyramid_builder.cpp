@@ -93,7 +93,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
                           << "(num. cache entries = " << m_bordersCache.numCacheEntries() << ")"
                           << std::endl;
 
-//                m_bordersCache.showStatus(tp.x, tp.y);
+                m_bordersCache.showStatus(tp.x, tp.y);
 
                 ctb::TileCoordinate coord(zoom, tp.x, tp.y);
                 coords.push_back(coord) ;
