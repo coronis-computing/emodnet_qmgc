@@ -68,15 +68,17 @@ namespace CGAL {
                 bool isConstrainedV0 = get(Vertex_is_constrained_map, aProfile.v0()) ;
                 bool isConstrainedV1 = get(Vertex_is_constrained_map, aProfile.v1()) ;
 
-                if ( isConstrainedV0 && isConstrainedV1 ) {
-                    // Both vertices in the edge are corners (will this ever happen?): the edge must remain as is, no placement possible
-                    return boost::optional<typename Profile::Point>();
-                }
+                // For the future: do not add this constraint! Returning a Point() seems to do nothing... so will create errors in extreme cases (detected in tiles near the poles, that is, lat approx = 90 degrees)
+//                if ( isConstrainedV0 && isConstrainedV1 ) {
+//                    // Both vertices in the edge are corners (will this ever happen?): the edge must remain as is, no placement possible
+//                    return boost::optional<typename Profile::Point>();
+//                }
 
-                if (get(Edge_is_constrained_map, edge(aProfile.v0_v1(), aProfile.surface_mesh()))) {
-                    // The edge is constrained: the edge must remain as is, no placement possible
-                    return boost::optional<typename Profile::Point>();
-                }
+                // For the future: do not add this constraint! This is implicitly tested in the BasePlacement when the Edge_is_constrained_map is set
+//                if (get(Edge_is_constrained_map, edge(aProfile.v0_v1(), aProfile.surface_mesh()))) {
+//                    // The edge is constrained: the edge must remain as is, no placement possible
+//                    return boost::optional<typename Profile::Point>();
+//                }
 
                 if ( isConstrainedV0 ) {
                     // v0 is constrained, return it as the placement
@@ -93,15 +95,15 @@ namespace CGAL {
                 in_edge_iterator eb, ee;
                 for (boost::tie(eb, ee) = halfedges_around_target(aProfile.v0(), aProfile.surface_mesh());
                      eb != ee; ++eb) {
-                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh())))
-                        return get(aProfile.vertex_point_map(),
-                                   aProfile.v0());
+                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh()))) {
+                        return aProfile.p0();
+                    }
                 }
                 for (boost::tie(eb, ee) = halfedges_around_target(aProfile.v1(), aProfile.surface_mesh());
                      eb != ee; ++eb) {
-                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh())))
-                        return get(aProfile.vertex_point_map(),
-                                   aProfile.v1());
+                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh()))) {
+                        return aProfile.p1();
+                    }
                 }
 
                 return static_cast<const BasePlacement *>(this)->operator()(aProfile);

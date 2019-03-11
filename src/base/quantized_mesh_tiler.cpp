@@ -44,8 +44,11 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
     m_tinCreator.setBounds(tileBounds.getMinX(), tileBounds.getMinY(), minHeight,
                            tileBounds.getMaxX(), tileBounds.getMaxY(), maxHeight);
 
+    bool constrainEasternVertices = false, constrainWesternVertices = false, constrainNorthernVertices = false, constrainSouthernVertices = false;
+    getConstraintsAtBorders(bd, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices);
+
     // Simplify the surface
-    Polyhedron surface = m_tinCreator.create(uvhPts, bd.tileEastVertices.size() > 0, bd.tileWestVertices.size() > 0, bd.tileNorthVertices.size() > 0, bd.tileSouthVertices.size() > 0) ;
+    Polyhedron surface = m_tinCreator.create(uvhPts, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
     // Needed for the next steps to work properly
@@ -98,10 +101,12 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
 
     // Check the start of the rasters: if there are constrained vertices from neighboring tiles to maintain,
     // the western and/or the southern vertices are not touched, and thus we should parse the raster starting from index 1
-    bool constrainEastVertices = bd.tileEastVertices.size() > 0 ;
-    bool constrainWestVertices = bd.tileWestVertices.size() > 0 ;
-    bool constrainNorthVertices = bd.tileNorthVertices.size() > 0 ;
-    bool constrainSouthVertices = bd.tileSouthVertices.size() > 0 ;
+//    bool constrainEastVertices = bd.tileEastVertices.size() > 0 ;
+//    bool constrainWestVertices = bd.tileWestVertices.size() > 0 ;
+//    bool constrainNorthVertices = bd.tileNorthVertices.size() > 0 ;
+//    bool constrainSouthVertices = bd.tileSouthVertices.size() > 0 ;
+    bool constrainEastVertices = false, constrainWestVertices = false, constrainNorthVertices = false, constrainSouthVertices = false;
+    getConstraintsAtBorders(bd, constrainEastVertices, constrainWestVertices, constrainNorthVertices, constrainSouthVertices);
 
     int startX = constrainWestVertices? 1: 0 ;
     int endX = constrainEastVertices? m_options.HeighMapSamplingSteps-1: m_options.HeighMapSamplingSteps ;
@@ -508,4 +513,19 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
 
     // Write normals to tile
     qmTile.setVertexNormals(vertexNormals) ;
+}
+
+
+
+void QuantizedMeshTiler::getConstraintsAtBorders(BordersData& bd,
+                                                 bool &constrainEasternVertices,
+                                                 bool &constrainWesternVertices,
+                                                 bool &constrainNorthernVertices,
+                                                 bool &constrainSouthernVertices) const
+{
+    // When bd.tile<X>Vertices.size() == 0, check the (very improvable, but still possible) cases where the two corners of the tile are constrained (that is, no border vertices in the middle of them)
+    constrainEasternVertices = bd.tileEastVertices.size() > 0 || (bd.constrainNorthEastCorner && bd.constrainSouthEastCorner);
+    constrainWesternVertices = bd.tileWestVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainSouthWestCorner);
+    constrainNorthernVertices = bd.tileNorthVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainNorthEastCorner);
+    constrainSouthernVertices = bd.tileSouthVertices.size() > 0 || (bd.constrainSouthWestCorner && bd.constrainSouthEastCorner);
 }

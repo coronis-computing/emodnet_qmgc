@@ -161,6 +161,12 @@ private:
         return std::max(lower, std::min(n, upper));
     }
 
+    void getConstraintsAtBorders(BordersData& bd,
+                                 bool &constrainEasternVertices,
+                                 bool &constrainWesternVertices,
+                                 bool &constrainNorthernVertices,
+                                 bool &constrainSouthernVertices) const;
+
     // --- The following private functions split the processing required to generate the tiles for better readability ---
 
 
