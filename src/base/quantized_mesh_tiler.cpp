@@ -44,11 +44,32 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
     m_tinCreator.setBounds(tileBounds.getMinX(), tileBounds.getMinY(), minHeight,
                            tileBounds.getMaxX(), tileBounds.getMaxY(), maxHeight);
 
-    bool constrainEasternVertices = false, constrainWesternVertices = false, constrainNorthernVertices = false, constrainSouthernVertices = false;
-    getConstraintsAtBorders(bd, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices);
+//    bool constrainEasternVertices = false, constrainWesternVertices = false, constrainNorthernVertices = false, constrainSouthernVertices = false;
+//    getConstraintsAtBorders(bd, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices);
 
     // Simplify the surface
-    Polyhedron surface = m_tinCreator.create(uvhPts, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices) ;
+//    Polyhedron surface = m_tinCreator.create(uvhPts, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices) ;
+
+    // Add the corners to the corresponding point sets
+    if (bd.constrainSouthEastCorner) {
+        bd.tileSouthVertices.push_back(bd.southEastCorner);
+        bd.tileEastVertices.push_back(bd.southEastCorner);
+    }
+    if (bd.constrainNorthEastCorner) {
+        bd.tileNorthVertices.push_back(bd.northEastCorner);
+        bd.tileEastVertices.push_back(bd.northEastCorner);
+    }
+    if (bd.constrainSouthWestCorner) {
+        bd.tileSouthVertices.push_back(bd.southWestCorner);
+        bd.tileWestVertices.push_back(bd.southWestCorner);
+    }
+    if (bd.constrainNorthWestCorner) {
+        bd.tileNorthVertices.push_back(bd.northWestCorner);
+        bd.tileWestVertices.push_back(bd.northWestCorner);
+    }
+
+    // Simplify the surface
+    Polyhedron surface = m_tinCreator.create(uvhPts, bd.tileEastVertices.size() > 0, bd.tileWestVertices.size() > 0, bd.tileNorthVertices.size() > 0, bd.tileSouthVertices.size() > 0) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
     // Needed for the next steps to work properly
