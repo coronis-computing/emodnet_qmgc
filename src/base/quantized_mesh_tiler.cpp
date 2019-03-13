@@ -51,22 +51,22 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 //    Polyhedron surface = m_tinCreator.create(uvhPts, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices) ;
 
     // Add the corners to the corresponding point sets
-    if (bd.constrainSouthEastCorner) {
-        bd.tileSouthVertices.push_back(bd.southEastCorner);
-        bd.tileEastVertices.push_back(bd.southEastCorner);
-    }
-    if (bd.constrainNorthEastCorner) {
-        bd.tileNorthVertices.push_back(bd.northEastCorner);
-        bd.tileEastVertices.push_back(bd.northEastCorner);
-    }
-    if (bd.constrainSouthWestCorner) {
-        bd.tileSouthVertices.push_back(bd.southWestCorner);
-        bd.tileWestVertices.push_back(bd.southWestCorner);
-    }
-    if (bd.constrainNorthWestCorner) {
-        bd.tileNorthVertices.push_back(bd.northWestCorner);
-        bd.tileWestVertices.push_back(bd.northWestCorner);
-    }
+//    if (bd.constrainSouthEastCorner) {
+//        bd.tileSouthVertices.push_back(bd.southEastCorner);
+//        bd.tileEastVertices.push_back(bd.southEastCorner);
+//    }
+//    if (bd.constrainNorthEastCorner) {
+//        bd.tileNorthVertices.push_back(bd.northEastCorner);
+//        bd.tileEastVertices.push_back(bd.northEastCorner);
+//    }
+//    if (bd.constrainSouthWestCorner) {
+//        bd.tileSouthVertices.push_back(bd.southWestCorner);
+//        bd.tileWestVertices.push_back(bd.southWestCorner);
+//    }
+//    if (bd.constrainNorthWestCorner) {
+//        bd.tileNorthVertices.push_back(bd.northWestCorner);
+//        bd.tileWestVertices.push_back(bd.northWestCorner);
+//    }
 
     // Simplify the surface
     Polyhedron surface = m_tinCreator.create(uvhPts, bd.tileEastVertices.size() > 0, bd.tileWestVertices.size() > 0, bd.tileNorthVertices.size() > 0, bd.tileSouthVertices.size() > 0) ;
