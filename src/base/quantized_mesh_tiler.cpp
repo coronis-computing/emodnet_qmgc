@@ -122,12 +122,12 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
 
     // Check the start of the rasters: if there are constrained vertices from neighboring tiles to maintain,
     // the western and/or the southern vertices are not touched, and thus we should parse the raster starting from index 1
-//    bool constrainEastVertices = bd.tileEastVertices.size() > 0 ;
-//    bool constrainWestVertices = bd.tileWestVertices.size() > 0 ;
-//    bool constrainNorthVertices = bd.tileNorthVertices.size() > 0 ;
-//    bool constrainSouthVertices = bd.tileSouthVertices.size() > 0 ;
-    bool constrainEastVertices = false, constrainWestVertices = false, constrainNorthVertices = false, constrainSouthVertices = false;
-    getConstraintsAtBorders(bd, constrainEastVertices, constrainWestVertices, constrainNorthVertices, constrainSouthVertices);
+    bool constrainEastVertices = bd.tileEastVertices.size() > 0 ;
+    bool constrainWestVertices = bd.tileWestVertices.size() > 0 ;
+    bool constrainNorthVertices = bd.tileNorthVertices.size() > 0 ;
+    bool constrainSouthVertices = bd.tileSouthVertices.size() > 0 ;
+//    bool constrainEastVertices = false, constrainWestVertices = false, constrainNorthVertices = false, constrainSouthVertices = false;
+//    getConstraintsAtBorders(bd, constrainEastVertices, constrainWestVertices, constrainNorthVertices, constrainSouthVertices);
 
     int startX = constrainWestVertices? 1: 0 ;
     int endX = constrainEastVertices? m_options.HeighMapSamplingSteps-1: m_options.HeighMapSamplingSteps ;
@@ -146,6 +146,12 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
                 i == m_options.HeighMapSamplingSteps-1 && y == m_options.HeighMapSamplingSteps-1 && bd.useNorthEastCorner() ||
                 i == m_options.HeighMapSamplingSteps-1 && y == 0 && bd.useSouthEastCorner())
                 continue;
+
+//            // Check the latitude value: do not include measures over 90 deg
+//            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)y/(m_options.HeighMapSamplingSteps-1)));
+////            std::cout << "lat = " << lat << std::endl;
+//            if (lat >= 90 || lat <=-90)
+//                continue;
 
             // Note that the heights in RasterIO have the origin in the upper-left corner,
             // while the tile has it in the lower-left. Obviously, x = i
@@ -538,15 +544,15 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
 
 
 
-void QuantizedMeshTiler::getConstraintsAtBorders(BordersData& bd,
-                                                 bool &constrainEasternVertices,
-                                                 bool &constrainWesternVertices,
-                                                 bool &constrainNorthernVertices,
-                                                 bool &constrainSouthernVertices) const
-{
-    // When bd.tile<X>Vertices.size() == 0, check the (very improvable, but still possible) cases where the two corners of the tile are constrained (that is, no border vertices in the middle of them)
-    constrainEasternVertices = bd.tileEastVertices.size() > 0 || (bd.constrainNorthEastCorner && bd.constrainSouthEastCorner);
-    constrainWesternVertices = bd.tileWestVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainSouthWestCorner);
-    constrainNorthernVertices = bd.tileNorthVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainNorthEastCorner);
-    constrainSouthernVertices = bd.tileSouthVertices.size() > 0 || (bd.constrainSouthWestCorner && bd.constrainSouthEastCorner);
-}
+//void QuantizedMeshTiler::getConstraintsAtBorders(BordersData& bd,
+//                                                 bool &constrainEasternVertices,
+//                                                 bool &constrainWesternVertices,
+//                                                 bool &constrainNorthernVertices,
+//                                                 bool &constrainSouthernVertices) const
+//{
+//    // When bd.tile<X>Vertices.size() == 0, check the (very improvable, but still possible) cases where the two corners of the tile are constrained (that is, no border vertices in the middle of them)
+//    constrainEasternVertices = bd.tileEastVertices.size() > 0 || (bd.constrainNorthEastCorner && bd.constrainSouthEastCorner);
+//    constrainWesternVertices = bd.tileWestVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainSouthWestCorner);
+//    constrainNorthernVertices = bd.tileNorthVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainNorthEastCorner);
+//    constrainSouthernVertices = bd.tileSouthVertices.size() > 0 || (bd.constrainSouthWestCorner && bd.constrainSouthEastCorner);
+//}
