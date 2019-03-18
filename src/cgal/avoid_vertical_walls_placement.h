@@ -10,12 +10,12 @@
 
 namespace CGAL {
 namespace Surface_mesh_simplification {
+
     /**
-     * Placement that checks if another placement would generate a vertical face (i.e., all vertices sharing the same X or Y coordinate) around the stars of the two vertices of an edge that is candidate for an edge collapse.
+     * Placement that checks if another placement would generate a vertical face (i.e., completely orthogonal to the Z axis) around the stars of the two vertices of an edge that is candidate for an edge collapse.
      * It then rejects this placement by returning boost::none.
      * @tparam Placement
      */
-
     template<class Placement>
     class AvoidVerticalWallsPlacement {
     public:
@@ -50,12 +50,12 @@ namespace Surface_mesh_simplification {
 
                     typename Profile::VertexPointMap ppmap = aProfile.vertex_point_map();
                     typename Profile::Triangle_vector::const_iterator it = triangles.begin();
-                    if(aProfile.left_face_exists()){
-                        ++it;
-                    }
-                    if(aProfile.right_face_exists()){
-                        ++it;
-                    }
+//                    if(aProfile.left_face_exists()){
+//                        ++it;
+//                    }
+//                    if(aProfile.right_face_exists()){
+//                        ++it;
+//                    }
                     while(it!= triangles.end()){
                         const typename Profile::Triangle& t = *it;
                         Point p = get(ppmap,t.v0);
