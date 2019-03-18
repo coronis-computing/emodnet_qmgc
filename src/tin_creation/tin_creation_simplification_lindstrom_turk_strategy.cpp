@@ -23,6 +23,7 @@
 #include "cgal/border_edges_are_constrained_edge_map.h"
 #include "cgal/corner_vertices_are_constrained_vertex_map.h"
 #include "cgal/further_constrained_placement.h"
+#include "cgal/avoid_vertical_walls_placement.h"
 #include "cgal/polyhedron_builder_from_projected_triangulation.h"
 
 namespace TinCreation {
@@ -56,7 +57,8 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
     // Set up the edge constrainer
     typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
                                              BorderEdgesAreConstrainedEdgeMap<Polyhedron>,
-                                             CornerVerticesAreConstrainedVertexMap<Polyhedron> > SimplificationConstrainedPlacement ;
+                                             CornerVerticesAreConstrainedVertexMap<Polyhedron> > SimplificationConstrainedPlacement;
+    typedef SMS::AvoidVerticalWallsPlacement<SimplificationConstrainedPlacement> SimplificationConstrainedPlacementVerticalWalls;
     BorderEdgesAreConstrainedEdgeMap<Polyhedron> beac( surface,
                                              constrainEasternVertices,
                                              constrainWesternVertices,
@@ -64,6 +66,8 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                                              constrainSouthernVertices ) ;
     CornerVerticesAreConstrainedVertexMap<Polyhedron> cvacvm(surface) ;
     SimplificationConstrainedPlacement scp( beac, cvacvm ) ;
+    SimplificationConstrainedPlacementVerticalWalls scpvw(scp);
+
     SimplificationCost sc( SimplificationCostParams( m_weightVolume,
                                                      m_weightBoundary,
                                                      m_weightShape ) ) ;
@@ -79,7 +83,7 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                               //                      .get_placement(pl)
                               //                      .get_placement(SimplificationPlacement())
                       .edge_is_constrained_map(beac)
-                      .get_placement(scp)
+                      .get_placement(scpvw)
             ) ;
 
     return surface ;
