@@ -100,8 +100,8 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
         double diffX = fabs(p1.x() - p0.x());
         double diffY = fabs(p1.y() - p0.y());
 
-//        if (fabs(diffX) < std::numeric_limits<double>::epsilon() && fabs(diffY) < std::numeric_limits<double>::epsilon()) {
-        if (fabs(diffX) < 0.001 && fabs(diffY) < 0.001) {
+        if (fabs(diffX) < std::numeric_limits<double>::epsilon() && fabs(diffY) < std::numeric_limits<double>::epsilon()) {
+//        if (fabs(diffX) < 0.001 && fabs(diffY) < 0.001) {
             std::cout << "Equal points on border!" << std::endl;
             std::cout << "Points p0 = " << p0 << std::endl;
             std::cout << "Points p1 = " << p1 << std::endl;
