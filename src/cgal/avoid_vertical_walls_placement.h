@@ -35,12 +35,19 @@ namespace Surface_mesh_simplification {
 
             // If some placement is computed, check its validity
             if(op){
+                typedef typename Profile::Point Point;
+                Point q2 = *op; // <-- The candidate placement
+
+                // Quick test: is it within the limits?
+                if (q2.x() < 0 || q2.x() > 1 || q2.y() < 0 || q2.y() > 1 )
+                    return boost::optional<typename Profile::Point>();
+
                 // triangles returns the triangles of the star of the vertices of the edge to collapse
                 // First the two trianges incident to the edge, then the other triangles
                 // The second vertex of each triangle is the vertex that gets placed
                 const typename Profile::Triangle_vector& triangles = aProfile.triangles();
                 if(triangles.size()>2){
-                    typedef typename Profile::Point Point;
+
                     typedef typename Profile::Kernel Traits;
                     typedef typename Traits::Vector_3 Vector;
                     typedef typename Traits::FT FT;
@@ -61,7 +68,6 @@ namespace Surface_mesh_simplification {
                         Point p = get(ppmap,t.v0);
                         // Point q = get(ppmap,t.v1); // <-- The point that will be placed!
                         Point r = get(ppmap,t.v2);
-                        Point q2 = *op; // <-- The candidate placement
 
                         // Edges of the newly generated triangle
                         Vector eq2p = Traits().construct_vector_3_object()(q2,p) ;
