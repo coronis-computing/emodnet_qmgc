@@ -105,7 +105,8 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
             std::cout << "Points p0 = " << p0 << std::endl;
             std::cout << "Points p1 = " << p1 << std::endl;
         }
-        ++e;
+        // Advance 2 positions (i.e., skip non-border halfedges)
+        std::advance(e,2) ;
     }
     // --- Debug (end) ---
 
