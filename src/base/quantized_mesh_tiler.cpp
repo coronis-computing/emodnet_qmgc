@@ -272,7 +272,6 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
     double maxEcefZ = -std::numeric_limits<double>::infinity();
     for (int i = 0; i < latLonPoints.size(); i++) {
         double tmpx, tmpy, tmpz;
-        double tmpx2, tmpy2, tmpz2;
         crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
                                   tmpx, tmpy, tmpz);
         ecefPoints.push_back(Point_3(tmpx, tmpy, tmpz));
