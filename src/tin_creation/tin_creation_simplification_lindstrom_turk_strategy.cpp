@@ -105,6 +105,7 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
             std::cout << "Points p0 = " << p0 << std::endl;
             std::cout << "Points p1 = " << p1 << std::endl;
         }
+        ++e;
     }
     // --- Debug (end) ---
 
