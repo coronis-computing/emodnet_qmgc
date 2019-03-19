@@ -70,7 +70,11 @@ namespace Surface_mesh_simplification {
                         // Normal of the triangle
                         Vector n = Traits().construct_cross_product_vector_3_object()(eq2p,eq2r);
 
+//                        if (CGAL::Angle::RIGHT == CGAL::angle(n, vwZ)) {
+//                            std::cout << "Right angle!" << std::endl;
+//                        }
                         if( fabs(Traits().compute_scalar_product_3_object()(n, vwZ)) < m_eps ){
+//                            std::cout << "Vertical wall, scalar product = " << Traits().compute_scalar_product_3_object()(n, vwZ) << std::endl;
                             return boost::optional<typename Profile::Point>();
                         }
                         ++it;

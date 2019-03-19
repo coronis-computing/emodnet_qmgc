@@ -86,6 +86,28 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                       .get_placement(scpvw)
             ) ;
 
+    // --- Debug (start) ---
+    surface.normalize_border();
+    typedef typename Polyhedron::Halfedge_const_iterator Halfedge_const_iterator;
+    Halfedge_const_iterator e = surface.border_halfedges_begin() ;
+    ++e ; // We start at the second halfedge!
+    while( e->is_border() ) {
+        // Relevant geometric info of the current edge
+        Point_3 p0 = e->vertex()->point(); // This is the point we will take care of now
+        Point_3 p1 = e->prev()->vertex()->point(); // This is the previous vertex, with which p0 forms an edge
+
+        // Differences between the points in the edge
+        double diffX = fabs(p1.x() - p0.x());
+        double diffY = fabs(p1.y() - p0.y());
+
+        if (diffX < std::numeric_limits<double>::epsilon() && diffY < std::numeric_limits<double>::epsilon()) {
+            std::cout << "Equal points on border!" << std::endl;
+            std::cout << "Points p0 = " << p0 << std::endl;
+            std::cout << "Points p1 = " << p1 << std::endl;
+        }
+    }
+    // --- Debug (end) ---
+
     return surface ;
 }
 
