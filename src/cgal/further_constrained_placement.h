@@ -68,11 +68,10 @@ namespace CGAL {
                 bool isConstrainedV0 = get(Vertex_is_constrained_map, aProfile.v0()) ;
                 bool isConstrainedV1 = get(Vertex_is_constrained_map, aProfile.v1()) ;
 
-                // For the future: do not add this constraint! Returning a Point() seems to do nothing... so will create errors in extreme cases (detected in tiles near the poles, that is, lat approx = 90 degrees)
-//                if ( isConstrainedV0 && isConstrainedV1 ) {
-//                    // Both vertices in the edge are corners (will this ever happen?): the edge must remain as is, no placement possible
-//                    return boost::optional<typename Profile::Point>();
-//                }
+                if ( isConstrainedV0 && isConstrainedV1 ) {
+                    // Both vertices in the edge are corners (will this ever happen?): the edge must remain as is, no placement possible
+                    return boost::optional<typename Profile::Point>();
+                }
 
                 // This is implicitly tested in the BasePlacement when the Edge_is_constrained_map is set, but we do it here because we need to check it before the test on the corners
                 if (get(Edge_is_constrained_map, edge(aProfile.v0_v1(), aProfile.surface_mesh()))) {
