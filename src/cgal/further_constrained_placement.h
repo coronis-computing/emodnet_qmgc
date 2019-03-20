@@ -74,11 +74,11 @@ namespace CGAL {
 //                    return boost::optional<typename Profile::Point>();
 //                }
 
-                // For the future: do not add this constraint! This is implicitly tested in the BasePlacement when the Edge_is_constrained_map is set
-//                if (get(Edge_is_constrained_map, edge(aProfile.v0_v1(), aProfile.surface_mesh()))) {
-//                    // The edge is constrained: the edge must remain as is, no placement possible
-//                    return boost::optional<typename Profile::Point>();
-//                }
+                // This is implicitly tested in the BasePlacement when the Edge_is_constrained_map is set, but we do it here because we need to check it before the test on the corners
+                if (get(Edge_is_constrained_map, edge(aProfile.v0_v1(), aProfile.surface_mesh()))) {
+                    // The edge is constrained: the edge must remain as is, no placement possible
+                    return boost::optional<typename Profile::Point>();
+                }
 
                 if ( isConstrainedV0 ) {
                     // v0 is constrained, return it as the placement
