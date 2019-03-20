@@ -215,6 +215,7 @@ int main ( int argc, char **argv)
                         }
 
                         double meanDiffLon = 0, meanDiffLat = 0, meanDiffHeight = 0;
+                        bool allOk = true;
                         if (pairInd == 0) {
                             // Tiles vertices should coincide at northern (original) --> southern (neighbor) border
                             if (eiO.northVertexCount != eiN.southVertexCount ) {
@@ -222,9 +223,10 @@ int main ( int argc, char **argv)
                                 cout << "current tile northVertexCount = " << eiO.northVertexCount << " / neighbor tile southVertexCount = " << eiN.southVertexCount << endl;
                                 cout << "Press ENTER to continue..." << endl;
                                 cin.get();
+                                allOk = false;
 //                                return 1;
                             }
-                            if (displayTileStats) cout << "Comparing northern (original) --> southern (neighbor) border:" << endl;
+                            if (displayTileStats && allOk) cout << "Comparing northern (original) --> southern (neighbor) border:" << endl;
                             compareVertices(qmt, qmtN, eiO.northIndices, eiN.southIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
                         else if (pairInd == 1) {
@@ -234,9 +236,10 @@ int main ( int argc, char **argv)
                                 cout << "current tile southVertexCount = " << eiO.southVertexCount << " / neighbor tile northVertexCount = " << eiN.northVertexCount << endl;
                                 cout << "Press ENTER to continue..." << endl;
                                 cin.get();
+                                allOk = false;
 //                                return 1;
                             }
-                            if (displayTileStats) cout << "Comparing southern (original) --> northern (neighbor) border:" << endl;
+                            if (displayTileStats && allOk) cout << "Comparing southern (original) --> northern (neighbor) border:" << endl;
                             compareVertices(qmt, qmtN, eiO.southIndices, eiN.northIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
                         else if (pairInd == 2) {
@@ -246,9 +249,10 @@ int main ( int argc, char **argv)
                                 cout << "current tile eastVertexCount = " << eiO.eastVertexCount << " / neighbor tile westVertexCount = " << eiN.westVertexCount << endl;
                                 cout << "Press ENTER to continue..." << endl;
                                 cin.get();
+                                allOk = false;
 //                                return 1;
                             }
-                            if (displayTileStats) cout << "Comparing eastern (original) --> western (neighbor) border:" << endl;
+                            if (displayTileStats && allOk) cout << "Comparing eastern (original) --> western (neighbor) border:" << endl;
                             compareVertices(qmt, qmtN, eiO.eastIndices, eiN.westIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
                         else if (pairInd == 3) {
@@ -258,12 +262,13 @@ int main ( int argc, char **argv)
                                 cout << "current tile westVertexCount = " << eiO.westVertexCount << " / neighbor tile eastVertexCount = " << eiN.eastVertexCount << endl;
                                 cout << "Press ENTER to continue..." << endl;
                                 cin.get();
+                                allOk = false;
 //                                return 1;
                             }
-                            if (displayTileStats) cout << "Comparing western (original) --> eastern (neighbor) border:" << endl;
+                            if (displayTileStats && allOk) cout << "Comparing western (original) --> eastern (neighbor) border:" << endl;
                             compareVertices(qmt, qmtN, eiO.westIndices, eiN.eastIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
-                        if (displayTileStats) {
+                        if (displayTileStats && allOk) {
                             cout << "Mean Diff. Lon. = " << meanDiffLon << endl;
                             cout << "Mean Diff. Lat. = " << meanDiffLat << endl;
                             cout << "Mean Diff. Height = " << meanDiffHeight << endl;
