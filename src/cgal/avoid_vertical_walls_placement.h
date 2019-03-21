@@ -39,7 +39,7 @@ namespace Surface_mesh_simplification {
                 Point q2 = *op; // <-- The candidate placement
 
                 // Quick test: is it within the limits?
-                if (q2.x() < 0 || q2.x() > 1 || q2.y() < 0 || q2.y() > 1 )
+                if (q2.x() <= 0 || q2.x() >= 1 || q2.y() <= 0 || q2.y() >= 1 )
                     return boost::optional<typename Profile::Point>();
 
                 // triangles returns the triangles of the star of the vertices of the edge to collapse
