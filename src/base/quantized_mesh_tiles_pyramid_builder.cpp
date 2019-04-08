@@ -56,8 +56,8 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
             zoomBounds = ctb::TileBounds(ctb::TileCoordinate(0,0,0), ctb::TileCoordinate(0,1,0));
         }
         else {
-            std::cout << "m_tilers[0].bounds().getLowerLeft() = " << m_tilers[0].bounds().getLowerLeft().x << ", " << m_tilers[0].bounds().getLowerLeft().y << std::endl;
-            std::cout << "m_tilers[0].bounds().getUpperRight() = " << m_tilers[0].bounds().getUpperRight().x << ", " << m_tilers[0].bounds().getUpperRight().y << std::endl;
+//            std::cout << "m_tilers[0].bounds().getLowerLeft() = " << m_tilers[0].bounds().getLowerLeft().x << ", " << m_tilers[0].bounds().getLowerLeft().y << std::endl;
+//            std::cout << "m_tilers[0].bounds().getUpperRight() = " << m_tilers[0].bounds().getUpperRight().x << ", " << m_tilers[0].bounds().getUpperRight().y << std::endl;
             ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
             ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
 
@@ -69,9 +69,9 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
                 ll = ctb::TileCoordinate(ll.zoom, ll.x, ll.y+1);
             }
 
-            std::cout << "Tile bounds ur = " << std::endl
-                      << "- min = " << m_tilers[0].grid().tileBounds(ur).getMinX() << ", " << m_tilers[0].grid().tileBounds(ur).getMinY() << std::endl
-                      << "- max = " << m_tilers[0].grid().tileBounds(ur).getMaxX() << ", " << m_tilers[0].grid().tileBounds(ur).getMaxY() << std::endl;
+//            std::cout << "Tile bounds ur = " << std::endl
+//                      << "- min = " << m_tilers[0].grid().tileBounds(ur).getMinX() << ", " << m_tilers[0].grid().tileBounds(ur).getMinY() << std::endl
+//                      << "- max = " << m_tilers[0].grid().tileBounds(ur).getMaxX() << ", " << m_tilers[0].grid().tileBounds(ur).getMaxY() << std::endl;
 
             zoomBounds = ctb::TileBounds(ll, ur);
         }
@@ -168,10 +168,26 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
             zoomBounds = ctb::TileBounds(ctb::TileCoordinate(0,0,0), ctb::TileCoordinate(0,1,0));
         }
         else {
+//            std::cout << "m_tilers[0].bounds().getLowerLeft() = " << m_tilers[0].bounds().getLowerLeft().x << ", " << m_tilers[0].bounds().getLowerLeft().y << std::endl;
+//            std::cout << "m_tilers[0].bounds().getUpperRight() = " << m_tilers[0].bounds().getUpperRight().x << ", " << m_tilers[0].bounds().getUpperRight().y << std::endl;
             ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
             ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
+
+            // Check latitude bounds... if the map covers up to latitude (+/-)90deg, a tile over the poles is constructed...
+            if ( m_tilers[0].grid().tileBounds(ur).getMinY() >= 90) {
+                ur = ctb::TileCoordinate(ur.zoom, ur.x, ur.y-1);
+            }
+            else if (m_tilers[0].grid().tileBounds(ll).getMinY() <= -90) {
+                ll = ctb::TileCoordinate(ll.zoom, ll.x, ll.y+1);
+            }
+
+//            std::cout << "Tile bounds ur = " << std::endl
+//                      << "- min = " << m_tilers[0].grid().tileBounds(ur).getMinX() << ", " << m_tilers[0].grid().tileBounds(ur).getMinY() << std::endl
+//                      << "- max = " << m_tilers[0].grid().tileBounds(ur).getMaxX() << ", " << m_tilers[0].grid().tileBounds(ur).getMaxY() << std::endl;
+
             zoomBounds = ctb::TileBounds(ll, ur);
         }
+
 
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
 
