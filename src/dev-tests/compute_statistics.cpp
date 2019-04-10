@@ -107,7 +107,7 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
 //                    std::cout << u << " " << v << " " << height << std::endl;
     }
     // --- Debug (begin) ---
-    exportToXYZ("pts_from_tile.xyz", qmPts);
+//    exportToXYZ("pts_from_tile.xyz", qmPts);
     // --- Debug  (end)  ---
 
     // Compute distances from points in the tile to the original raster values
@@ -144,7 +144,9 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
         // Finally, compute the squared distance between the query point and the intersection
         dist = CGAL::squared_distance(*it, *ip);
         dist = CGAL::sqrt(dist);
-//                    std::cout << "dist = " << dist << std::endl;
+//        std::cout << "it = " << *it << std::endl;
+//        std::cout << "ip = " << *ip << std::endl;
+//        std::cout << "dist = " << dist << std::endl;
 
         // Update running mean
         numDists++;
@@ -184,9 +186,9 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
                     ptsRaster.push_back(Point_3(tmpx, tmpy, tmpz));
                 }
     // --- Debug (begin) ---
-    ofstream ofMeshRaster("mesh_raster.off");
-    ofMeshRaster << meshRaster;
-    ofMeshRaster.close();
+//    ofstream ofMeshRaster("mesh_raster.off");
+//    ofMeshRaster << meshRaster;
+//    ofMeshRaster.close();
 
 //    cout << "Raster tile bounds = " << tileBounds.getMinX() << ", " << tileBounds.getMinY() << ", " << tileBounds.getMaxX() << ", " << tileBounds.getMaxY() << endl;
     // --- Debug  (end)  ---
@@ -215,9 +217,9 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
                          indToVertIndMap[triIndices.indices[(3*i)+2]]);
     }
     // --- Debug (begin) ---
-    ofstream ofMeshTin("mesh_tin.off");
-    ofMeshTin << meshTin;
-    ofMeshTin.close();
+//    ofstream ofMeshTin("mesh_tin.off");
+//    ofMeshTin << meshTin;
+//    ofMeshTin.close();
     // --- Debug  (end)  ---
 
     // Bidirectional Hausdorff distance computation
@@ -257,7 +259,8 @@ bool exportToMatlab(const std::string& outFile,
                     const double& meanNumTriangles,
                     const double& meanHeightError,
                     const double& maxHeightError,
-                    const double& meanSymmetricHausdorffDistance)
+                    const double& meanSymmetricHausdorffDistance,
+                    const std::vector<std::pair<int, int>>& tileXY)
 {
     ofstream ofs(outFile);
     if (!ofs) {
@@ -281,6 +284,15 @@ bool exportToMatlab(const std::string& outFile,
     ofs << "maxHeightError = " << maxHeightError << ";" << endl;
     ofs << "meanSymmetricHausdorffDistance = " << meanSymmetricHausdorffDistance << ";" << endl;
 
+    ofs << "tileXY = [";
+    for (int i=0; i < tileXY.size(); i++) {
+        ofs << tileXY[i].first << ", " << tileXY[i].second;
+        if (i == tileXY.size()-1)
+            ofs << "];" << endl;
+        else
+            ofs << ";" << endl;
+    }
+
     return true;
 }
 
@@ -290,7 +302,7 @@ int main(int argc, char **argv)
 {
     // Parse input parameters
     std::string tilesInputDir, inputRaster, configFile, outMatlabFile;
-    int heighMapSamplingSteps, zoom;
+    int heighMapSamplingSteps, zoom, singleTileX, singleTileY;
     float clippingHighValue, clippingLowValue, aboveSeaLevelScaleFactor, belowSeaLevelScaleFactor;
     bool bathymetryFlag, verbose;
 #ifdef USE_OPENMP
@@ -303,6 +315,8 @@ int main(int argc, char **argv)
             ("input-tiles,t", po::value<std::string>(&tilesInputDir), "Input directory containing the TMS structure of quantized mesh tiles generated with qm_tiler")
             ("input-raster,i", po::value<std::string>(&inputRaster), "Input raster from which we generated the TMS structure pointed by --input-tiles")
             ("zoom,z", po::value<int>(&zoom)->default_value(0), "Zoom level of the pyramid to extract the statistics from" )
+            ("tile-x,x", po::value<int>(&singleTileX)->default_value(-1), "Use this in conjuntion with tile-y to query just a single tile. Otherwise, all the tiles in the zoom are taken into account." )
+            ("tile-y,y", po::value<int>(&singleTileY)->default_value(-1), "Use this in conjuntion with tile-x to query just a single tile. Otherwise, all the tiles in the zoom are taken into account." )
             ("output,o", po::value<std::string>(&outMatlabFile)->default_value("out_stats_zoom.m"), "Output matlab file containing the per-tile results, along with the global statistics computed in this function")
             ("bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations" )
             ("samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that the statistics will be computed with respect to this raster resolution." )
@@ -399,11 +413,21 @@ int main(int argc, char **argv)
     ctb::GlobalGeodetic profile;
     double globalMeanDiffLon = 0, globalMeanDiffLat = 0, globalMeanDiffHeight = 0;
 
-    // Compute limits of the zoom
-    int startX = jZooms[zoom][0]["startX"].get<int>();
-    int endX = jZooms[zoom][0]["endX"].get<int>();
-    int startY = jZooms[zoom][0]["startY"].get<int>();
-    int endY = jZooms[zoom][0]["endY"].get<int>();
+    int startX, endX, startY, endY;
+    if (singleTileX > 0 && singleTileY > 0) {
+        // Querying a single tile
+        startX = singleTileX;
+        endX = singleTileX;
+        startY = singleTileY;
+        endY = singleTileY;
+    }
+    else {
+        // Compute limits of the zoom
+        startX = jZooms[zoom][0]["startX"].get<int>();
+        endX = jZooms[zoom][0]["endX"].get<int>();
+        startY = jZooms[zoom][0]["startY"].get<int>();
+        endY = jZooms[zoom][0]["endY"].get<int>();
+    }
 
     if (verbose) {
         cout << "----- Processing zoom " << zoom << " -----" << endl;
@@ -437,6 +461,7 @@ int main(int argc, char **argv)
     std::vector<double> hausdorffDistRasterToTinPerTile; hausdorffDistRasterToTinPerTile.reserve(numTiles);
     std::vector<double> hausdorffDistTinToRasterPerTile; hausdorffDistTinToRasterPerTile.reserve(numTiles);
     std::vector<double> symmetricHausdorffDistancePerTile; symmetricHausdorffDistancePerTile.reserve(numTiles);
+    std::vector<std::pair<int, int> > tileXY;
 
     // Visit each tile in the zoom
     int numDispDigits = ceil(log10(numTiles));
@@ -474,7 +499,7 @@ int main(int argc, char **argv)
             float minHeight, maxHeight;
             ctb::CRSBounds tileBounds;
             BordersData bd = BordersData();
-            std::vector<Point_3> rasterPts = tiler.getUVHPointsFromRaster(coord, bd, minHeight, maxHeight, tileBounds);
+            std::vector<Point_3> rasterPts = tiler.getUVHPointsFromRaster(coord, bd, minHeight, maxHeight, tileBounds, true);
 
             // We want points in uv in the XY plane, but with real values in height
             for (std::vector<Point_3>::iterator it = rasterPts.begin(); it != rasterPts.end(); ++it) {
@@ -482,7 +507,7 @@ int main(int argc, char **argv)
                 *it = Point_3((*it).x(), (*it).y(), height);
             }
             // --- Debug (begin) ---
-            exportToXYZ("pts_from_raster.xyz", rasterPts);
+//            exportToXYZ("pts_from_raster.xyz", rasterPts);
             // --- Debug  (end)  ---
 
             Delaunay dtRaster(rasterPts.begin(), rasterPts.end());
@@ -527,6 +552,7 @@ int main(int argc, char **argv)
             hausdorffDistRasterToTinPerTile.push_back(hausdorffDistRasterToTin);
             hausdorffDistTinToRasterPerTile.push_back(hausdorffDistTinToRaster);
             symmetricHausdorffDistancePerTile.push_back(hausdorffDist);
+            tileXY.push_back(std::make_pair(x, y));
         }
     }
 
@@ -560,7 +586,8 @@ int main(int argc, char **argv)
                               meanNumTriangles,
                               meanHeightError,
                               maxHeightError,
-                              meanSymmetricHausdorffDistance);
+                              meanSymmetricHausdorffDistance,
+                              tileXY);
     if (!res) {
         cerr << "[ERROR] Problems writing the output matlab file" << endl;
         return EXIT_FAILURE;

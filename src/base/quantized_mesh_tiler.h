@@ -126,7 +126,8 @@ public:
     std::vector<Point_3> getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
                                                 BordersData& bd,
                                                 float& minHeight, float& maxHeight,
-                                                ctb::CRSBounds& tileBounds) const ;
+                                                ctb::CRSBounds& tileBounds,
+                                                const bool& ignoreNoDataPoints = false) const ;
 
 private:
     // --- Attributes ---

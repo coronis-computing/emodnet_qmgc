@@ -38,7 +38,7 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
     float minHeight, maxHeight;
     ctb::CRSBounds tileBounds;
     std::vector<Point_3 > uvhPts = getUVHPointsFromRaster(coord, bd,
-                                                          minHeight, maxHeight, tileBounds );
+                                                          minHeight, maxHeight, tileBounds);
 
     // Inform the TIN creator about the bounds of the tile
     m_tinCreator.setBounds(tileBounds.getMinX(), tileBounds.getMinY(), minHeight,
@@ -89,7 +89,8 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
                                                                              BordersData& bd,
                                                                              float& minHeight, float& maxHeight,
-                                                                             ctb::CRSBounds& tileBounds ) const
+                                                                             ctb::CRSBounds& tileBounds,
+                                                                             const bool& ignoreNoDataPoints) const
 {
     m_mutex.lock() ;
     ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
@@ -159,10 +160,14 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
             // Compute the height value
             float height = rasterHeights[j * m_options.HeighMapSamplingSteps + i];
 
+            // Skip no data values, if required to
+            if (ignoreNoDataPoints && height == noDataValue)
+                continue;
+
             // Clipping
             height = clip( height, m_options.ClippingLowValue, m_options.ClippingHighValue ) ;
 
-            // When no data is available, we assume ground data
+            // When no data is available, and no skipping is required, we assume ground data
             if ( height == noDataValue )
                 height = 0 ;
 
