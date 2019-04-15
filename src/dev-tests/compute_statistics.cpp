@@ -304,7 +304,7 @@ int main(int argc, char **argv)
     std::string tilesInputDir, inputRaster, configFile, outMatlabFile;
     int heighMapSamplingSteps, zoom, singleTileX, singleTileY;
     float clippingHighValue, clippingLowValue, aboveSeaLevelScaleFactor, belowSeaLevelScaleFactor;
-    bool bathymetryFlag, verbose;
+    bool bathymetryFlag, verbose, excludeBorderTiles;
 #ifdef USE_OPENMP
     int numThreads ;
 #endif
@@ -324,6 +324,7 @@ int main(int argc, char **argv)
             ("clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
             ("above-sea-level-scale-factor", po::value<float>(&aboveSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings above sea level (ignored if < 0)" )
             ("below-sea-level-scale-factor", po::value<float>(&belowSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings below sea level (ignored if < 0)" )
+            ("exclude-border-tiles", po::value<bool>(&excludeBorderTiles)->default_value(false), "Switch to exclude the tiles on the borders (due to some part of the tile not being filled, this could cause strange statistics)")
             ("config,c", po::value<string>(&configFile)->default_value(""), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
             ("verbose", po::value<bool>(&verbose)->default_value(true), "Activate/deactivate output on the screen")
 #ifdef USE_OPENMP
@@ -427,6 +428,12 @@ int main(int argc, char **argv)
         endX = jZooms[zoom][0]["endX"].get<int>();
         startY = jZooms[zoom][0]["startY"].get<int>();
         endY = jZooms[zoom][0]["endY"].get<int>();
+        if (excludeBorderTiles) {
+            startX++;
+            endX--;
+            startY++;
+            endY--;
+        }
     }
 
     if (verbose) {
