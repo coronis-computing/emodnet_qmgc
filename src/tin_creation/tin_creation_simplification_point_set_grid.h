@@ -53,7 +53,7 @@ public:
                                                 minFeaturePolylineSize,
                                                 preserveSharpEdges)
     {
-        m_cellSizePerZoom = std::vector<double>{m_cellSize};
+        m_cellSizePerZoom = std::vector<double>{cellSize};
         setParamsForZoomConcreteStrategy(0);
     }
 

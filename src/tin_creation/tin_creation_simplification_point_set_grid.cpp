@@ -38,6 +38,9 @@ simplify(const std::vector<Point_3> &pts) {
                                                       m_cellSize),
                         ptsToSimpECEF.end());
 
+    // Optional: after erase(), use Scott Meyer's "swap trick" to trim excess capacity
+//    std::vector<Point_3>(ptsToSimpECEF).swap(ptsToSimpECEF);
+
     // Convert to the local (XY-projectable) coordinates again
     std::vector<Point_3> ptsSimp = this->convertECEFToUVH(ptsToSimpECEF);
 

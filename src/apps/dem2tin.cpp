@@ -59,9 +59,9 @@ int main ( int argc, char **argv) {
     // Command line parser
     std::string inputFile, inputType, outputFile, tinCreationStrategy, schedulerType, debugDir, configFile, greedyErrorType, exportNewOrigin;
     double greedyErrorTol, simpWeightVolume, simpWeightBoundary, simpWeightShape,
-           remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize,
-           psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize,
-           psRandomRemovePercentage ;
+            remeshingFacetDistance, remeshingFacetAngle, remeshingFacetSize, remeshingEdgeSize,
+            psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize,
+            psRandomRemovePercentage;
     float clippingHighValue, clippingLowValue;
     int simpStopEdgesCount, heighMapSamplingSteps, greedyInitGridSize;
     unsigned int psHierMaxClusterSize, psWlopIterNumber, psMinFeaturePolylineSize;
@@ -71,40 +71,66 @@ int main ( int argc, char **argv) {
     options.add_options()
             ("help,h", "Produce help message")
             ("input,i", po::value<std::string>(&inputFile), "Input terrain file (GDAL raster)")
-            ("input-type", po::value<std::string>(&inputType)->default_value("gdal"), "Type of the input terrain file. Options: gdal, point-set, off")
-            ("output,o", po::value<std::string>(&outputFile)->default_value("./out.off"), "Output OFF file with the TIN")
-            ("bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations (only for GDAL files)")
-            ("clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold (only for GDAL files)")
-            ("clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold (only for GDAL files)")
-            ("reset-origin", po::value<bool>(&resetOrigin)->default_value(true), "Resets the origin of the input samples to be minimum point of their bounding box. Just used when the input is not a GDAL raster")
-            ("export-new-origin", po::value<std::string>(&exportNewOrigin)->default_value(""), "Path where to export the new origin. Only use when reset-origin parameter is set to true. The format is the minimum X, Y, Z of the input vertices. Adding this values to the resulting vertices should get them in the original coordinates.")
-            ("tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random, remeshing, (see documentation for the meaning of each)" )
-            ("tc-greedy-error-tol", po::value<double>(&greedyErrorTol)->default_value(0.1), "Error tolerance for a tile to fulfill in the greedy insertion approach")
-            ("tc-greedy-init-grid-size", po::value<int>(&greedyInitGridSize)->default_value(-1), "An initial grid of this size will be used as base mesh to start the insertion process. Defaults to the 4 corners of the terrain if < 0")
-            ("tc-greedy-error-type", po::value<string>(&greedyErrorType)->default_value("height"), "The error computation type. Available: height, 3d.")
-            ("tc-lt-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500), "Simplification stops when the number of edges is below this value." )
-            ("tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
-            ("tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5), "Simplification boundary weight (Lindstrom-Turk cost function, see original reference)." )
-            ("tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10), "Simplification shape weight (Lindstrom-Turk cost function, see original reference)." )
+            ("input-type", po::value<std::string>(&inputType)->default_value("gdal"),
+             "Type of the input terrain file. Options: gdal, point-set, off")
+            ("output,o", po::value<std::string>(&outputFile)->default_value("./out.off"),
+             "Output OFF file with the TIN")
+            ("bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false),
+             "Switch to consider the input DEM as containing depths instead of elevations (only for GDAL files)")
+            ("clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()),
+             "Clip values in the DEM above this threshold (only for GDAL files)")
+            ("clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()),
+             "Clip values in the DEM below this threshold (only for GDAL files)")
+            ("reset-origin", po::value<bool>(&resetOrigin)->default_value(true),
+             "Resets the origin of the input samples to be minimum point of their bounding box. Just used when the input is not a GDAL raster")
+            ("export-new-origin", po::value<std::string>(&exportNewOrigin)->default_value(""),
+             "Path where to export the new origin. Only use when reset-origin parameter is set to true. The format is the minimum X, Y, Z of the input vertices. Adding this values to the resulting vertices should get them in the original coordinates.")
+            ("tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"),
+             "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random, remeshing, (see documentation for the meaning of each)")
+            ("tc-greedy-error-tol", po::value<double>(&greedyErrorTol)->default_value(0.1),
+             "Error tolerance for a tile to fulfill in the greedy insertion approach")
+            ("tc-greedy-init-grid-size", po::value<int>(&greedyInitGridSize)->default_value(-1),
+             "An initial grid of this size will be used as base mesh to start the insertion process. Defaults to the 4 corners of the terrain if < 0")
+            ("tc-greedy-error-type", po::value<string>(&greedyErrorType)->default_value("height"),
+             "The error computation type. Available: height, 3d.")
+            ("tc-lt-stop-edges-count", po::value<int>(&simpStopEdgesCount)->default_value(500),
+             "Simplification stops when the number of edges is below this value.")
+            ("tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5),
+             "Simplification volume weight (Lindstrom-Turk cost function, see original reference).")
+            ("tc-lt-weight-boundary", po::value<double>(&simpWeightBoundary)->default_value(0.5),
+             "Simplification boundary weight (Lindstrom-Turk cost function, see original reference).")
+            ("tc-lt-weight-shape", po::value<double>(&simpWeightShape)->default_value(1e-10),
+             "Simplification shape weight (Lindstrom-Turk cost function, see original reference).")
 // Remeshing is experimental, do not use yet...
 //            ("tc-remeshing-facet-distance", po::value<double>(&remeshingFacetDistance)->default_value(10), "Remeshing facet distance." )
 //            ("tc-remeshing-facet-angle", po::value<double>(&remeshingFacetAngle)->default_value(25), "Remeshing facet angle." )
 //            ("tc-remeshing-facet-size", po::value<double>(&remeshingFacetSize)->default_value(10), "Remeshing facet size." )
 //            ("tc-remeshing-edge-size", po::value<double>(&remeshingEdgeSize)->default_value(10), "Remeshing edge size." )
-            ("tc-ps-border-max-error", po::value<double>(&psBorderSimpMaxDist)->default_value(0.01), "Polyline simplification error at borders" )
-            ("tc-ps-border-max-length", po::value<double>(&psBorderSimpMaxLength)->default_value(0.1), "Polyline simplification, maximum length of border edges" )
-            ("tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered" )
-            ("tc-ps-preserve-sharp-edges", po::value<bool>(&psPreserveSharpEdges)->default_value(true), "Preserve and simplify the sharp edges present in the terrain (dihedral angle between incident faces > 60 degrees).")
-            ("tc-ps-hierarchy-cluster-size", po::value<unsigned int>(&psHierMaxClusterSize)->default_value(100), "Hierarchy point set simplification maximum cluster size" )
-            ("tc-ps-hierarchy-max-surface-variance", po::value<double>(&psHierMaxSurfaceVariance)->default_value(0.01), "Hierarchy point set simplification maximum surface variation" )
-            ("tc-ps-wlop-retain-percent", po::value<double>(&psWlopRetainPercentage)->default_value(5), "Percentage of points to retain, [0..100]" )
-            ("tc-ps-wlop-radius", po::value<double>(&psWlopRadius)->default_value(0.2), "PS WLOP simplification: radius" )
-            ("tc-ps-wlop-iter-number", po::value<unsigned int>(&psWlopIterNumber)->default_value(35), "PS WLOP simplification: number of iterations" )
-            ("tc-ps-grid-cell-size", po::value<double>(&psGridCellSize)->default_value(0.1), "PS Grid simplification: Cell size")
-            ("tc-ps-random-percent", po::value<double>(&psRandomRemovePercentage)->default_value(80), "PS Random simplification: percentage to remove")
+            ("tc-ps-border-max-error", po::value<double>(&psBorderSimpMaxDist)->default_value(0.01),
+             "Polyline simplification error at borders")
+            ("tc-ps-border-max-length-xy-percent", po::value<double>(&psBorderSimpMaxLength)->default_value(10),
+             "Polyline simplification, maximum length of border edges when projected to the XY plane. Expressed as a percentage [0..100] (*).")
+            ("tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5),
+             "Minimum number of points in a feature polyline to be considered")
+            ("tc-ps-preserve-sharp-edges", po::value<bool>(&psPreserveSharpEdges)->default_value(true),
+             "Preserve and simplify the sharp edges present in the terrain (dihedral angle between incident faces > 60 degrees).")
+            ("tc-ps-hierarchy-cluster-size", po::value<unsigned int>(&psHierMaxClusterSize)->default_value(100),
+             "Hierarchy point set simplification maximum cluster size")
+            ("tc-ps-hierarchy-max-surface-variance", po::value<double>(&psHierMaxSurfaceVariance)->default_value(0.01),
+             "Hierarchy point set simplification maximum surface variation")
+            ("tc-ps-wlop-retain-percent", po::value<double>(&psWlopRetainPercentage)->default_value(5),
+             "Percentage of points to retain, [0..100]")
+            ("tc-ps-wlop-radius", po::value<double>(&psWlopRadius)->default_value(0.2),
+             "PS WLOP simplification: radius")
+            ("tc-ps-wlop-iter-number", po::value<unsigned int>(&psWlopIterNumber)->default_value(35),
+             "PS WLOP simplification: number of iterations")
+            ("tc-ps-grid-cell-size", po::value<double>(&psGridCellSize)->default_value(0.1),
+             "PS Grid simplification: Cell size")
+            ("tc-ps-random-percent", po::value<double>(&psRandomRemovePercentage)->default_value(80),
+             "PS Random simplification: percentage to remove")
             ("verbose", po::value<bool>(&verbose)->default_value(true), "Activate/deactivate output on the screen")
-            ("config,c", po::value<string>(&configFile)->default_value(""), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
-        ;
+            ("config,c", po::value<string>(&configFile)->default_value(""),
+             "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.");
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
 
@@ -113,8 +139,8 @@ int main ( int argc, char **argv) {
             options(options).positional(positionalOptions).run(), vm);
 
     // Read the configuration file (if exists)
-    if(vm.count("config") > 0 && !vm["config"].as<std::string>().empty()) {
-        configFile = vm["config"].as<std::string>() ;
+    if (vm.count("config") > 0 && !vm["config"].as<std::string>().empty()) {
+        configFile = vm["config"].as<std::string>();
         ifstream ifs(configFile);
         if (ifs.good())
             po::store(po::parse_config_file(ifs, options), vm);
@@ -136,17 +162,17 @@ int main ( int argc, char **argv) {
                                      tinCreationStrategy.compare("ps-wlop") == 0 ||
                                      tinCreationStrategy.compare("ps-grid") == 0 ||
                                      tinCreationStrategy.compare("ps-random") == 0;
-                                     // tinCreationStrategy.compare("remeshing") == 0
-    if (usingAMethodRequiringECEF && inputType.compare("gdal") == 0) {
-        std::cout << "For the moment, using a point set processing method on a gdal raster is not possible.\n"
-                     "If you want to use these methods, please use an input point set or TIN in METRIC units\n"
-                     "Aborting..." << std::endl;
-        return EXIT_FAILURE;
-    }
+    // tinCreationStrategy.compare("remeshing") == 0
+//    if (usingAMethodRequiringECEF && inputType.compare("gdal") == 0) {
+//        std::cout << "For the moment, using a point set processing method on a gdal raster is not possible.\n"
+//                     "If you want to use these methods, please use an input point set or TIN in METRIC units\n"
+//                     "Aborting..." << std::endl;
+//        return EXIT_FAILURE;
+//    }
 
     // Read the input samples
-    std::vector<Point_3> samples ;
-    double minX, minY, minHeight, maxX, maxY, maxHeight;
+    std::vector<Point_3> samples;
+    double width, height, minX, minY, minHeight, maxX, maxY, maxHeight, minXWorld, minYWorld, maxXWorld, maxYWorld;
     minX = minY = minHeight = 0;//= maxX = maxY = maxHeight = 0.0;
     std::transform(inputType.begin(), inputType.end(), inputType.begin(), ::tolower);
     if (inputType.compare("gdal") == 0) {
@@ -173,11 +199,11 @@ int main ( int argc, char **argv) {
         }
 
         // Run over the array and create a
-        minHeight =  std::numeric_limits<float>::infinity() ;
-        //maxHeight = -std::numeric_limits<float>::infinity() ;
+        minHeight = std::numeric_limits<float>::infinity();
+        maxHeight = -std::numeric_limits<float>::infinity() ;
         for (int i = 0; i < heightsBand->GetXSize(); i++) {
             for (int j = 0; j < heightsBand->GetYSize(); j++) {
-                int y = heightsBand->GetXSize() - 1 - j; // y coordinate within the tile.
+                int y = heightsBand->GetYSize() - 1 - j; // y coordinate within the tile.
                 // Note that the heights in RasterIO have the origin in the upper-left corner,
                 // while the tile has it in the lower-left. Obviously, x = i
 
@@ -205,47 +231,47 @@ int main ( int argc, char **argv) {
             }
         }
 
-        double width = gdalDataset->GetRasterXSize();
-        double height = gdalDataset->GetRasterYSize();
+        // Only used in ECEF methods
+        width = gdalDataset->GetRasterXSize();
+        height = gdalDataset->GetRasterYSize();
         double gt[6];
         gdalDataset->GetGeoTransform(gt);
-        minX = gt[0];
-        minY = gt[3] + width*gt[4] + height*gt[5];
-        maxX = gt[0] + width*gt[1] + height*gt[2];
-        maxY = gt[3];
+        minXWorld = gt[0];
+        minYWorld = gt[3] + width * gt[4] + height * gt[5];
+        maxXWorld = gt[0] + width * gt[1] + height * gt[2];
+        maxYWorld = gt[3];
+        minX = 0;
+        minY = 0;
+        maxX = heightsBand->GetXSize() - 1;
+        maxY = heightsBand->GetYSize() - 1;
 
         // Delete the allocated memory that is not needed anymore
         delete rasterHeights;
         delete gdalDataset;
-        if(verbose) cout << " done." << endl;
-    }
-    else if (inputType.compare("point-set") == 0)
-    {
+        if (verbose) cout << " done." << endl;
+    } else if (inputType.compare("point-set") == 0) {
         if (verbose) cout << "Reading the input point set..." << flush;
         std::ifstream stream(inputFile.c_str());
         bool success = stream &&
                        CGAL::read_xyz_points(stream, std::back_inserter(samples));
-        if (!success)
-        {
+        if (!success) {
             std::cerr << "\n[Error] Cannot read point set file " << inputFile << std::endl;
             return EXIT_FAILURE;
         }
         stream.close();
-        if (verbose) cout << " done." << endl ;
-    }
-    else if (inputType.compare("off") == 0)
-    {
+        if (verbose) cout << " done." << endl;
+    } else if (inputType.compare("off") == 0) {
         if (verbose) cout << "Reading the input OFF polyhedron..." << flush;
-        Polyhedron poly ;
+        Polyhedron poly;
         std::ifstream stream(inputFile.c_str());
         stream >> poly;
-        for (Polyhedron::Vertex_iterator it = poly.vertices_begin(); it != poly.vertices_end(); ++it )
+        for (Polyhedron::Vertex_iterator it = poly.vertices_begin(); it != poly.vertices_end(); ++it)
             samples.push_back((*it).point());
         stream.close();
-        if (verbose) cout << " done." << endl ;
-    }
-    else {
-        std::cerr << "\n[ERROR] Unknown input type \"" << inputType << "\", available options are \"gdal\", \"point-set\" or \"off\"" << std::endl;
+        if (verbose) cout << " done." << endl;
+    } else {
+        std::cerr << "\n[ERROR] Unknown input type \"" << inputType
+                  << "\", available options are \"gdal\", \"point-set\" or \"off\"" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -258,6 +284,10 @@ int main ( int argc, char **argv) {
         maxX = boundingBox.xmax();
         maxY = boundingBox.ymax();
         maxHeight = boundingBox.zmax();
+        minXWorld = minX;
+        minYWorld = minY;
+        maxXWorld = maxX;
+        maxYWorld = maxY;
     }
 
     for (std::vector<Point_3>::iterator it = samples.begin(); it != samples.end(); ++it) {
@@ -269,7 +299,7 @@ int main ( int argc, char **argv) {
     }
 
     // Setup the TIN creator
-    if(verbose) cout << "Creating the TIN..." << flush;
+    if (verbose) cout << "Creating the TIN..." << flush;
     TinCreator tinCreator;
     std::transform(tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower);
     if (tinCreationStrategy.compare("lt") == 0) {
@@ -279,17 +309,16 @@ int main ( int argc, char **argv) {
                                                                                    simpWeightBoundary,
                                                                                    simpWeightShape);
         tinCreator.setCreator(tcLT);
-    }
-    else if (tinCreationStrategy.compare("greedy") == 0) {
+    } else if (tinCreationStrategy.compare("greedy") == 0) {
         std::transform(greedyErrorType.begin(), greedyErrorType.end(), greedyErrorType.begin(), ::tolower);
         int et;
         if (greedyErrorType.compare("height") == 0) {
             et = TinCreationGreedyInsertionStrategy::ErrorHeight;
-        }
-        else if (greedyErrorType.compare("3d") == 0)
+        } else if (greedyErrorType.compare("3d") == 0)
             et = TinCreationGreedyInsertionStrategy::Error3D;
         else {
-            std::cerr << "[ERROR] Unknown error type \"" << tinCreationStrategy << "\" for the Greedy TIN creation strategy" << std::endl;
+            std::cerr << "[ERROR] Unknown error type \"" << tinCreationStrategy
+                      << "\" for the Greedy TIN creation strategy" << std::endl;
             return 1;
         }
         std::shared_ptr<TinCreationGreedyInsertionStrategy> tcGreedy
@@ -313,8 +342,7 @@ int main ( int argc, char **argv) {
                                                                                psHierMaxClusterSize,
                                                                                psHierMaxSurfaceVariance);
         tinCreator.setCreator(tcHier);
-    }
-    else if (tinCreationStrategy.compare("ps-wlop") == 0) {
+    } else if (tinCreationStrategy.compare("ps-wlop") == 0) {
         std::shared_ptr<TinCreationSimplificationPointSetWLOP> tcWlop
                 = std::make_shared<TinCreationSimplificationPointSetWLOP>(psBorderSimpMaxDist,
                                                                           psBorderSimpMaxLength,
@@ -324,8 +352,7 @@ int main ( int argc, char **argv) {
                                                                           psWlopRadius,
                                                                           psWlopIterNumber);
         tinCreator.setCreator(tcWlop);
-    }
-    else if (tinCreationStrategy.compare("ps-grid") == 0) {
+    } else if (tinCreationStrategy.compare("ps-grid") == 0) {
         std::shared_ptr<TinCreationSimplificationPointSetGrid> tcGrid
                 = std::make_shared<TinCreationSimplificationPointSetGrid>(psBorderSimpMaxDist,
                                                                           psBorderSimpMaxLength,
@@ -333,8 +360,7 @@ int main ( int argc, char **argv) {
                                                                           psPreserveSharpEdges,
                                                                           psGridCellSize);
         tinCreator.setCreator(tcGrid);
-    }
-    else if (tinCreationStrategy.compare("ps-random") == 0) {
+    } else if (tinCreationStrategy.compare("ps-random") == 0) {
         std::shared_ptr<TinCreationSimplificationPointSetRandom> tcRand
                 = std::make_shared<TinCreationSimplificationPointSetRandom>(psBorderSimpMaxDist,
                                                                             psBorderSimpMaxLength,
@@ -342,30 +368,29 @@ int main ( int argc, char **argv) {
                                                                             psPreserveSharpEdges,
                                                                             psRandomRemovePercentage);
         tinCreator.setCreator(tcRand);
-    }
-    else if (tinCreationStrategy.compare("delaunay") == 0) {
+    } else if (tinCreationStrategy.compare("delaunay") == 0) {
         std::shared_ptr<TinCreationDelaunayStrategy> tcDel =
                 std::make_shared<TinCreationDelaunayStrategy>();
         tinCreator.setCreator(tcDel);
-    }
-    else {
+    } else {
         std::cerr << "\n[ERROR] Unknown TIN creation strategy \"" << tinCreationStrategy << "\"" << std::endl;
         return 1;
     }
 
-    // Set the bounds of the "tile" if not using the remeshing or point set algorithm
-    tinCreator.setBounds(minX, minY, minHeight, maxX, maxY, maxHeight);
+    // Set the bounds of the "tile" if we are using the remeshing or point set algorithm, so that the input can then be converted to ECEF coordinates
+    // Note: this will only be used by methods requiring ECEF coordinates when the input is a GDAL dataset
+    tinCreator.setBounds(minXWorld, minYWorld, minHeight, maxXWorld, maxYWorld, maxHeight);
 
     // Set parameters for zoom 0 (i.e., use the input parameters, since there will be no more zooms)
     tinCreator.setParamsForZoom(0);
 
     // Create the TIN and compute the time spent to do it
     auto start = std::chrono::high_resolution_clock::now();
-    Polyhedron poly = tinCreator.create(samples);
+    Polyhedron poly = tinCreator.create(samples, false, false, false, false);
     auto finish = std::chrono::high_resolution_clock::now();
 
     chrono::duration<double> elapsed = finish - start;
-    if(verbose) cout << " done, " << elapsed.count() << " seconds." << endl ;
+    if (verbose) cout << " done, " << elapsed.count() << " seconds." << endl;
 
     // Recover the real values for the coordinates
     for (Polyhedron::Point_iterator it = poly.points_begin(); it != poly.points_end(); ++it) {

@@ -29,6 +29,7 @@
 #include <sstream>
 #include <gdal.h>
 #include "misc_utils.h"
+#include <GeographicLib/Geocentric.hpp>
 
 QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord, BordersData& bd)
 {
@@ -263,7 +264,8 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
         // In Latitude, Longitude, Height format
         float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * it->y());
         float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * it->x());
-        latLonPoints.push_back(Point_3(lat, lon, it->z()));
+        float height = minHeight + ((maxHeight - minHeight) * it->z());
+        latLonPoints.push_back(Point_3(lat, lon, height));
     }
 
     // Points in ECEF coordinates
@@ -275,10 +277,12 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
     double maxEcefY = -std::numeric_limits<double>::infinity();
     double minEcefZ = std::numeric_limits<double>::infinity();
     double maxEcefZ = -std::numeric_limits<double>::infinity();
+    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     for (int i = 0; i < latLonPoints.size(); i++) {
         double tmpx, tmpy, tmpz;
-        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
-                                  tmpx, tmpy, tmpz);
+//        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
+//                                  tmpx, tmpy, tmpz);
+        earth.Forward(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(), tmpx, tmpy, tmpz);
         ecefPoints.push_back(Point_3(tmpx, tmpy, tmpz));
 
         if (tmpx < minEcefX)
@@ -367,6 +371,15 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
         unsigned short u = QuantizedMesh::remapToVertexDataValue(x, 0.0, 1.0);
         unsigned short v = QuantizedMesh::remapToVertexDataValue(y, 0.0, 1.0);
         unsigned short h = QuantizedMesh::remapToVertexDataValue(z, 0.0, 1.0);
+
+        // --- Debug (start) ---
+//        float zH = qmTile.getHeader().MinimumHeight + ((qmTile.getHeader().MaximumHeight - qmTile.getHeader().MinimumHeight) * z);
+//        std::cout << "zH      = " << zH << std::endl;
+//        float height = qmTile.getHeader().MinimumHeight + ((qmTile.getHeader().MaximumHeight - qmTile.getHeader().MinimumHeight) * ((double)h/(double)QuantizedMesh::MAX_VERTEX_DATA));
+//        std::cout << "height  = " << height << std::endl;
+//        float heightRemap = remap((double)h, 0.0, (double)QuantizedMesh::MAX_VERTEX_DATA, (double)qmTile.getHeader().MinimumHeight, (double)qmTile.getHeader().MaximumHeight);
+//        std::cout << "heightR = " << heightRemap << std::endl;
+        // --- Debug  (end)  ---
 
         vertices.push_back(u) ;
         vertices.push_back(v) ;

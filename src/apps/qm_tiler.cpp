@@ -302,8 +302,9 @@ int main ( int argc, char **argv)
         }
 
         // Create the tiler object
+        std::cout << "tiler" << std::endl;
         QuantizedMeshTiler tiler(gdalDatasets[i], grid, gdalTilerOptions, qmtOptions, tinCreator);
-
+        std::cout << "tiler created" << std::endl;
         // Add the tiler
         tilers.push_back(tiler);
     }
@@ -354,9 +355,9 @@ int main ( int argc, char **argv)
     auto finish = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = finish - start;
-//    std::cout << "Requested tiles created in " << elapsed.count() << " seconds" << std::endl
-//              << "Remember to create a layer.json file in the root folder! (see ""create_layer_json.py script"")"
-//              << std::endl ;
+    std::cout << "Requested tiles created in " << elapsed.count() << " seconds" << std::endl
+              << "Remember to create a layer.json file in the root folder! (see ""create_layer_json.py script"")"
+              << std::endl ;
 
     // Delete gdalDatasets pointers;
     for (std::vector<GDALDataset *>::iterator it = gdalDatasets.begin() ; it != gdalDatasets.end(); ++it)

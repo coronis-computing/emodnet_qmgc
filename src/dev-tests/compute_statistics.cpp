@@ -46,6 +46,8 @@
 // Boost
 #include <boost/program_options.hpp>
 #include <boost/foreach.hpp>
+// GeographicLib
+#include <GeographicLib/Geocentric.hpp>
 // OpenMP
 #ifdef USE_OPENMP
 #include <omp.h>
@@ -107,7 +109,7 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
 //                    std::cout << u << " " << v << " " << height << std::endl;
     }
     // --- Debug (begin) ---
-//    exportToXYZ("pts_from_tile.xyz", qmPts);
+    exportToXYZ("pts_from_tile.xyz", qmPts);
     // --- Debug  (end)  ---
 
     // Compute distances from points in the tile to the original raster values
@@ -144,9 +146,13 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
         // Finally, compute the squared distance between the query point and the intersection
         dist = CGAL::squared_distance(*it, *ip);
         dist = CGAL::sqrt(dist);
-//        std::cout << "it = " << *it << std::endl;
-//        std::cout << "ip = " << *ip << std::endl;
-//        std::cout << "dist = " << dist << std::endl;
+        std::cout << "it = " << *it << std::endl;
+        std::cout << "ip = " << *ip << std::endl;
+        std::cout << "dist = " << dist << std::endl;
+        double z0s = remap(it->z(), qmt.getHeader().MinimumHeight, qmt.getHeader().MaximumHeight, 0.0, 1.0);
+        double z1s = remap(ip->z(), qmt.getHeader().MinimumHeight, qmt.getHeader().MaximumHeight, 0.0, 1.0);
+        std::cout << "z0s = " << z0s << std::endl;
+        std::cout << "z1s = " << z1s << std::endl;
 
         // Update running mean
         numDists++;
@@ -204,8 +210,12 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
         lat = tileBounds.getMinY() + fabs( tileBounds.getMaxY() - tileBounds.getMinY() ) * (double)vertexData.v[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
         height = qmt.getHeader().MinimumHeight + fabs( qmt.getHeader().MaximumHeight - qmt.getHeader().MinimumHeight ) * (double)vertexData.height[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
 
+//        double tmpx, tmpy, tmpz;
+//        crs_conversions::llh2ecef(lat, lon, height, tmpx, tmpy, tmpz);
+
+        GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
         double tmpx, tmpy, tmpz;
-        crs_conversions::llh2ecef(lat, lon, height, tmpx, tmpy, tmpz);
+        earth.Forward(lat, lon, height, tmpx, tmpy, tmpz);
 
         SurfaceMesh::Vertex_index vi = meshTin.add_vertex(Point_3(tmpx, tmpy, tmpz));
         indToVertIndMap.insert(std::pair<int, SurfaceMesh::Vertex_index>(i, vi));
@@ -514,7 +524,7 @@ int main(int argc, char **argv)
                 *it = Point_3((*it).x(), (*it).y(), height);
             }
             // --- Debug (begin) ---
-//            exportToXYZ("pts_from_raster.xyz", rasterPts);
+            exportToXYZ("pts_from_raster.xyz", rasterPts);
             // --- Debug  (end)  ---
 
             Delaunay dtRaster(rasterPts.begin(), rasterPts.end());
