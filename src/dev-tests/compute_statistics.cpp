@@ -105,11 +105,12 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
         double u = (double)vertexData.u[i]/(double)QuantizedMesh::MAX_VERTEX_DATA;
         double v = (double)vertexData.v[i]/(double)QuantizedMesh::MAX_VERTEX_DATA;
         double height = header.MinimumHeight + fabs( header.MaximumHeight - header.MinimumHeight ) * (double)vertexData.height[i]/(double)QuantizedMesh::MAX_VERTEX_DATA;
+//        double height = (double)vertexData.height[i]/(double)QuantizedMesh::MAX_VERTEX_DATA;
         qmPts.emplace_back(Point_3(u,v,height));
 //                    std::cout << u << " " << v << " " << height << std::endl;
     }
     // --- Debug (begin) ---
-    exportToXYZ("pts_from_tile.xyz", qmPts);
+//    exportToXYZ("pts_from_tile.xyz", qmPts);
     // --- Debug  (end)  ---
 
     // Compute distances from points in the tile to the original raster values
@@ -118,6 +119,9 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
     meanDist = 0.0;
     maxDist = 0.0;
     for (std::vector<Point_3>::iterator it = qmPts.begin(); it != qmPts.end(); ++it) {
+        if (it->x() == 0 || it->y() == 0 || it->x() == 1 || it->y() == 1) // Skip borders!
+            continue;
+
         // Locate the point in the triangulation
         Delaunay::Face_handle fh = dtRaster.locate(*it);
         Triangle_3 t = dtRaster.triangle(fh);
@@ -146,13 +150,14 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
         // Finally, compute the squared distance between the query point and the intersection
         dist = CGAL::squared_distance(*it, *ip);
         dist = CGAL::sqrt(dist);
-        std::cout << "it = " << *it << std::endl;
-        std::cout << "ip = " << *ip << std::endl;
-        std::cout << "dist = " << dist << std::endl;
-        double z0s = remap(it->z(), qmt.getHeader().MinimumHeight, qmt.getHeader().MaximumHeight, 0.0, 1.0);
-        double z1s = remap(ip->z(), qmt.getHeader().MinimumHeight, qmt.getHeader().MaximumHeight, 0.0, 1.0);
-        std::cout << "z0s = " << z0s << std::endl;
-        std::cout << "z1s = " << z1s << std::endl;
+//        std::cout << "it = " << *it << std::endl;
+//        std::cout << "ip = " << *ip << std::endl;
+//        std::cout << "dist = " << dist << std::endl;
+//        double z0s = remap(it->z(), qmt.getHeader().MinimumHeight, qmt.getHeader().MaximumHeight, 0.0, 1.0);
+//        double z1s = remap(ip->z(), qmt.getHeader().MinimumHeight, qmt.getHeader().MaximumHeight, 0.0, 1.0);
+//        std::cout << "z0s = " << z0s << std::endl;
+//        std::cout << "z1s = " << z1s << std::endl;
+//        std::cout << "dist in z = " << CGAL::sqrt(Vector_3(it->x()-ip->x(), it->y()-ip->y(), it->z()-ip->z()).squared_length()) << std::endl;
 
         // Update running mean
         numDists++;
@@ -177,16 +182,21 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
     // --> Raster mesh
     // Translate to a surface mesh
     SurfaceMesh meshRaster = surfaceMeshFromProjectedTriangulation<Delaunay, SurfaceMesh>(dtRaster);
+
+    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
+
     // Transform vertices to ECEF (preserve connectivity)
     std::vector<Point_3> ptsRaster;
     BOOST_FOREACH(vertex_descriptor vd, vertices(meshRaster)){
                     Point_3 p = meshRaster.point(vd);
+
                     // From UV to lat/lon (height already in the correct units)
                     double lat = tileBounds.getMinY() + fabs(tileBounds.getMaxY() - tileBounds.getMinY()) * p.y();
                     double lon = tileBounds.getMinX() + fabs(tileBounds.getMaxX() - tileBounds.getMinX()) * p.x();
 
                     double tmpx, tmpy, tmpz;
-                    crs_conversions::llh2ecef(lat, lon, p.z(), tmpx, tmpy, tmpz);
+//                    crs_conversions::llh2ecef(lat, lon, p.z(), tmpx, tmpy, tmpz);
+                    earth.Forward(lat, lon, p.z(), tmpx, tmpy, tmpz);
 
                     meshRaster.point(vd) = Point_3(tmpx, tmpy, tmpz);
                     ptsRaster.push_back(Point_3(tmpx, tmpy, tmpz));
@@ -213,7 +223,7 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
 //        double tmpx, tmpy, tmpz;
 //        crs_conversions::llh2ecef(lat, lon, height, tmpx, tmpy, tmpz);
 
-        GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
+
         double tmpx, tmpy, tmpz;
         earth.Forward(lat, lon, height, tmpx, tmpy, tmpz);
 
@@ -233,11 +243,19 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
     // --- Debug  (end)  ---
 
     // Bidirectional Hausdorff distance computation
+//    std::cout << "Computing Haussdorf distances RASTER to TIN" << std::endl;
+    int numSamples = 1000;
     hausdorffDistRasterToTin = PMP::approximate_Hausdorff_distance<TAG>(meshRaster, meshTin,
-                                                                        PMP::parameters::all_default());
-
+                                                                        //PMP::parameters::all_default());
+                                                                        PMP::parameters::number_of_points_on_faces(numSamples).number_of_points_on_edges(numSamples),
+                                                                        PMP::parameters::number_of_points_on_faces(numSamples).number_of_points_on_edges(numSamples));
+//    std::cout << "Computing Haussdorf distances TIN to RASTER" << std::endl;
     hausdorffDistTinToRaster = PMP::approximate_Hausdorff_distance<TAG>(meshTin, meshRaster,
-                                                                        PMP::parameters::number_of_points_on_faces(meshRaster.number_of_vertices()));
+//            PMP::parameters::all_default());
+                                                                        //PMP::parameters::number_of_points_on_faces(meshRaster.number_of_vertices()));
+                                                                        PMP::parameters::number_of_points_on_faces(numSamples).number_of_points_on_edges(numSamples),
+                                                                        PMP::parameters::number_of_points_on_faces(numSamples).number_of_points_on_edges(numSamples));
+
 }
 
 
@@ -524,7 +542,7 @@ int main(int argc, char **argv)
                 *it = Point_3((*it).x(), (*it).y(), height);
             }
             // --- Debug (begin) ---
-            exportToXYZ("pts_from_raster.xyz", rasterPts);
+//            exportToXYZ("pts_from_raster.xyz", rasterPts);
             // --- Debug  (end)  ---
 
             Delaunay dtRaster(rasterPts.begin(), rasterPts.end());

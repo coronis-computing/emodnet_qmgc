@@ -32,9 +32,6 @@ simplify(const std::vector<Point_3> &pts) {
     if (ptsToSimpECEF.size() == 0)
         return std::vector<Point_3>();
 
-    std::cout << "m_radius = " << m_radius << std::endl;
-    std::cout << "m_retainPercentage = " << m_retainPercentage << std::endl;
-
     std::vector<Point_3> ptsSimpECEF;
     CGAL::wlop_simplify_and_regularize_point_set
             <Concurrency_tag>
