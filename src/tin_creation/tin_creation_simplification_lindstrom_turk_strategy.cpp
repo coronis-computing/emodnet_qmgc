@@ -42,18 +42,6 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
     PolyhedronBuilderFromProjectedTriangulation<Delaunay, HalfedgeDS> builder(dt);
     surface.delegate(builder);
 
-    if (constrainEasternVertices)
-        std::cout << "Eastern vertices constrained" << std::endl;
-    if (constrainWesternVertices)
-        std::cout << "Western vertices constrained" << std::endl;
-    if (constrainNorthernVertices)
-        std::cout << "Northern vertices constrained" << std::endl;
-    if (constrainSouthernVertices)
-        std::cout << "Southern vertices constrained" << std::endl;
-//
-//    std::cout << "Press any key to continue..." << std::endl;
-//    char resp = std::cin.get();
-
     // Set up the edge constrainer
     typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
                                              BorderEdgesAreConstrainedEdgeMap<Polyhedron>,

@@ -302,9 +302,7 @@ int main ( int argc, char **argv)
         }
 
         // Create the tiler object
-        std::cout << "tiler" << std::endl;
         QuantizedMeshTiler tiler(gdalDatasets[i], grid, gdalTilerOptions, qmtOptions, tinCreator);
-        std::cout << "tiler created" << std::endl;
         // Add the tiler
         tilers.push_back(tiler);
     }
