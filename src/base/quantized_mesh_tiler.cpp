@@ -103,7 +103,7 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
 //    std::cout << "Pixel size = " << adfGeoTransform[1] << ", " << adfGeoTransform[5] << std::endl;
 
     double noDataValue = heightsBand->GetNoDataValue();
-    double resolution                                                                                                               ;
+    double resolution;
     tileBounds = terrainTileBounds(coord, resolution);
 
     // Copy the raster data into an array

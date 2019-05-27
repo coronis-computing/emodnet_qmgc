@@ -532,9 +532,11 @@ int main(int argc, char **argv)
 
             // Create the mesh from the raster tile
             float minHeight, maxHeight;
-            ctb::CRSBounds tileBounds;
+            ctb::CRSBounds tileBoundsDummy;
             BordersData bd = BordersData();
-            std::vector<Point_3> rasterPts = tiler.getUVHPointsFromRaster(coord, bd, minHeight, maxHeight, tileBounds, true);
+            std::vector<Point_3> rasterPts = tiler.getUVHPointsFromRaster(coord, bd, minHeight, maxHeight, tileBoundsDummy, true);
+            ctb::GlobalGeodetic profile;
+            ctb::CRSBounds tileBounds = profile.tileBounds(coord);
 
             // We want points in uv in the XY plane, but with real values in height
             for (std::vector<Point_3>::iterator it = rasterPts.begin(); it != rasterPts.end(); ++it) {

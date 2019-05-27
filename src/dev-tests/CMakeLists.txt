@@ -38,6 +38,9 @@ target_link_libraries(test_check_borders ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${
 add_executable(detect_features_without_borders detect_features_without_borders.cpp)
 target_link_libraries(detect_features_without_borders ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
 
+add_executable(get_tile_bounds get_tile_bounds.cpp)
+target_link_libraries(get_tile_bounds ${Boost_LIBRARIES} ${CTB_LIBRARY} ${GDAL_LIBRARY})
+
 # OpenMP
 find_package(OpenMP)
 if(OPENMP_FOUND)
