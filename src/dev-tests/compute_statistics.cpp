@@ -171,7 +171,7 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
 
 
 
-void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster, const ctb::CRSBounds& tileBounds,
+void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster, const ctb::CRSBounds& tileBoundsRaster, const ctb::CRSBounds& tileBoundsTIN,
                          double& hausdorffDistRasterToTin, double& hausdorffDistTinToRaster)
 {
     // --- Compute distances in a metric space ---
@@ -191,8 +191,13 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
                     Point_3 p = meshRaster.point(vd);
 
                     // From UV to lat/lon (height already in the correct units)
-                    double lat = tileBounds.getMinY() + fabs(tileBounds.getMaxY() - tileBounds.getMinY()) * p.y();
-                    double lon = tileBounds.getMinX() + fabs(tileBounds.getMaxX() - tileBounds.getMinX()) * p.x();
+                    double lat = tileBoundsRaster.getMinY() + fabs(tileBoundsRaster.getMaxY() - tileBoundsRaster.getMinY()) * p.y();
+                    double lon = tileBoundsRaster.getMinX() + fabs(tileBoundsRaster.getMaxX() - tileBoundsRaster.getMinX()) * p.x();
+
+//                    if (lat == tileBoundsRaster.getMaxY())
+//                        std::cout << "Maximum latitude achieved!" << std::endl;
+//                    if (lon == tileBoundsRaster.getMaxX())
+//                        std::cout << "Maximum longitude achieved!" << std::endl;
 
                     double tmpx, tmpy, tmpz;
 //                    crs_conversions::llh2ecef(lat, lon, p.z(), tmpx, tmpy, tmpz);
@@ -216,8 +221,8 @@ void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster,
         double lat, lon, height;
 //        qmt.convertUVHToLonLatHeight(vertexData.u[i], vertexData.v[i], vertexData.height[i], lon, lat, height );
 
-        lon = tileBounds.getMinX() + fabs( tileBounds.getMaxX() - tileBounds.getMinX() ) * (double)vertexData.u[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
-        lat = tileBounds.getMinY() + fabs( tileBounds.getMaxY() - tileBounds.getMinY() ) * (double)vertexData.v[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
+        lon = tileBoundsTIN.getMinX() + fabs( tileBoundsTIN.getMaxX() - tileBoundsTIN.getMinX() ) * (double)vertexData.u[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
+        lat = tileBoundsTIN.getMinY() + fabs( tileBoundsTIN.getMaxY() - tileBoundsTIN.getMinY() ) * (double)vertexData.v[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
         height = qmt.getHeader().MinimumHeight + fabs( qmt.getHeader().MaximumHeight - qmt.getHeader().MinimumHeight ) * (double)vertexData.height[i]/(double)QuantizedMesh::MAX_VERTEX_DATA ;
 
 //        double tmpx, tmpy, tmpz;
@@ -532,11 +537,11 @@ int main(int argc, char **argv)
 
             // Create the mesh from the raster tile
             float minHeight, maxHeight;
-            ctb::CRSBounds tileBoundsDummy;
+            ctb::CRSBounds tileBoundsRaster;
             BordersData bd = BordersData();
-            std::vector<Point_3> rasterPts = tiler.getUVHPointsFromRaster(coord, bd, minHeight, maxHeight, tileBoundsDummy, true);
+            std::vector<Point_3> rasterPts = tiler.getUVHPointsFromRaster(coord, bd, minHeight, maxHeight, tileBoundsRaster, true);
             ctb::GlobalGeodetic profile;
-            ctb::CRSBounds tileBounds = profile.tileBounds(coord);
+            ctb::CRSBounds tileBoundsTIN = profile.tileBounds(coord);
 
             // We want points in uv in the XY plane, but with real values in height
             for (std::vector<Point_3>::iterator it = rasterPts.begin(); it != rasterPts.end(); ++it) {
@@ -560,7 +565,7 @@ int main(int argc, char **argv)
             computeErrorsInHeight(qmt, dtRaster, meanHeightErrorInTile, maxHeightErrorInTile);
 
             double hausdorffDistRasterToTin, hausdorffDistTinToRaster;
-            computeErrorsInECEF(qmt, dtRaster, tileBounds, hausdorffDistRasterToTin, hausdorffDistTinToRaster);
+            computeErrorsInECEF(qmt, dtRaster, tileBoundsTIN, tileBoundsTIN, hausdorffDistRasterToTin, hausdorffDistTinToRaster);
 
             // Bidirectional Hausdorff distance: maximum of Hausdorff in both directions
             double hausdorffDist = std::max(hausdorffDistRasterToTin, hausdorffDistTinToRaster);
