@@ -46,7 +46,7 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
     typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
                                              BorderEdgesAreConstrainedEdgeMap<Polyhedron>,
                                              CornerVerticesAreConstrainedVertexMap<Polyhedron> > SimplificationConstrainedPlacement;
-    typedef SMS::AvoidVerticalWallsPlacement<SimplificationConstrainedPlacement> SimplificationConstrainedPlacementVerticalWalls;
+//    typedef SMS::AvoidVerticalWallsPlacement<SimplificationConstrainedPlacement> SimplificationConstrainedPlacementVerticalWalls;
     BorderEdgesAreConstrainedEdgeMap<Polyhedron> beac( surface,
                                              constrainEasternVertices,
                                              constrainWesternVertices,
@@ -54,7 +54,7 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                                              constrainSouthernVertices ) ;
     CornerVerticesAreConstrainedVertexMap<Polyhedron> cvacvm(surface) ;
     SimplificationConstrainedPlacement scp( beac, cvacvm ) ;
-    SimplificationConstrainedPlacementVerticalWalls scpvw(scp);
+//    SimplificationConstrainedPlacementVerticalWalls scpvw(scp);
 
     SimplificationCost sc( SimplificationCostParams( m_weightVolume,
                                                      m_weightBoundary,
@@ -71,7 +71,7 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                               //                      .get_placement(pl)
                               //                      .get_placement(SimplificationPlacement())
                       .edge_is_constrained_map(beac)
-                      .get_placement(scpvw)
+                      .get_placement(scp)
             ) ;
 
     // --- Debug (start) ---

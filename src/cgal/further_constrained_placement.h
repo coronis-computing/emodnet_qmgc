@@ -51,13 +51,27 @@ namespace CGAL {
 
             EdgeIsConstrainedMap Edge_is_constrained_map;
             VertexIsConstrainedMap Vertex_is_constrained_map;
+            bool m_constrainEasternVertices;
+            bool m_constrainWesternVertices;
+            bool m_constrainNorthernVertices;
+            bool m_constrainSouthernVertices;
 
         public:
             FurtherConstrainedPlacement(
                     EdgeIsConstrainedMap edgesMap = EdgeIsConstrainedMap(),
                     VertexIsConstrainedMap vertMap = VertexIsConstrainedMap(),
-                    BasePlacement base = BasePlacement())
-                    : BasePlacement(base), Edge_is_constrained_map(edgesMap), Vertex_is_constrained_map(vertMap) {}
+                    BasePlacement base = BasePlacement(),
+                    const bool& constrainEasternVertices = false,
+                    const bool& constrainWesternVertices = false,
+                    const bool& constrainNorthernVertices = false,
+                    const bool& constrainSouthernVertices = false)
+                    : BasePlacement(base)
+                    , Edge_is_constrained_map(edgesMap)
+                    , Vertex_is_constrained_map(vertMap)
+                    , m_constrainEasternVertices(constrainEasternVertices)
+                    , m_constrainWesternVertices(constrainWesternVertices)
+                    , m_constrainNorthernVertices(constrainNorthernVertices)
+                    , m_constrainSouthernVertices(constrainSouthernVertices) {}
 
             template<typename Profile>
             optional<typename Profile::Point> operator()(Profile const &aProfile) const {
@@ -105,7 +119,31 @@ namespace CGAL {
                     }
                 }
 
-                return static_cast<const BasePlacement *>(this)->operator()(aProfile);
+                // Get the result of the base placement
+                boost::optional<typename Profile::Point> op = static_cast<const BasePlacement *>(this)->operator()(aProfile);
+
+                // If some placement is computed, check its validity
+                if(op) {
+                    typedef typename Profile::Point Point;
+                    Point q2 = *op; // <-- The candidate placement
+
+                    // Check if the placement result is in bounds
+                    // Quick test: is it within the limits?
+                    if (q2.x() < 0 || q2.x() > 1 || q2.y() < 0 || q2.y() > 1 )
+                        return boost::optional<typename Profile::Point>();
+
+                    // Check if the placement is in a constrained border
+                    if (q2.x() == 0 && m_constrainWesternVertices)
+                        return boost::optional<typename Profile::Point>();
+                    if (q2.x() == 1 && m_constrainEasternVertices)
+                        return boost::optional<typename Profile::Point>();
+                    if (q2.y() == 0 && m_constrainSouthernVertices)
+                        return boost::optional<typename Profile::Point>();
+                    if (q2.y() == 1 && m_constrainNorthernVertices)
+                        return boost::optional<typename Profile::Point>();
+                }
+                return op;
+//                return static_cast<const BasePlacement *>(this)->operator()(aProfile);
             }
         };
 
