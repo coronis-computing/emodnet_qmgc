@@ -2,11 +2,11 @@
 # Author: Ricard Campos (rcampos@eia.udg.edu)
 
 # Check for cmake/env-defined vars
-set( CTB_INCLUDE_SEARCH_PATHS ${CTB_INCLUDE_HITS} $ENV{CTB_INCLUDE_HITS} )
+set( CTB_INCLUDE_SEARCH_PATHS ${CTB_INCLUDE_HINTS} $ENV{CTB_INCLUDE_HINTS} )
 set( CTB_LIBRARY_SEARCH_PATHS ${CTB_LIBRARY_HINTS} $ENV{CTB_LIBRARY_HINTS} )
 
 # Check include in common paths
-FIND_PATH(CTB_INCLUDE_DIR NAMES TerrainTile.hpp
+FIND_PATH(CTB_INCLUDE_DIR NAMES ctb.hpp
         PATHS
         ${CTB_INCLUDE_SEARCH_PATHS}
         /usr/include/ctb
@@ -22,7 +22,7 @@ FIND_PATH(CTB_INCLUDE_DIR NAMES TerrainTile.hpp
 # Check library in common paths
 FIND_LIBRARY(CTB_LIBRARY NAMES libctb.so
         PATHS
-        ${CTB_LIBRARY_HINTS}
+        ${CTB_LIBRARY_SEARCH_PATHS}
         /usr/lib/ctb
         /usr/lib
         /opt/local/lib
