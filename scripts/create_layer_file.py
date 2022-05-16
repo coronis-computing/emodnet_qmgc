@@ -15,6 +15,22 @@ def get_files(dir):
     dir_cnt = os.listdir(dir)
     return [name for name in dir_cnt if os.path.isfile(os.path.join(dir, name))]
 
+# DevNote: the following two functions come from gdal2tiles sources:
+def TileBounds(tx, ty, zoom):
+        "Returns bounds of the given tile"
+        tileSize = 256
+        res = 180.0 / tileSize / 2**zoom
+        return (
+            tx*tileSize*res - 180,
+            ty*tileSize*res - 90,
+            (tx+1)*tileSize*res - 180,
+            (ty+1)*tileSize*res - 90
+        )
+        
+def TileLatLonBounds(tx, ty, zoom):
+    "Returns bounds of the given tile in the SWNE form"
+    b = TileBounds(tx, ty, zoom)
+    return (b[1],b[0],b[3],b[2])
 
 # Main function
 if __name__ == '__main__':
@@ -25,7 +41,7 @@ if __name__ == '__main__':
     param = parser.parse_args()
 
     # Base layer.json data
-    data = {"tilejson": "2.1.0", "format": "quantized-mesh-1.0", "version": "1.2.0", "scheme": "tms", "tiles": ["{z}/{x}/{y}.terrain?v={version}"], "attribution": "Terrain Data,Author: Created using the EMODnet Quantized Mesh Generator for Cesium", "projection": "EPSG:4326", "bounds": [0.0,90.0,180.0,-90.0] }
+    data = {"tilejson": "2.1.0", "format": "quantized-mesh-1.0", "version": "1.2.0", "scheme": "tms", "tiles": ["{z}/{x}/{y}.terrain?v={version}"], "attribution": "Terrain Data,Author: Created using the EMODnet Quantized Mesh Generator for Cesium", "projection": "EPSG:4326"}
 
     # Get the zoom levels
 
@@ -43,7 +59,7 @@ if __name__ == '__main__':
     available = []
     for folder_x_int in list_zoom_ints:
         cur_limits = {}
-	folder_x = str(folder_x_int)
+        folder_x = str(folder_x_int)
 
         # --- Limits in X ---
         dir_cnt_X = get_folders(os.path.join(param.tms_dir, folder_x))
@@ -61,10 +77,14 @@ if __name__ == '__main__':
         cur_limits_list = [cur_limits]
         available.append(cur_limits_list)
 
+    # Compute the bounds of the map based on the coordinates of the tiles in the deeper zoom level
+    deeper_limits = available[data["maxzoom"]][0]
+    ul_lon, ul_lat, _, _ = TileLatLonBounds(deeper_limits["startX"], deeper_limits["startY"], data["maxzoom"])
+    _, _, lr_lon, lr_lat = TileLatLonBounds(deeper_limits["endX"], deeper_limits["endY"], data["maxzoom"])
+
+    data["bounds"] = [ul_lon, ul_lat, lr_lon, lr_lat]
     data["available"] = available
 
     # Write JSON file
     with open(param.tms_dir + "/layer.json", 'w') as outfile:
         json.dump(data, outfile, indent = 4)
-
-
