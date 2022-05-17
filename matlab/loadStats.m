@@ -9,7 +9,7 @@ numMethods = numel(methods);
 stats(numMethods).method = '';
 
 for i = 1:numMethods
-    method = methods{i};
+    method = methods{i}
     stats(i).method = method;
     
     % Check the number of zooms in that method
