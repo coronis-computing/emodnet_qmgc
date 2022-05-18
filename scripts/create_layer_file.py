@@ -79,10 +79,10 @@ if __name__ == '__main__':
 
     # Compute the bounds of the map based on the coordinates of the tiles in the deeper zoom level
     deeper_limits = available[data["maxzoom"]][0]
-    ul_lon, ul_lat, _, _ = TileLatLonBounds(deeper_limits["startX"], deeper_limits["startY"], data["maxzoom"])
-    _, _, lr_lon, lr_lat = TileLatLonBounds(deeper_limits["endX"], deeper_limits["endY"], data["maxzoom"])
+    s, w, _, _ = TileLatLonBounds(deeper_limits["startX"], deeper_limits["startY"], data["maxzoom"])
+    _, _, n, e = TileLatLonBounds(deeper_limits["endX"], deeper_limits["endY"], data["maxzoom"])
 
-    data["bounds"] = [ul_lon, ul_lat, lr_lon, lr_lat]
+    data["bounds"] = [w, s, e, n]
     data["available"] = available
 
     # Write JSON file
