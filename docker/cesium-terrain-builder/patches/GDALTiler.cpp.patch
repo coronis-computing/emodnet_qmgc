@@ -1,0 +1,11 @@
+--- /cesium-terrain-builder_original/src/GDALTiler.cpp	2020-08-05 09:17:40.542643329 +0200
++++ src/GDALTiler.cpp	2018-09-13 11:42:23.585035227 +0200
+@@ -246,7 +246,7 @@
+               if( iOvr >= 0 )
+                 {
+                   //std::cout << "CTB WARPING: Selecting overview level " << iOvr << " for output dataset " << nPixels << "x" << nLines << std::endl;
+-                  poSrcOvrDS = GDALCreateOverviewDataset( poSrcDS, iOvr, FALSE);
++                  poSrcOvrDS = GDALCreateOverviewDataset( poSrcDS, iOvr, FALSE, FALSE);
+                 }
+             }
+         }
