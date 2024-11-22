@@ -4,8 +4,7 @@ FROM ubuntu:18.04
 RUN apt-get update -y && apt-get install -y \
     git \
     cmake \
-    wget \
-    python-dev \
+    wget \    
     build-essential \
     pkg-config \
     bash-completion \
@@ -13,7 +12,8 @@ RUN apt-get update -y && apt-get install -y \
     libboost-all-dev \
     libcgal-dev \
     libproj-dev \
-    python3
+    python3 \
+    libnetcdf-dev
 
 # Download and install the gdal version that works with Cesium Terrain Builder (avoids the "undefined reference to `GDALCreateOverviewDataset(GDALDataset*" error)
 WORKDIR /opt/ 
