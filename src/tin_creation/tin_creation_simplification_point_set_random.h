@@ -46,10 +46,12 @@ public:
 TinCreationSimplificationPointSetRandom(double borderSimplificationMaxDistance,
                                         double borderSimplificationMaxLength,
                                         unsigned int minFeaturePolylineSize,
+                                        bool preserveSharpEdges,
                                         double removePercentage)
         : TinCreationSimplificationPointSet(borderSimplificationMaxDistance,
                                             borderSimplificationMaxLength,
-                                            minFeaturePolylineSize)
+                                            minFeaturePolylineSize,
+                                            preserveSharpEdges)
 {
     m_removePercentagePerZoom = std::vector<double>{removePercentage};
     setParamsForZoomConcreteStrategy(0);
@@ -65,10 +67,12 @@ TinCreationSimplificationPointSetRandom(double borderSimplificationMaxDistance,
 TinCreationSimplificationPointSetRandom(std::vector<double> borderSimplificationMaxDistancePerZoom,
                                         std::vector<double> borderSimplificationMaxLengthPerZoom,
                                         unsigned int minFeaturePolylineSize,
+                                        bool preserveSharpEdges,
                                         std::vector<double> removePercentagePerZoom)
         : TinCreationSimplificationPointSet(borderSimplificationMaxDistancePerZoom,
                                             borderSimplificationMaxLengthPerZoom,
-                                            minFeaturePolylineSize)
+                                            minFeaturePolylineSize,
+                                            preserveSharpEdges)
         , m_removePercentagePerZoom(removePercentagePerZoom)
 {
     setParamsForZoomConcreteStrategy(0);

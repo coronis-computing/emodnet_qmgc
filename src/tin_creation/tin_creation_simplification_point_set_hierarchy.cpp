@@ -30,6 +30,9 @@ simplify(const std::vector<Point_3> &pts) {
     // Convert to metric
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
+    if (ptsToSimpECEF.size() == 0)
+        return std::vector<Point_3>();
+
     // Simplify using hierarchical point set simplification (erase-remove idiom)
     // Note: since CGAL 5.x this takes the point range itself, and the cluster
     // size / surface variation are named parameters rather than positional ones.

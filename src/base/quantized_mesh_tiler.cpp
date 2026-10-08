@@ -29,6 +29,7 @@
 #include <sstream>
 #include <gdal.h>
 #include "misc_utils.h"
+#include <GeographicLib/Geocentric.hpp>
 
 QuantizedMeshTile QuantizedMeshTiler::createTile( const qmgc::TileCoordinate &coord, BordersData& bd)
 {
@@ -38,11 +39,35 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const qmgc::TileCoordinate &co
     float minHeight, maxHeight;
     qmgc::CRSBounds tileBounds;
     std::vector<Point_3 > uvhPts = getUVHPointsFromRaster(coord, bd,
-                                                          minHeight, maxHeight, tileBounds );
+                                                          minHeight, maxHeight, tileBounds);
 
     // Inform the TIN creator about the bounds of the tile
     m_tinCreator.setBounds(tileBounds.getMinX(), tileBounds.getMinY(), minHeight,
                            tileBounds.getMaxX(), tileBounds.getMaxY(), maxHeight);
+
+//    bool constrainEasternVertices = false, constrainWesternVertices = false, constrainNorthernVertices = false, constrainSouthernVertices = false;
+//    getConstraintsAtBorders(bd, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices);
+
+    // Simplify the surface
+//    Polyhedron surface = m_tinCreator.create(uvhPts, constrainEasternVertices, constrainWesternVertices, constrainNorthernVertices, constrainSouthernVertices) ;
+
+    // Add the corners to the corresponding point sets
+//    if (bd.constrainSouthEastCorner) {
+//        bd.tileSouthVertices.push_back(bd.southEastCorner);
+//        bd.tileEastVertices.push_back(bd.southEastCorner);
+//    }
+//    if (bd.constrainNorthEastCorner) {
+//        bd.tileNorthVertices.push_back(bd.northEastCorner);
+//        bd.tileEastVertices.push_back(bd.northEastCorner);
+//    }
+//    if (bd.constrainSouthWestCorner) {
+//        bd.tileSouthVertices.push_back(bd.southWestCorner);
+//        bd.tileWestVertices.push_back(bd.southWestCorner);
+//    }
+//    if (bd.constrainNorthWestCorner) {
+//        bd.tileNorthVertices.push_back(bd.northWestCorner);
+//        bd.tileWestVertices.push_back(bd.northWestCorner);
+//    }
 
     // Simplify the surface
     Polyhedron surface = m_tinCreator.create(uvhPts, bd.tileEastVertices.size() > 0, bd.tileWestVertices.size() > 0, bd.tileNorthVertices.size() > 0, bd.tileSouthVertices.size() > 0) ;
@@ -65,7 +90,8 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const qmgc::TileCoordinate &co
 std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const qmgc::TileCoordinate &coord,
                                                                              BordersData& bd,
                                                                              float& minHeight, float& maxHeight,
-                                                                             qmgc::CRSBounds& tileBounds ) const
+                                                                             qmgc::CRSBounds& tileBounds,
+                                                                             const bool& ignoreNoDataPoints) const
 {
     // The raster associated with this tile coordinate. The dataset owns itself now,
     // so an exception below cannot leak it; there is also no mutex to strand, since
@@ -104,6 +130,8 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
     bool constrainWestVertices = bd.tileWestVertices.size() > 0 ;
     bool constrainNorthVertices = bd.tileNorthVertices.size() > 0 ;
     bool constrainSouthVertices = bd.tileSouthVertices.size() > 0 ;
+//    bool constrainEastVertices = false, constrainWestVertices = false, constrainNorthVertices = false, constrainSouthVertices = false;
+//    getConstraintsAtBorders(bd, constrainEastVertices, constrainWestVertices, constrainNorthVertices, constrainSouthVertices);
 
     int startX = constrainWestVertices? 1: 0 ;
     int endX = constrainEastVertices? m_options.HeighMapSamplingSteps-1: m_options.HeighMapSamplingSteps ;
@@ -123,17 +151,26 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
                 i == m_options.HeighMapSamplingSteps-1 && y == 0 && bd.useSouthEastCorner())
                 continue;
 
+//            // Check the latitude value: do not include measures over 90 deg
+//            float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * ((float)y/(m_options.HeighMapSamplingSteps-1)));
+////            std::cout << "lat = " << lat << std::endl;
+//            if (lat >= 90 || lat <=-90)
+//                continue;
+
             // Note that the heights in RasterIO have the origin in the upper-left corner,
             // while the tile has it in the lower-left. Obviously, x = i
 
             // Compute the height value
             float height = rasterHeights[j * m_options.HeighMapSamplingSteps + i];
 
-            // When no data is available, we assume ground data.
+            // No data available: skip the sample if required to, otherwise assume ground data.
             // Note: checked before clipping, which would otherwise turn a nodata
             // value outside the clipping range into a valid-looking height.
-            if ( hasNoData && ( noDataIsNaN ? std::isnan(height) : height == noDataValue ) )
+            if ( hasNoData && ( noDataIsNaN ? std::isnan(height) : height == noDataValue ) ) {
+                if ( ignoreNoDataPoints )
+                    continue;
                 height = 0 ;
+            }
 
             // Clipping
             height = clip( height, m_options.ClippingLowValue, m_options.ClippingHighValue ) ;
@@ -247,11 +284,12 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
     double maxEcefY = -std::numeric_limits<double>::infinity();
     double minEcefZ = std::numeric_limits<double>::infinity();
     double maxEcefZ = -std::numeric_limits<double>::infinity();
+    GeographicLib::Geocentric earth(GeographicLib::Constants::WGS84_a(), GeographicLib::Constants::WGS84_f());
     for (int i = 0; i < latLonPoints.size(); i++) {
         double tmpx, tmpy, tmpz;
-        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
-                                  tmpx, tmpy, tmpz);
-
+//        crs_conversions::llh2ecef(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(),
+//                                  tmpx, tmpy, tmpz);
+        earth.Forward(latLonPoints[i].x(), latLonPoints[i].y(), latLonPoints[i].z(), tmpx, tmpy, tmpz);
         ecefPoints.push_back(Point_3(tmpx, tmpy, tmpz));
 
         if (tmpx < minEcefX)
@@ -337,9 +375,18 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
         z = z < 0.0? 0.0 : z ;
         z = z > 1.0? 1.0 : z ;
 
-        unsigned short u = QuantizedMesh::remapToVertexDataValue( x, 0.0, 1.0 ) ;
-        unsigned short v = QuantizedMesh::remapToVertexDataValue( y, 0.0, 1.0 ) ;
-        unsigned short h = QuantizedMesh::remapToVertexDataValue( z, 0.0, 1.0 ) ;
+        unsigned short u = QuantizedMesh::remapToVertexDataValue(x, 0.0, 1.0);
+        unsigned short v = QuantizedMesh::remapToVertexDataValue(y, 0.0, 1.0);
+        unsigned short h = QuantizedMesh::remapToVertexDataValue(z, 0.0, 1.0);
+
+        // --- Debug (start) ---
+//        float zH = qmTile.getHeader().MinimumHeight + ((qmTile.getHeader().MaximumHeight - qmTile.getHeader().MinimumHeight) * z);
+//        std::cout << "zH      = " << zH << std::endl;
+//        float height = qmTile.getHeader().MinimumHeight + ((qmTile.getHeader().MaximumHeight - qmTile.getHeader().MinimumHeight) * ((double)h/(double)QuantizedMesh::MAX_VERTEX_DATA));
+//        std::cout << "height  = " << height << std::endl;
+//        float heightRemap = remap((double)h, 0.0, (double)QuantizedMesh::MAX_VERTEX_DATA, (double)qmTile.getHeader().MinimumHeight, (double)qmTile.getHeader().MaximumHeight);
+//        std::cout << "heightR = " << heightRemap << std::endl;
+        // --- Debug  (end)  ---
 
         vertices.push_back(u) ;
         vertices.push_back(v) ;
@@ -518,3 +565,18 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
     // Write normals to tile
     qmTile.setVertexNormals(vertexNormals) ;
 }
+
+
+
+//void QuantizedMeshTiler::getConstraintsAtBorders(BordersData& bd,
+//                                                 bool &constrainEasternVertices,
+//                                                 bool &constrainWesternVertices,
+//                                                 bool &constrainNorthernVertices,
+//                                                 bool &constrainSouthernVertices) const
+//{
+//    // When bd.tile<X>Vertices.size() == 0, check the (very improvable, but still possible) cases where the two corners of the tile are constrained (that is, no border vertices in the middle of them)
+//    constrainEasternVertices = bd.tileEastVertices.size() > 0 || (bd.constrainNorthEastCorner && bd.constrainSouthEastCorner);
+//    constrainWesternVertices = bd.tileWestVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainSouthWestCorner);
+//    constrainNorthernVertices = bd.tileNorthVertices.size() > 0 || (bd.constrainNorthWestCorner && bd.constrainNorthEastCorner);
+//    constrainSouthernVertices = bd.tileSouthVertices.size() > 0 || (bd.constrainSouthWestCorner && bd.constrainSouthEastCorner);
+//}

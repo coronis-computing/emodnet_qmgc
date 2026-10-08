@@ -54,45 +54,82 @@ class TileBorderVertices
 {
 public:
     TileBorderVertices()
-            : m_easternVertices()
-            , m_westernVertices()
-            , m_northernVertices()
-            , m_southernVertices()
-            , m_lifeCounter(0) {}
+            : m_easternVerticesPtr()
+            , m_westernVerticesPtr()
+            , m_northernVerticesPtr()
+            , m_southernVerticesPtr()
+            , m_northWestCornerPtr()
+            , m_southWestCornerPtr()
+            , m_northEastCornerPtr()
+            , m_southEastCornerPtr(){}
 
-    TileBorderVertices( const std::vector<BorderVertex>& easternVertices,
-                        const std::vector<BorderVertex>& westernVertices,
-                        const std::vector<BorderVertex>& northernVertices,
-                        const std::vector<BorderVertex>& southernVertices,
-                        const int& lifeCounter = 4 ) // The life counter will be 4 for those tiles not in the zoom borders and surrounded by unprocessed tiles
-            : m_easternVertices(easternVertices)
-            , m_westernVertices(westernVertices)
-            , m_northernVertices(northernVertices)
-            , m_southernVertices(southernVertices)
-            , m_lifeCounter(lifeCounter) {}
+    bool hasEasternVertices() {return m_easternVerticesPtr != nullptr;}
+    bool hasWesternVertices() {return m_westernVerticesPtr != nullptr;}
+    bool hasNorthernVertices() {return m_northernVerticesPtr != nullptr;}
+    bool hasSouthernVertices() {return m_southernVerticesPtr != nullptr;}
+    bool hasNorthWestCorner() {return m_northWestCornerPtr!= nullptr;}
+    bool hasSouthWestCorner() {return m_southWestCornerPtr!= nullptr;}
+    bool hasNorthEastCorner() {return m_northEastCornerPtr!= nullptr;}
+    bool hasSouthEastCorner() {return m_southEastCornerPtr!= nullptr;}
 
-    // Each time we consult for a border, we update the number of times it has been consulted by decreasing the lifeCounter.
-    // When it gets to zero, the information in this object will not be needed anymore and can be deleted (responsability of the cache object)
-    std::vector<BorderVertex> getEasternVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_easternVertices ; }
-    std::vector<BorderVertex> getWesternVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_westernVertices ; }
-    std::vector<BorderVertex> getNorthernVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_northernVertices ; }
-    std::vector<BorderVertex> getSouthernVerticesAndDecreaseLife() { m_lifeCounter-- ; return m_southernVertices ; }
+    // Note that, when setting, we only add another reference to the data already allocated in the vector
+    void setEasternVertices(std::shared_ptr<std::vector<BorderVertex>> ptr) {m_easternVerticesPtr = ptr;}
+    void setWesternVertices(std::shared_ptr<std::vector<BorderVertex>> ptr) {m_westernVerticesPtr = ptr;}
+    void setNorthernVertices(std::shared_ptr<std::vector<BorderVertex>> ptr) {m_northernVerticesPtr = ptr;}
+    void setSouthernVertices(std::shared_ptr<std::vector<BorderVertex>> ptr) {m_southernVerticesPtr = ptr;}
+    void setNorthWestCorner(std::shared_ptr<double> ptr) {m_northWestCornerPtr = ptr;}
+    void setSouthWestCorner(std::shared_ptr<double> ptr) {m_southWestCornerPtr = ptr;}
+    void setNorthEastCorner(std::shared_ptr<double> ptr) {m_northEastCornerPtr = ptr;}
+    void setSouthEastCorner(std::shared_ptr<double> ptr) {m_southEastCornerPtr = ptr;}
 
-    std::vector<BorderVertex> getEasternVertices() { return m_easternVertices ; }
-    std::vector<BorderVertex> getWesternVertices() { return m_westernVertices ; }
-    std::vector<BorderVertex> getNorthernVertices() { return m_northernVertices ; }
-    std::vector<BorderVertex> getSouthernVertices() { return m_southernVertices ; }
+    std::vector<BorderVertex> getEasternVertices() {
+        if (m_easternVerticesPtr == nullptr)
+            return std::vector<BorderVertex>();
+        else
+            return *m_easternVerticesPtr;
+    }
+    std::vector<BorderVertex> getWesternVertices() {
+        if (m_westernVerticesPtr == nullptr)
+            return std::vector<BorderVertex>();
+        else
+            return *m_westernVerticesPtr;
+    }
+    std::vector<BorderVertex> getNorthernVertices() {
+        if (m_northernVerticesPtr == nullptr)
+            return std::vector<BorderVertex>();
+        else
+            return *m_northernVerticesPtr;
+    }
+    std::vector<BorderVertex> getSouthernVertices() {
+        if (m_southernVerticesPtr == nullptr)
+            return std::vector<BorderVertex>();
+        else
+            return *m_southernVerticesPtr;
+    }
+    double getNorthWestCorner() {return *m_northWestCornerPtr;}
+    double getSouthWestCorner() {return *m_southWestCornerPtr;}
+    double getNorthEastCorner() {return *m_northEastCornerPtr;}
+    double getSouthEastCorner() {return *m_southEastCornerPtr;}
 
-    void decreaseLife() { m_lifeCounter--; }
-
-    bool isAlive() { return m_lifeCounter > 0 ; }
+    std::shared_ptr<std::vector<BorderVertex>> getEasternVerticesPtr() {return m_easternVerticesPtr;}
+    std::shared_ptr<std::vector<BorderVertex>> getWesternVerticesPtr() {return m_westernVerticesPtr;}
+    std::shared_ptr<std::vector<BorderVertex>> getNorthernVerticesPtr() {return m_northernVerticesPtr;}
+    std::shared_ptr<std::vector<BorderVertex>> getSouthernVerticesPtr() {return m_southernVerticesPtr;}
+    std::shared_ptr<double> getNorthWestCornerPtr() {return m_northWestCornerPtr;}
+    std::shared_ptr<double> getSouthWestCornerPtr() {return m_southWestCornerPtr;}
+    std::shared_ptr<double> getNorthEastCornerPtr() {return m_northEastCornerPtr;}
+    std::shared_ptr<double> getSouthEastCornerPtr() {return m_southEastCornerPtr;}
 
 private:
-    std::vector<BorderVertex> m_easternVertices ;
-    std::vector<BorderVertex> m_westernVertices ;
-    std::vector<BorderVertex> m_northernVertices ;
-    std::vector<BorderVertex> m_southernVertices ;
-    int m_lifeCounter ;
+    std::shared_ptr<std::vector<BorderVertex>> m_easternVerticesPtr;
+    std::shared_ptr<std::vector<BorderVertex>> m_westernVerticesPtr;
+    std::shared_ptr<std::vector<BorderVertex>> m_northernVerticesPtr;
+    std::shared_ptr<std::vector<BorderVertex>> m_southernVerticesPtr;
+    // Note that for corners we only store the height value!
+    std::shared_ptr<double> m_northWestCornerPtr;
+    std::shared_ptr<double> m_southWestCornerPtr;
+    std::shared_ptr<double> m_northEastCornerPtr;
+    std::shared_ptr<double> m_southEastCornerPtr;
 };
 
 #endif //EMODNET_QMGC_TILE_BORDER_VERTICES_H

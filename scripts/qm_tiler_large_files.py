@@ -40,7 +40,14 @@ def run_cmd(cmd):
         return False
     return True
 
-
+def create_tif_list(in_dir, out_file):
+    # Create a list of the tif files under a directory (recursive)
+    f = open(out_file, "w")
+    for root, dirs, files in os.walk(in_dir):
+        for name in files:
+            if name.endswith(".tif"):
+                f.write(os.path.join(root, name) + "\n")
+    f.close()
 
 def main():
     parser = argparse.ArgumentParser(description="Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format.\n"
@@ -137,8 +144,13 @@ def main():
         if not all_ok:
             sys.exit(1)
 
+        # Create a list with the tif files
+        tiffs_list_file = param.output_dir_tiff + "/zoom" + str(i) + "_tiffs.txt"
+        create_tif_list(param.output_dir_tiff + "/" + str(i) + "/", tiffs_list_file)
+
         # Build the VRT from this level
-        cmd = "gdalbuildvrt " + param.output_dir_tiff + "/" + "zoom" + str(i) + ".vrt " + param.output_dir_tiff + "/" + str(i) + "/*/*.tif"
+        # cmd = "gdalbuildvrt " + param.output_dir_tiff + "/" + "zoom" + str(i) + ".vrt " + param.output_dir_tiff + "/" + str(i) + "/*/*.tif"
+        cmd = "gdalbuildvrt -input_file_list " + tiffs_list_file + " " + param.output_dir_tiff + "/" + "zoom" + str(i) + ".vrt "
         print_cmd(cmd, param.fancy_output)
         all_ok = run_cmd(cmd)
         if not all_ok:

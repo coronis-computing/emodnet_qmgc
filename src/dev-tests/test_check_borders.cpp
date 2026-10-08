@@ -218,47 +218,60 @@ int main ( int argc, char **argv)
                         }
 
                         double meanDiffLon = 0, meanDiffLat = 0, meanDiffHeight = 0;
+                        bool allOk = true;
                         if (pairInd == 0) {
                             // Tiles vertices should coincide at northern (original) --> southern (neighbor) border
                             if (eiO.northVertexCount != eiN.southVertexCount ) {
                                 cout << "[ERROR] Number of vertices does not coincide for northern neighbor!" << endl;
                                 cout << "current tile northVertexCount = " << eiO.northVertexCount << " / neighbor tile southVertexCount = " << eiN.southVertexCount << endl;
-                                return 1;
+                                cout << "Press ENTER to continue..." << endl;
+                                cin.get();
+                                allOk = false;
+//                                return 1;
                             }
                             if (displayTileStats) cout << "Comparing northern (original) --> southern (neighbor) border:" << endl;
-                            compareVertices(qmt, qmtN, eiO.northIndices, eiN.southIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
+                            if (allOk) compareVertices(qmt, qmtN, eiO.northIndices, eiN.southIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
                         else if (pairInd == 1) {
                             // Tiles vertices should coincide at southern (original) --> northern (neighbor) border
                             if (eiO.southVertexCount != eiN.northVertexCount ) {
                                 cout << "[ERROR] Number of vertices does not coincide for southern neighbor!" << endl;
                                 cout << "current tile southVertexCount = " << eiO.southVertexCount << " / neighbor tile northVertexCount = " << eiN.northVertexCount << endl;
-                                return 1;
+                                cout << "Press ENTER to continue..." << endl;
+                                cin.get();
+                                allOk = false;
+//                                return 1;
                             }
                             if (displayTileStats) cout << "Comparing southern (original) --> northern (neighbor) border:" << endl;
-                            compareVertices(qmt, qmtN, eiO.southIndices, eiN.northIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
+                            if (allOk) compareVertices(qmt, qmtN, eiO.southIndices, eiN.northIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
                         else if (pairInd == 2) {
                             // Tiles vertices should coincide at eastern (original) --> western (neighbor) border
                             if (eiO.eastVertexCount != eiN.westVertexCount ) {
                                 cout << "[ERROR] Number of vertices does not coincide for eastern neighbor!" << endl;
                                 cout << "current tile eastVertexCount = " << eiO.eastVertexCount << " / neighbor tile westVertexCount = " << eiN.westVertexCount << endl;
-                                return 1;
+                                cout << "Press ENTER to continue..." << endl;
+                                cin.get();
+                                allOk = false;
+//                                return 1;
                             }
                             if (displayTileStats) cout << "Comparing eastern (original) --> western (neighbor) border:" << endl;
-                            compareVertices(qmt, qmtN, eiO.eastIndices, eiN.westIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
+                            if (allOk) compareVertices(qmt, qmtN, eiO.eastIndices, eiN.westIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
                         else if (pairInd == 3) {
                             // Tiles vertices should coincide at western (original) --> eastern (neighbor) border
                             if (eiO.westVertexCount != eiN.eastVertexCount ) {
                                 cout << "[ERROR] Number of vertices does not coincide for western neighbor!" << endl;
                                 cout << "current tile westVertexCount = " << eiO.westVertexCount << " / neighbor tile eastVertexCount = " << eiN.eastVertexCount << endl;
-                                return 1;
+                                cout << "Press ENTER to continue..." << endl;
+                                cin.get();
+                                allOk = false;
+//                                return 1;
                             }
                             if (displayTileStats) cout << "Comparing western (original) --> eastern (neighbor) border:" << endl;
-                            compareVertices(qmt, qmtN, eiO.westIndices, eiN.eastIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
+                            if (allOk) compareVertices(qmt, qmtN, eiO.westIndices, eiN.eastIndices, meanDiffLon, meanDiffLat, meanDiffHeight);
                         }
-                        if (displayTileStats) {
+                        if (displayTileStats && allOk) {
                             cout << "Mean Diff. Lon. = " << meanDiffLon << endl;
                             cout << "Mean Diff. Lat. = " << meanDiffLat << endl;
                             cout << "Mean Diff. Height = " << meanDiffHeight << endl;

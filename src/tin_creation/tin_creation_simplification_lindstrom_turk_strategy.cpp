@@ -23,6 +23,7 @@
 #include "cgal/border_edges_are_constrained_edge_map.h"
 #include "cgal/corner_vertices_are_constrained_vertex_map.h"
 #include "cgal/further_constrained_placement.h"
+#include "cgal/avoid_vertical_walls_placement.h"
 #include "cgal/polyhedron_builder_from_projected_triangulation.h"
 
 namespace TinCreation {
@@ -44,7 +45,8 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
     // Set up the edge constrainer
     typedef SMS::FurtherConstrainedPlacement<SimplificationPlacement,
                                              BorderEdgesAreConstrainedEdgeMap<Polyhedron>,
-                                             CornerVerticesAreConstrainedVertexMap<Polyhedron> > SimplificationConstrainedPlacement ;
+                                             CornerVerticesAreConstrainedVertexMap<Polyhedron> > SimplificationConstrainedPlacement;
+//    typedef SMS::AvoidVerticalWallsPlacement<SimplificationConstrainedPlacement> SimplificationConstrainedPlacementVerticalWalls;
     BorderEdgesAreConstrainedEdgeMap<Polyhedron> beac( surface,
                                              constrainEasternVertices,
                                              constrainWesternVertices,
@@ -52,6 +54,8 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                                              constrainSouthernVertices ) ;
     CornerVerticesAreConstrainedVertexMap<Polyhedron> cvacvm(surface) ;
     SimplificationConstrainedPlacement scp( beac, cvacvm ) ;
+//    SimplificationConstrainedPlacementVerticalWalls scpvw(scp);
+
     SimplificationCost sc( SimplificationCostParams( m_weightVolume,
                                                      m_weightBoundary,
                                                      m_weightShape ) ) ;
@@ -66,9 +70,34 @@ Polyhedron TinCreationSimplificationLindstromTurkStrategy::create( const std::ve
                       .get_cost(sc)
                               //                      .get_placement(pl)
                               //                      .get_placement(SimplificationPlacement())
-                      .get_placement(scp)
                       .edge_is_constrained_map(beac)
+                      .get_placement(scp)
             ) ;
+
+    // --- Debug (start) ---
+//    surface.normalize_border();
+//    typedef typename Polyhedron::Halfedge_const_iterator Halfedge_const_iterator;
+//    Halfedge_const_iterator e = surface.border_halfedges_begin() ;
+//    ++e ; // We start at the second halfedge!
+//    while( e->is_border() ) {
+//        // Relevant geometric info of the current edge
+//        Point_3 p0 = e->vertex()->point(); // This is the point we will take care of now
+//        Point_3 p1 = e->prev()->vertex()->point(); // This is the previous vertex, with which p0 forms an edge
+//
+//        // Differences between the points in the edge
+//        double diffX = fabs(p1.x() - p0.x());
+//        double diffY = fabs(p1.y() - p0.y());
+//
+//        if (fabs(diffX) < std::numeric_limits<double>::epsilon() && fabs(diffY) < std::numeric_limits<double>::epsilon()) {
+////        if (fabs(diffX) < 0.001 && fabs(diffY) < 0.001) {
+//            std::cout << "Equal points on border!" << std::endl;
+//            std::cout << "Points p0 = " << p0 << std::endl;
+//            std::cout << "Points p1 = " << p1 << std::endl;
+//        }
+//        // Advance 2 positions (i.e., skip non-border halfedges)
+//        std::advance(e,2) ;
+//    }
+    // --- Debug (end) ---
 
     return surface ;
 }

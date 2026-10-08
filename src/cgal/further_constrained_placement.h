@@ -54,13 +54,27 @@ namespace CGAL {
 
             EdgeIsConstrainedMap Edge_is_constrained_map;
             VertexIsConstrainedMap Vertex_is_constrained_map;
+            bool m_constrainEasternVertices;
+            bool m_constrainWesternVertices;
+            bool m_constrainNorthernVertices;
+            bool m_constrainSouthernVertices;
 
         public:
             FurtherConstrainedPlacement(
                     EdgeIsConstrainedMap edgesMap = EdgeIsConstrainedMap(),
                     VertexIsConstrainedMap vertMap = VertexIsConstrainedMap(),
-                    BasePlacement base = BasePlacement())
-                    : BasePlacement(base), Edge_is_constrained_map(edgesMap), Vertex_is_constrained_map(vertMap) {}
+                    BasePlacement base = BasePlacement(),
+                    const bool& constrainEasternVertices = false,
+                    const bool& constrainWesternVertices = false,
+                    const bool& constrainNorthernVertices = false,
+                    const bool& constrainSouthernVertices = false)
+                    : BasePlacement(base)
+                    , Edge_is_constrained_map(edgesMap)
+                    , Vertex_is_constrained_map(vertMap)
+                    , m_constrainEasternVertices(constrainEasternVertices)
+                    , m_constrainWesternVertices(constrainWesternVertices)
+                    , m_constrainNorthernVertices(constrainNorthernVertices)
+                    , m_constrainSouthernVertices(constrainSouthernVertices) {}
 
             template<typename Profile>
             boost::optional<typename Profile::Point> operator()(Profile const &aProfile) const {
@@ -73,10 +87,17 @@ namespace CGAL {
                 bool isConstrainedV1 = get(Vertex_is_constrained_map, aProfile.v1()) ;
 
                 if ( isConstrainedV0 && isConstrainedV1 ) {
-                    // Both vertices in the edge are constrained: the edge must remain as is, no placement possible
+                    // Both vertices in the edge are corners (will this ever happen?): the edge must remain as is, no placement possible
                     return boost::optional<typename Profile::Point>();
                 }
-                else if ( isConstrainedV0 ) {
+
+                // This is implicitly tested in the BasePlacement when the Edge_is_constrained_map is set, but we do it here because we need to check it before the test on the corners
+                if (get(Edge_is_constrained_map, edge(aProfile.v0_v1(), aProfile.surface_mesh()))) {
+                    // The edge is constrained: the edge must remain as is, no placement possible
+                    return boost::optional<typename Profile::Point>();
+                }
+
+                if ( isConstrainedV0 ) {
                     // v0 is constrained, return it as the placement
                     return get(aProfile.vertex_point_map(), aProfile.v0()) ;
                 }
@@ -89,18 +110,42 @@ namespace CGAL {
                 in_edge_iterator eb, ee;
                 for (boost::tie(eb, ee) = halfedges_around_target(aProfile.v0(), aProfile.surface_mesh());
                      eb != ee; ++eb) {
-                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh())))
-                        return get(aProfile.vertex_point_map(),
-                                   aProfile.v0());
+                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh()))) {
+                        return aProfile.p0();
+                    }
                 }
                 for (boost::tie(eb, ee) = halfedges_around_target(aProfile.v1(), aProfile.surface_mesh());
                      eb != ee; ++eb) {
-                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh())))
-                        return get(aProfile.vertex_point_map(),
-                                   aProfile.v1());
+                    if (get(Edge_is_constrained_map, edge(*eb, aProfile.surface_mesh()))) {
+                        return aProfile.p1();
+                    }
                 }
 
-                return static_cast<const BasePlacement *>(this)->operator()(aProfile);
+                // Get the result of the base placement
+                boost::optional<typename Profile::Point> op = static_cast<const BasePlacement *>(this)->operator()(aProfile);
+
+                // If some placement is computed, check its validity
+                if(op) {
+                    typedef typename Profile::Point Point;
+                    Point q2 = *op; // <-- The candidate placement
+
+                    // Check if the placement result is in bounds
+                    // Quick test: is it within the limits?
+                    if (q2.x() < 0 || q2.x() > 1 || q2.y() < 0 || q2.y() > 1 )
+                        return boost::optional<typename Profile::Point>();
+
+                    // Check if the placement is in a constrained border
+                    if (q2.x() == 0 && m_constrainWesternVertices)
+                        return boost::optional<typename Profile::Point>();
+                    if (q2.x() == 1 && m_constrainEasternVertices)
+                        return boost::optional<typename Profile::Point>();
+                    if (q2.y() == 0 && m_constrainSouthernVertices)
+                        return boost::optional<typename Profile::Point>();
+                    if (q2.y() == 1 && m_constrainNorthernVertices)
+                        return boost::optional<typename Profile::Point>();
+                }
+                return op;
+//                return static_cast<const BasePlacement *>(this)->operator()(aProfile);
             }
         };
 

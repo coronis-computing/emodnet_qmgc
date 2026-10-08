@@ -27,7 +27,8 @@
 #include "tile_border_vertices.h"
 #include "tin_creation/tin_creation_cgal_types.h"
 #include "borders_data.h"
-
+#include <chrono>
+#include <thread>
 
 /**
  * @class ZoomTilesBorderVerticesCache
@@ -51,10 +52,18 @@ public:
             , m_zoomBounds(zoomBounds)
             , m_tileMaxCoord( tileMaxCoord )
             , m_numProcessedTiles(0)
-            , m_tilesVisited()
-            , m_tilesBeingProcessed()
     {
         m_numTiles = (zoomBounds.getMaxY()-zoomBounds.getMinY()+1)*(zoomBounds.getMaxX()-zoomBounds.getMinX()+1) ;
+
+        // Initialize vectors of bools
+        int nx = zoomBounds.getMaxX()-zoomBounds.getMinX()+1; // Number of tiles in X
+        int ny = zoomBounds.getMaxY()-zoomBounds.getMinY()+1; // Number of tiles in Y
+        m_tilesVisited.resize(nx);
+        for (int i = 0; i < nx; i++)
+            m_tilesVisited[i].resize(ny, false);
+        m_tilesBeingProcessed.resize(nx);
+        for (int i = 0; i < nx; i++)
+            m_tilesBeingProcessed[i].resize(ny, false);
     }
 
     /**
@@ -66,7 +75,8 @@ public:
             , m_tileMaxCoord(0)
             , m_numProcessedTiles(0)
             , m_numTiles(0)
-            , m_tilesVisited() {}
+            , m_tilesVisited()
+            , m_tilesBeingProcessed() {}
 
     /**
      * Given a tile, it gets the border edges to preserve from already constructed tiles.
@@ -77,23 +87,17 @@ public:
      * @param tileY The Y coordinate of the tile to construct
      * @param bd Tile's borders' data to be maintained for this tile based on the info in the cache
      */
-    void getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData& bd);
+    bool getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData& bd);
 
     /**
      * Stores the borders to preserve for a given tile in the cache. Note that the eastern/western/northern/southern vectors already include the corners, so we don't set them separately as opposed to getConstrainedBorderVerticesForTile
      *
      * @param tileX The X coordinate of the tile
      * @param tileY The Y coordinate of the tile
-     * @param easternVerticesToPreserve Eastern vertices to preserve for the tile
-     * @param westernVerticesToPreserve Western vertices to preserve for the tile
-     * @param northernVerticesToPreserve Southern vertices to preserve for the tile
-     * @param southernVerticesToPreserve Northern vertices to preserve for the tile
+     * @param bd Tile's borders' data (to be preserved in new tiles)
+     * @return
      */
-    void setConstrainedBorderVerticesForTile( const int& tileX, const int& tileY,
-                                              const std::vector<Point_3>& easternVerticesToPreserve,
-                                              const std::vector<Point_3>& westernVerticesToPreserve,
-                                              const std::vector<Point_3>& northernVerticesToPreserve,
-                                              const std::vector<Point_3>& southernVerticesToPreserve ) ;
+    bool setConstrainedBorderVerticesForTile( const int& tileX, const int& tileY, BordersData& bd ) ;
 
     /**
      * Get the number of cache entries
@@ -102,11 +106,6 @@ public:
      */
     int numCacheEntries() { return m_mapTileToBorderVertices.size(); }
 
-    bool isTileVisited( const int& tileX, const int& tileY ) {
-        std::pair<int,int> tileInd = std::make_pair( tileX, tileY ) ;
-        return isTileVisited(tileInd) ;
-    }
-
     /**
      * @brief Checks if a tile is visited
      *
@@ -114,11 +113,8 @@ public:
      * @param tileInd Tile index (a pair)
      * @return boolean indicating whether the tile was already visited
      */
-    bool isTileVisited( const std::pair<int, int>& tileInd ) {
-        if (m_tilesVisited.count(tileInd) == 0)
-            return false;
-        else
-            return m_tilesVisited[tileInd];
+    bool isTileVisited( const int& tileX, const int& tileY ) const {
+        return m_tilesVisited[tileX-m_zoomBounds.getMinX()][tileY-m_zoomBounds.getMinY()];
     }
 
     /**
@@ -129,23 +125,16 @@ public:
      * @param tileY Y coordinate of the tile
      * @return boolean indicating whether the tile was already processed
      */
-    bool isTileBeingProcessed( const int& tileX, const int& tileY ) {
-        std::pair<int,int> tileInd = std::make_pair( tileX, tileY ) ;
-        return isTileBeingProcessed(tileInd) ;
+    bool isTileBeingProcessed( const int& tileX, const int& tileY ) const {
+        return m_tilesBeingProcessed[tileX-m_zoomBounds.getMinX()][tileY-m_zoomBounds.getMinY()];
     }
 
-    /**
-     * @brief Checks if a tile is being processed
-     *
-     * WARNING: Does not perform bounds check for the tile
-     * @param tileInd Tile index (a pair)
-     * @return boolean indicating whether the tile was already processed
-     */
-    bool isTileBeingProcessed( const std::pair<int,int>& tileInd ) {
-        if (m_tilesBeingProcessed.count(tileInd) == 0)
-            return false;
-        else
-            return m_tilesBeingProcessed[tileInd] ;
+    void setBeingProcessed( const int& tileX, const int& tileY, bool b ) {
+        m_tilesBeingProcessed[tileX-m_zoomBounds.getMinX()][tileY-m_zoomBounds.getMinY()] = b;
+    }
+
+    void setVisited( const int& tileX, const int& tileY, bool b ) {
+        m_tilesVisited[tileX-m_zoomBounds.getMinX()][tileY-m_zoomBounds.getMinY()] = b;
     }
 
     /**
@@ -171,15 +160,22 @@ public:
      */
     int getNumTiles() const { return m_numTiles ; }
 
+    /**
+     * Simple internal drawing function for debugging purposes. Shows the state of the cache
+     * @param curX The currently built tile X coordinate
+     * @param curY The currently built tile Y coordinate
+     */
+    void showStatus(int curX = -1, int curY = -1, bool drawUnixTerminalColors = false) const;
+
 private:
     // --- Attributes ---
-    qmgc::TileBounds m_zoomBounds ;
-    int m_tileMaxCoord ;
-    int m_numTiles ;
-    int m_numProcessedTiles ;
+    qmgc::TileBounds m_zoomBounds;
+    int m_tileMaxCoord;
+    int m_numTiles;
+    int m_numProcessedTiles;
     std::unordered_map<std::pair<int,int>, TileBorderVertices, boost::hash<std::pair<int, int>>> m_mapTileToBorderVertices;
-    std::unordered_map<std::pair<int,int>, bool, boost::hash<std::pair<int, int>>> m_tilesVisited;
-    std::unordered_map<std::pair<int,int>, bool, boost::hash<std::pair<int, int>>> m_tilesBeingProcessed;
+    std::vector<std::vector<bool>> m_tilesVisited;
+    std::vector<std::vector<bool>> m_tilesBeingProcessed;
 
     /// Bounds check for a tile (pair)
     bool isTileInBounds( const std::pair<int, int>& tileInd ) const {

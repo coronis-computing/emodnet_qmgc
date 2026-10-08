@@ -139,7 +139,8 @@ public:
     std::vector<Point_3> getUVHPointsFromRaster(const qmgc::TileCoordinate &coord,
                                                 BordersData& bd,
                                                 float& minHeight, float& maxHeight,
-                                                qmgc::CRSBounds& tileBounds) const ;
+                                                qmgc::CRSBounds& tileBounds,
+                                                const bool& ignoreNoDataPoints = false) const ;
 
 private:
     // --- Attributes ---
@@ -172,6 +173,12 @@ private:
     float clip(const float& n, const float& lower, const float& upper) const {
         return std::max(lower, std::min(n, upper));
     }
+
+//    void getConstraintsAtBorders(BordersData& bd,
+//                                 bool &constrainEasternVertices,
+//                                 bool &constrainWesternVertices,
+//                                 bool &constrainNorthernVertices,
+//                                 bool &constrainSouthernVertices) const;
 
     // --- The following private functions split the processing required to generate the tiles for better readability ---
 

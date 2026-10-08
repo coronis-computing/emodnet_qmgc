@@ -29,6 +29,9 @@ simplify(const std::vector<Point_3> &pts) {
     // Convert to metric
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
+    if (ptsToSimpECEF.size() == 0)
+        return std::vector<Point_3>();
+
     std::vector<Point_3> ptsSimpECEF;
     // Note: since CGAL 5.x this takes the point range itself, and its tuning
     // arguments are named parameters rather than positional ones.

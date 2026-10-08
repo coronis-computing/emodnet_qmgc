@@ -48,9 +48,12 @@ All notable changes to this project are documented in this file.
   - C++14 is required (CGAL 5 needs it) instead of C++11. It is set through `CMAKE_CXX_STANDARD`.
   - CMake 3.10 or later is required.
   - GDAL 3.0 or later is required.
-- **Docker image:** now based on Ubuntu 24.04 and uses the distribution's `libgdal-dev` / `libcgal-dev` packages.
+- **Docker image:** now based on Ubuntu 24.04 and uses the distribution's `libgdal-dev` / `libcgal-dev` / `libgeographiclib-dev` packages.
+- **GeographicLib is required again**, for the ECEF conversions. `FindGeographicLib.cmake` now also finds GeographicLib 2.x, whose library was renamed from `Geographic` to `GeographicLib`.
 - `Readme.md` and `DeveloperNotes.md` are updated to match.
 - The `test_check_borders` and `compute_statistics` dev-tests now handle zoom levels that have no tiles in `layer.json`.
+- `compute_statistics` shares a single tiler (and GDAL dataset) across its OpenMP threads. libctb's tiler serialized raster reads with an internal mutex, which is gone, so the read is now serialized with an OpenMP critical section instead.
+- The new `get_tile_bounds` dev-tool uses the `qmgc` grid instead of libctb.
 
 ### Fixed
 

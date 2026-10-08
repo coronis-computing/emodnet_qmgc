@@ -155,10 +155,10 @@ public:
     }
 
     Polyhedron create(const std::vector<Point_3>& dataPts,
-                      const bool& constrainEasternVertices,
-                      const bool& constrainWesternVertices,
-                      const bool& constrainNorthernVertices,
-                      const bool& constrainSouthernVertices);
+                      const bool& constrainEasternVertices = false,
+                      const bool& constrainWesternVertices = false,
+                      const bool& constrainNorthernVertices = false,
+                      const bool& constrainSouthernVertices = false);
 private:
     // --- Attributes ---
     FT m_approxTol ;

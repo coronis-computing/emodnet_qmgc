@@ -31,10 +31,10 @@
 namespace TinCreation {
 
 Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>& dataPts,
-                                                              const bool &constrainEasternVertices,
-                                                              const bool &constrainWesternVertices,
-                                                              const bool &constrainNorthernVertices,
-                                                              const bool &constrainSouthernVertices)
+                                                      const bool &constrainEasternVertices,
+                                                      const bool &constrainWesternVertices,
+                                                      const bool &constrainNorthernVertices,
+                                                      const bool &constrainSouthernVertices)
 {
     // Scale the parameters according to the tile
     m_borderSimpMaxScaledSqDist = m_borderSimpMaxDist*this->getScaleZ();
@@ -64,6 +64,13 @@ Polyhedron TinCreationSimplificationPointSet::create( const std::vector<Point_3>
 
     // Insert the simplified points in the constrained triangulation
     for( PointCloud::iterator it = ptsToSimplify.begin(); it != ptsToSimplify.end(); ++it ) {
+        // Error check
+        if (it->x() < 0.0 || it->y() < 0.0 || it->x() > 1.0 || it->y() > 1.0) {
+            std::cout << "[ERROR] point to insert not on the 0..1 range: " << *it << std::endl;
+            continue;
+        }
+
+        // Insert the point
         m_cdt.insert(*it);
     }
 
@@ -111,23 +118,42 @@ imposeConstraintsAndSimplifyPolylines(Polyhedron& surface, // Note: points in th
     std::sort(southernBorderVertices.begin(), southernBorderVertices.end(), smallerThanInX) ;
 
     // Collect the polylines to simplify, or leave them as they are if required to
+/*
+std::cout << "icsp: Collect the polylines to simplify" << std::endl;
     Polylines polylinesToSimplify, polylinesToMaintain ;
-    if (!constrainEasternVertices)
+    if (!constrainEasternVertices) {
+	std::cout << "Eastern polyline, set to simplify" << std::endl;
+	for (Polyline::iterator itp = easternBorderVertices.begin(); itp != easternBorderVertices.end(); ++itp) 
+		std::cout << *itp << std::endl;
         m_cdt.insert_constraint(easternBorderVertices.begin(), easternBorderVertices.end(), false);
+    }
     else
         polylinesToMaintain.push_back(easternBorderVertices);
-    if (!constrainWesternVertices)
+    if (!constrainWesternVertices) {
+	std::cout << "Western polyline, set to simplify" << std::endl;
+	for (Polyline::iterator itp = westernBorderVertices.begin(); itp != westernBorderVertices.end(); ++itp) 
+		std::cout << *itp << std::endl;
         m_cdt.insert_constraint(westernBorderVertices.begin(), westernBorderVertices.end(), false);
+    }
     else
         polylinesToMaintain.push_back(westernBorderVertices);
-    if (!constrainNorthernVertices)
+    if (!constrainNorthernVertices) {
+	std::cout << "Northern polyline, set to simplify" << std::endl;
+	for (Polyline::iterator itp = northernBorderVertices.begin(); itp != northernBorderVertices.end(); ++itp) 
+		std::cout << *itp << std::endl;
         m_cdt.insert_constraint(northernBorderVertices.begin(), northernBorderVertices.end(), false);
+    }
     else
         polylinesToMaintain.push_back(northernBorderVertices);
-    if (!constrainSouthernVertices)
+    if (!constrainSouthernVertices) {
+        std::cout << "Southern polyline, set to simplify" << std::endl;
+	for (Polyline::iterator itp = southernBorderVertices.begin(); itp != southernBorderVertices.end(); ++itp) 
+		std::cout << *itp << std::endl;
         m_cdt.insert_constraint(southernBorderVertices.begin(), southernBorderVertices.end(), false);
+    }
     else
         polylinesToMaintain.push_back(southernBorderVertices);
+std::cout << "icsp: Collect the polylines to simplify DONE" << std::endl;
 
     // Create a property map storing if an edge is sharp or not (since the Polyhedron_3 does not have internal property_maps creation, we use a map container within a boost::associative_property_map)
     typedef typename boost::graph_traits<Polyhedron>::edge_descriptor edge_descriptor;
@@ -137,23 +163,129 @@ imposeConstraintsAndSimplifyPolylines(Polyhedron& surface, // Note: points in th
     EdgeIsSharpPropertyMap eisMap(map);
 
     // Detect sharp edges
+std::cout << "icsp: Detect sharp edges" << std::endl;
     detect_sharp_edges_without_borders<Polyhedron, double, EdgeIsSharpPropertyMap, K>(surface, FT(60.0), eisMap);
+std::cout << "icsp: Detect sharp edges DONE" << std::endl;
 
     // Trace the polylines from the detected edges
+
+std::cout << "icsp: Trace polylines from detected edges" << std::endl;
     Polylines featurePolylines;
     extract_polylines_from_sharp_edges(surface, eisMap, featurePolylines);
+std::cout << "icsp: Trace polylines from detected edges DONE" << std::endl;
 
+std::cout << "icsp: Insert constraints" << std::endl;
     for ( Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it ) {
-        m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+	if ((*it).size() > m_minFeaturePolylineSize) {
+	    std::cout << "A polyline to simplify:" << std::endl;
+	    for (Polyline::const_iterator itp = (*it).begin(); itp != (*it).end(); ++itp) 
+		std::cout << *itp << std::endl;
+	    std::cout << "Insert the polyline to simplify" << std::endl;
+            m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+	    std::cout << "Insert the polyline to simplify DONE" << std::endl;
+	}
+    }
+std::cout << "icsp: Insert constraints DONE" << std::endl;
+
+    // Simplify the polylines
+std::cout << "icsp: Simplify the polylines" << std::endl;
+    std::size_t numRemoved = PS::simplify(m_cdt, PSSqDist3Cost(m_borderSimpMaxLengthPercent), PSStopCost(m_borderSimpMaxScaledSqDist), true);
+std::cout << "icsp: Simplify the polylines DONE" << std::endl;
+    
+    // Debug!!!!
+    Polyhedron surface2;
+    PolyhedronBuilderFromProjectedTriangulation<CTXY, HalfedgeDS> builderCDT(m_cdt);
+    surface2.delegate(builderCDT);
+    std::ofstream of("current_after_simplify.off");
+    of << surface2;
+
+    // Finally, insert the border polylines that need to be maintained as they are
+std::cout << "icsp: insert the border polylines that need to be maintained as they are" << std::endl;
+    for ( Polylines::iterator it = polylinesToMaintain.begin(); it != polylinesToMaintain.end(); ++it ) {
+	std::cout << "A polyline to maintain:" << std::endl;
+	for (Polyline::iterator itp = (*it).begin(); itp != (*it).end(); ++itp) {
+		std::cout << *itp << std::endl;
+	}
+
+	for (int i = 0; i < (*it).size()-1; i++) {
+		std::cout << "Adding edge " << (*it)[i] << ", " << (*it)[i+1] << std::endl;
+		CDTXY::Vertex_handle va = m_cdt.insert((*it)[i]);
+		CDTXY::Vertex_handle vb = m_cdt.insert((*it)[i+1]);
+		m_cdt.insert_constraint((*it)[i], (*it)[i+1], false);
+	}
+
+
+//	std::cout << "Insert the polyline to maintain" << std::endl;
+//        m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+//	std::cout << "Insert the polyline to maintain DONE" << std::endl;
+    }
+std::cout << "icsp: insert the border polylines that need to be maintained as they are DONE" << std::endl;
+*/
+
+    if (!constrainEasternVertices) {
+        // Add as a constraint (will be simplified by PS::simplify())
+        m_cdt.insert_constraint(easternBorderVertices.begin(), easternBorderVertices.end(), false);
+    }
+    else {
+        // Add as regular vertices in the triangulation: since they are in the borders, the edges will be maintained!
+		for (Polyline::iterator it = easternBorderVertices.begin(); it != easternBorderVertices.end(); ++it)
+			m_cdt.insert(*it);
+    }
+    if (!constrainWesternVertices) {
+        // Add as a constraint (will be simplified by PS::simplify())
+        m_cdt.insert_constraint(westernBorderVertices.begin(), westernBorderVertices.end(), false);
+    }
+    else {
+        // Add as regular vertices in the triangulation: since they are in the borders, the edges will be maintained!
+		for (Polyline::iterator it = westernBorderVertices.begin(); it != westernBorderVertices.end(); ++it)
+			m_cdt.insert(*it);
+    }
+    if (!constrainSouthernVertices) {
+        // Add as a constraint (will be simplified by PS::simplify())
+        m_cdt.insert_constraint(southernBorderVertices.begin(), southernBorderVertices.end(), false);
+    }
+    else {
+        // Add as regular vertices in the triangulation: since they are in the borders, the edges will be maintained!
+		for (Polyline::iterator it = southernBorderVertices.begin(); it != southernBorderVertices.end(); ++it)
+			m_cdt.insert(*it);
+    }
+    if (!constrainNorthernVertices) {
+        // Add as a constraint (will be simplified by PS::simplify())
+        m_cdt.insert_constraint(northernBorderVertices.begin(), northernBorderVertices.end(), false);
+    }
+    else {
+        // Add as regular vertices in the triangulation: since they are in the borders, the edges will be maintained!
+		for (Polyline::iterator it = northernBorderVertices.begin(); it != northernBorderVertices.end(); ++it)
+			m_cdt.insert(*it);
+    }
+
+    if (m_preserveSharpEdges) {
+        // Create a property map storing if an edge is sharp or not (since the Polyhedron_3 does not have internal property_maps creation, we use a map container within a boost::associative_property_map)
+        typedef typename boost::graph_traits<Polyhedron>::edge_descriptor edge_descriptor;
+        typedef typename std::map<edge_descriptor, bool> EdgeIsSharpMap;
+        typedef typename boost::associative_property_map<EdgeIsSharpMap> EdgeIsSharpPropertyMap;
+        EdgeIsSharpMap map;
+        EdgeIsSharpPropertyMap eisMap(map);
+
+        // Detect sharp edges
+        detect_sharp_edges_without_borders<Polyhedron, double, EdgeIsSharpPropertyMap, K>(surface, FT(60.0), eisMap);
+
+        // Trace the polylines from the detected edges
+        Polylines featurePolylines;
+        extract_polylines_from_sharp_edges(surface, eisMap, featurePolylines);
+
+        for (Polylines::const_iterator it = featurePolylines.begin(); it != featurePolylines.end(); ++it) {
+            if ((*it).size() > m_minFeaturePolylineSize) {
+                //	    std::cout << "A polyline to simplify:" << std::endl;
+                //	    for (Polyline::const_iterator itp = (*it).begin(); itp != (*it).end(); ++itp)
+                //		std::cout << *itp << std::endl;
+                m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
+            }
+        }
     }
 
     // Simplify the polylines
     std::size_t numRemoved = PS::simplify(m_cdt, PSSqDist3Cost(m_borderSimpMaxLengthPercent), PSStopCost(m_borderSimpMaxScaledSqDist), true);
-
-    // Finally, insert the border polylines that need to be maintained as they are
-    for ( Polylines::iterator it = polylinesToMaintain.begin(); it != polylinesToMaintain.end(); ++it ) {
-        m_cdt.insert_constraint((*it).begin(), (*it).end(), false);
-    }
 }
 
 

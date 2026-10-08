@@ -9,7 +9,7 @@
 # Author: Ricard Campos (rcampos@eia.udg.edu)
 
 find_library (  GeographicLib_LIBRARIES 
-		NAMES Geographic
+		NAMES GeographicLib Geographic # Named GeographicLib since version 2.0
   		PATHS 	/usr/local 
 			/usr/local/lib
 			/opt/local/lib

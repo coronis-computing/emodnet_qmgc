@@ -48,10 +48,11 @@ public:
     TinCreationSimplificationPointSetWLOP(double borderSimplificationMaxDistance,
                                           double borderSimplificationMaxLength,
                                           unsigned int minFeaturePolylineSize,
+                                          bool preserveSharpEdges,
                                           double retainPercentage,
                                           double radius,
                                           unsigned int iterNumber = 35)
-            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, borderSimplificationMaxLength, minFeaturePolylineSize)
+            : TinCreationSimplificationPointSet(borderSimplificationMaxDistance, borderSimplificationMaxLength, minFeaturePolylineSize, preserveSharpEdges)
             , m_iterNumber(iterNumber)
     {
         m_retainPercentagePerZoom = std::vector<double>{retainPercentage};
@@ -71,12 +72,14 @@ public:
     TinCreationSimplificationPointSetWLOP(std::vector<double> borderSimplificationMaxDistancePerZoom,
                                           std::vector<double> borderSimplificationMaxLengthPerZoom,
                                           unsigned int minFeaturePolylineSize,
+                                          bool preserveSharpEdges,
                                           std::vector<double> retainPercentagePerZoom,
                                           std::vector<double> radiusPerZoom,
                                           unsigned int iterNumber = 35)
             : TinCreationSimplificationPointSet(borderSimplificationMaxDistancePerZoom,
                                                 borderSimplificationMaxLengthPerZoom,
-                                                minFeaturePolylineSize)
+                                                minFeaturePolylineSize,
+                                                preserveSharpEdges)
             , m_retainPercentagePerZoom(retainPercentagePerZoom)
             , m_radiusPerZoom(radiusPerZoom)
             , m_iterNumber(iterNumber)

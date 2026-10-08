@@ -13,6 +13,7 @@ RUN apt-get update -y && apt-get install -y \
     libboost-all-dev \
     libcgal-dev \
     libgdal-dev \
+    libgeographiclib-dev \
     gdal-bin \
     libproj-dev \
     python3 \

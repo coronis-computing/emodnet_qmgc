@@ -9,6 +9,7 @@ This project depends on the following C++ libraries:
 * Boost (program_options): http://www.boost.org/
 * ZLib: https://www.zlib.net/
 * GDAL: http://www.gdal.org/ (version 3.0 or later)
+* GeographicLib: https://geographiclib.sourceforge.io/
 * CGAL: https://www.cgal.org/ (version 5.x, tested with 5.6)
 * meshoptimizer: https://github.com/zeux/meshoptimizer (with small modifications, source included in this project) 
 * JSON for modern C++: https://github.com/nlohmann/json (source included in this project)
