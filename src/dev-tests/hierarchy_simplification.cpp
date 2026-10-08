@@ -80,9 +80,11 @@ int main(int argc, char*argv[])
     CGAL::Timer task_timer; task_timer.start();
 
     // simplification by clustering using erase-remove idiom
-    points.erase (CGAL::hierarchy_simplify_point_set (points.begin (), points.end (),
-                                                      maxClusterSize, // Max cluster size
-                                                      maxSurfaceVariance), // Max surface variation
+    // Note: since CGAL 5.x this takes the point range itself, and the cluster
+    // size / surface variation are named parameters rather than positional ones.
+    points.erase (CGAL::hierarchy_simplify_point_set (points,
+                                                      CGAL::parameters::size(maxClusterSize)              // Max cluster size
+                                                              .maximum_variation(maxSurfaceVariance)),    // Max surface variation
                   points.end ());
     std::size_t memory = CGAL::Memory_sizer().virtual_size();
 

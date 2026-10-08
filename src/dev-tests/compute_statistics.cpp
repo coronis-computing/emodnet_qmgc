@@ -30,8 +30,6 @@
 #include <map>
 // JSON
 #include <nlohmann/json.hpp>
-// Cesium-terrain-builder
-#include <ctb.hpp>
 // Project-specific
 #include "quantized_mesh_tile.h"
 #include "quantized_mesh_tiler.h"
@@ -155,7 +153,7 @@ void computeErrorsInHeight(const QuantizedMeshTile& qmt, const Delaunay& dtRaste
 
 
 
-void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster, const ctb::CRSBounds& tileBounds,
+void computeErrorsInECEF(const QuantizedMeshTile& qmt, const Delaunay& dtRaster, const qmgc::CRSBounds& tileBounds,
                          double& hausdorffDistRasterToTin, double& hausdorffDistTinToRaster)
 {
     // --- Compute distances in a metric space ---
@@ -350,13 +348,14 @@ int main(int argc, char **argv)
 
     // Define the grid we are going to use
     int tileSize = 256;
-    ctb::Grid grid = ctb::GlobalGeodetic(tileSize);
+    qmgc::GlobalGeodeticGrid grid(tileSize);
     // And the ellipsoid of reference
     Ellipsoid e;
     e = WGS84Ellipsoid();
 
     // The tiler options (default for the moment, let the user change this in the future?)
-    ctb::TilerOptions gdalTilerOptions = ctb::TilerOptions();
+    // Note: keep these the same as in qm_tiler, so the statistics compare like with like
+    qmgc::TilerOptions gdalTilerOptions;
 
     // The quantized mesh tiler options
     QuantizedMeshTiler::QMTOptions qmtOptions;
@@ -373,10 +372,14 @@ int main(int argc, char **argv)
     QuantizedMeshTiler tiler(gdal, grid, gdalTilerOptions, qmtOptions, tinCreator);
 
     // Run over zooms/tiles
-    ctb::GlobalGeodetic profile;
+    qmgc::GlobalGeodeticGrid profile;
     double globalMeanDiffLon = 0, globalMeanDiffLat = 0, globalMeanDiffHeight = 0;
 
     // Compute limits of the zoom
+    if (zoom < 0 || zoom >= (int)jZooms.size() || jZooms[zoom].empty()) {
+        cerr << "[ERROR] Zoom level " << zoom << " is not available in the layer.json file" << endl;
+        return 1;
+    }
     int startX = jZooms[zoom][0]["startX"].get<int>();
     int endX = jZooms[zoom][0]["endX"].get<int>();
     int startY = jZooms[zoom][0]["startY"].get<int>();
@@ -426,7 +429,7 @@ int main(int argc, char **argv)
             // Load the tile
             std::ostringstream ss;
             ss << tilesInputDir << "/" << zoom << "/" << x << "/" << y << ".terrain";
-            const ctb::TileCoordinate coord(zoom, x, y);
+            const qmgc::TileCoordinate coord(zoom, x, y);
             QuantizedMeshTile qmt(coord);
             if (!qmt.readFile(ss.str())) {
                 cerr << "[ERROR] Cannot read the input file" << endl;
@@ -435,7 +438,7 @@ int main(int argc, char **argv)
 
             // Create the mesh from the raster tile
             float minHeight, maxHeight;
-            ctb::CRSBounds tileBounds;
+            qmgc::CRSBounds tileBounds;
             BordersData bd = BordersData();
             std::vector<Point_3> rasterPts = tiler.getUVHPointsFromRaster(coord, bd, minHeight, maxHeight, tileBounds);
 

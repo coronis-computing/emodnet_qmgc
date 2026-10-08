@@ -31,11 +31,14 @@ simplify(const std::vector<Point_3> &pts) {
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
     // Simplify using hierarchical point set simplification (erase-remove idiom)
-    ptsToSimpECEF.erase(CGAL::hierarchy_simplify_point_set(ptsToSimpECEF.begin(),
-                                                           ptsToSimpECEF.end(),
-                                                           m_maxClusterSize, // Max cluster size
-                                                           m_maxSurfaceVariance), // Max surface variation
-                        ptsToSimpECEF.end());
+    // Note: since CGAL 5.x this takes the point range itself, and the cluster
+    // size / surface variation are named parameters rather than positional ones.
+    ptsToSimpECEF.erase(
+            CGAL::hierarchy_simplify_point_set(
+                    ptsToSimpECEF,
+                    CGAL::parameters::size(m_maxClusterSize)                  // Max cluster size
+                            .maximum_variation(m_maxSurfaceVariance)),        // Max surface variation
+            ptsToSimpECEF.end());
 
     // Convert to the local (XY-projectable) coordinates again
     std::vector<Point_3> ptsSimp = this->convertECEFToUVH(ptsToSimpECEF);

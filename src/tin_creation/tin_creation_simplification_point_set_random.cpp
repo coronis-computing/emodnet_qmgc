@@ -29,9 +29,8 @@ simplify(const std::vector<Point_3> &pts) {
     std::vector<Point_3> ptsSimp = pts;
 
     // Simplify using random simplification (erase-remove idiom)
-    ptsSimp.erase(CGAL::random_simplify_point_set(ptsSimp.begin(),
-                                                  ptsSimp.end(),
-                                                  m_removePercentage),
+    // Note: since CGAL 5.x this takes the point range itself, not an iterator pair
+    ptsSimp.erase(CGAL::random_simplify_point_set(ptsSimp, m_removePercentage),
                   ptsSimp.end());
 
     return ptsSimp;

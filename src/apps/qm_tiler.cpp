@@ -26,7 +26,6 @@
 
 // Boost
 #include <boost/program_options.hpp>
-#include <boost/progress.hpp>
 // Std
 #include <iostream>
 #include <string>
@@ -197,14 +196,16 @@ int main ( int argc, char **argv)
 
         // Define the grid we are going to use
         int tileSize = 256;
-        ctb::Grid grid = ctb::GlobalGeodetic(tileSize);
+        qmgc::GlobalGeodeticGrid grid(tileSize);
 
         // And the ellipsoid of reference
         Ellipsoid e;
         e = WGS84Ellipsoid();
 
         // The tiler options (default for the moment, let the user change this in the future?)
-        ctb::TilerOptions gdalTilerOptions = ctb::TilerOptions();
+        // Note: the defaults sample the raster at the tile's nodes
+        // (SamplingMode::NodeRegistered) and keep nodata out of the resampling.
+        qmgc::TilerOptions gdalTilerOptions;
 
         // The quantized mesh tiler options
         QuantizedMeshTiler::QMTOptions qmtOptions;

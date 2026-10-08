@@ -21,7 +21,7 @@
 #ifndef EMODNET_QMGC_ZOOM_TILES_BORDER_VERTICES_CACHE_H
 #define EMODNET_QMGC_ZOOM_TILES_BORDER_VERTICES_CACHE_H
 
-#include <ctb.hpp>
+#include "tiling/geo_types.h"
 #include <unordered_map>
 #include <boost/functional/hash.hpp>
 #include "tile_border_vertices.h"
@@ -46,7 +46,7 @@ public:
      * @param zoomBounds The bounds of the current zoom
      * @param tileMaxCoord The number of pixels in a tile
      */
-    ZoomTilesBorderVerticesCache( const ctb::TileBounds& zoomBounds, const int& tileMaxCoord)
+    ZoomTilesBorderVerticesCache( const qmgc::TileBounds& zoomBounds, const int& tileMaxCoord)
             : m_mapTileToBorderVertices()
             , m_zoomBounds(zoomBounds)
             , m_tileMaxCoord( tileMaxCoord )
@@ -77,7 +77,7 @@ public:
      * @param tileY The Y coordinate of the tile to construct
      * @param bd Tile's borders' data to be maintained for this tile based on the info in the cache
      */
-    bool getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData& bd);
+    void getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData& bd);
 
     /**
      * Stores the borders to preserve for a given tile in the cache. Note that the eastern/western/northern/southern vectors already include the corners, so we don't set them separately as opposed to getConstrainedBorderVerticesForTile
@@ -88,9 +88,8 @@ public:
      * @param westernVerticesToPreserve Western vertices to preserve for the tile
      * @param northernVerticesToPreserve Southern vertices to preserve for the tile
      * @param southernVerticesToPreserve Northern vertices to preserve for the tile
-     * @return
      */
-    bool setConstrainedBorderVerticesForTile( const int& tileX, const int& tileY,
+    void setConstrainedBorderVerticesForTile( const int& tileX, const int& tileY,
                                               const std::vector<Point_3>& easternVerticesToPreserve,
                                               const std::vector<Point_3>& westernVerticesToPreserve,
                                               const std::vector<Point_3>& northernVerticesToPreserve,
@@ -174,7 +173,7 @@ public:
 
 private:
     // --- Attributes ---
-    ctb::TileBounds m_zoomBounds ;
+    qmgc::TileBounds m_zoomBounds ;
     int m_tileMaxCoord ;
     int m_numTiles ;
     int m_numProcessedTiles ;

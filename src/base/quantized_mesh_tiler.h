@@ -24,11 +24,10 @@
 #include "quantized_mesh.h"
 #include "quantized_mesh_tile.h"
 #include "tin_creation/tin_creation_cgal_types.h"
-#include <ctb.hpp>
+#include "tiling/raster_tiler.h"
 #include <boost/filesystem.hpp>
 #include "ellipsoid.h"
 #include "tin_creation/tin_creator.h"
-#include <mutex>
 #include "borders_data.h"
 
 namespace fs = boost::filesystem ;
@@ -37,8 +36,14 @@ namespace fs = boost::filesystem ;
 /**
  * @class QuantizedMeshTiler
  * @brief Tiler of a terrain generating quantized-mesh tiles
+ *
+ * @note Holds a qmgc::RasterTiler rather than deriving from one. Deriving from
+ *       cesium-terrain-builder's TerrainTiler was what dragged the heightmap
+ *       format's one-sample border into this tiler; composition also lets the
+ *       compiler generate the copy constructor, which previously had to be
+ *       written out by hand to dodge a non-copyable mutex.
  */
-class QuantizedMeshTiler : public ctb::TerrainTiler
+class QuantizedMeshTiler
 {
     // --- Private Typedefs ---
     typedef TinCreation::Point_3 Point_3;
@@ -65,23 +70,31 @@ public:
      *
      */
     QuantizedMeshTiler(GDALDataset *dataset,
-                       const ctb::Grid &grid,
-                       const ctb::TilerOptions &tilerOptions,
+                       const qmgc::GlobalGeodeticGrid &grid,
+                       const qmgc::TilerOptions &tilerOptions,
                        const QMTOptions& options,
                        const TinCreation::TinCreator& tinCreator )
-            : TerrainTiler(dataset, grid, tilerOptions)
+            : m_rasterTiler(dataset, grid, tilerOptions)
             , m_options(options)
             , m_tinCreator(tinCreator)
             {checkOptions();}
 
-    /**
-     * @brief A copy constructor that does not try to copy the mutex (needed because mutex are non-copyable)
-     */
-    QuantizedMeshTiler(const QuantizedMeshTiler& tiler )
-            : TerrainTiler(tiler.poDataset, tiler.mGrid, tiler.options)
-            , m_options(tiler.m_options)
-            , m_tinCreator(tiler.m_tinCreator)
-    {}
+    /// Get the underlying raster tiler
+    const qmgc::RasterTiler& rasterTiler() const { return m_rasterTiler; }
+
+    /// Get the tiling grid
+    const qmgc::GlobalGeodeticGrid& grid() const { return m_rasterTiler.grid(); }
+
+    /// Get the source dataset's extent, in EPSG:4326 degrees
+    const qmgc::CRSBounds& bounds() const { return m_rasterTiler.bounds(); }
+
+    /// Get the deepest zoom level justified by the source dataset's resolution
+    qmgc::i_zoom maxZoomLevel() const { return m_rasterTiler.maxZoomLevel(); }
+
+    /// Get the tiles spanned by the source dataset at a given zoom level
+    qmgc::TileBounds tileBoundsForZoom(qmgc::i_zoom zoom) const {
+        return m_rasterTiler.tileBoundsForZoom(zoom);
+    }
 
     /**
      * @brief Create the quantized mesh tile.
@@ -99,7 +112,7 @@ public:
      *
      * @return The quantized mesh tile.
      */
-    QuantizedMeshTile createTile(const ctb::TileCoordinate &coord, BordersData& bd) ;
+    QuantizedMeshTile createTile(const qmgc::TileCoordinate &coord, BordersData& bd) ;
 
     /**
      * @brief Get the creation options for this tiler (QMTOptions structure)
@@ -123,17 +136,16 @@ public:
      * @param[out] tileBounds Output variable containing the tile bounds
      * @return Vector of points in the heightmap
      */
-    std::vector<Point_3> getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
+    std::vector<Point_3> getUVHPointsFromRaster(const qmgc::TileCoordinate &coord,
                                                 BordersData& bd,
                                                 float& minHeight, float& maxHeight,
-                                                ctb::CRSBounds& tileBounds) const ;
+                                                qmgc::CRSBounds& tileBounds) const ;
 
 private:
     // --- Attributes ---
+    qmgc::RasterTiler m_rasterTiler; //!< Supplies the raster covered by each tile
     QMTOptions m_options;
     TinCreation::TinCreator m_tinCreator;
-    mutable std::mutex m_mutex; // Mark mutex as mutable because it doesn't represent the object's real state
-                                // Note that we don't need the mutex if we create multiple instances of tilers, as done in qm_tiler right now. We leave it here in case it is needed for other implementations
 
     // --- Private Functions ---
     /**
@@ -177,7 +189,7 @@ private:
     void computeQuantizedMeshHeader(QuantizedMeshTile& qmTile,
                                     const Polyhedron& surface,
                                     const float& minHeight, float& maxHeight,
-                                    const ctb::CRSBounds& tileBounds) const ;
+                                    const qmgc::CRSBounds& tileBounds) const ;
 
 
     /**

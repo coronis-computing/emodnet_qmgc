@@ -21,7 +21,9 @@
 #ifndef EMODNET_QMGC_PROJECTION_TRAITS_3_EXTENDED_H
 #define EMODNET_QMGC_PROJECTION_TRAITS_3_EXTENDED_H
 
-#include <CGAL/internal/Projection_traits_3.h>
+// Note: this header lived at <CGAL/internal/Projection_traits_3.h> up to CGAL 4.x.
+// The CGAL::internal namespace it declares is unchanged.
+#include <CGAL/Kernel_23/internal/Projection_traits_3.h>
 
 
 namespace CGAL {
@@ -53,15 +55,10 @@ namespace internal {
             return squared_distance(p2, s2);
         }
 
-        RT operator()(const Point_3& p, const Point_3& q) const
-        {
-            this->operator()(p,q);
-        }
-
-        RT operator()(const Line_3& l, const Point_3& p) const
-        {
-            this->operator()(l,p);
-        }
+        // Note: declaring operator() above hides all the base class overloads, so bring
+        // them back into scope. These used to be re-declared here as functions calling
+        // this->operator() with the same arguments, which recursed forever.
+        using Squared_distance_projected_3<R,dim>::operator();
     };
 
 

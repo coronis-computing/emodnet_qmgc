@@ -21,7 +21,7 @@
 #ifndef EMODNET_QMGC_ZOOM_SCHEDULER_H
 #define EMODNET_QMGC_ZOOM_SCHEDULER_H
 
-#include <ctb.hpp>
+#include "tiling/geo_types.h"
 
 /**
  * @class ZoomTilesSchedulerStrategy
@@ -42,21 +42,21 @@ class ZoomTilesSchedulerStrategy
 public:
     ZoomTilesSchedulerStrategy() : m_index(0), m_tilesToProcess() {}
 
-    virtual void initSchedule(const ctb::TileBounds& zoomBounds) = 0 ;
+    virtual void initSchedule(const qmgc::TileBounds& zoomBounds) = 0 ;
 
     // The root is only composed of two tiles... and should be always present regardless of the computed zoom bounds
     void initRootSchedule() {
         m_index = 0;
         m_tilesToProcess.clear();
-        m_tilesToProcess.emplace_back(ctb::TilePoint(0,0));
-        m_tilesToProcess.emplace_back(ctb::TilePoint(1,0));
+        m_tilesToProcess.emplace_back(qmgc::TilePoint(0,0));
+        m_tilesToProcess.emplace_back(qmgc::TilePoint(1,0));
     }
 
     /// Get the next tile to process
-    ctb::TilePoint getNextTile() {
+    qmgc::TilePoint getNextTile() {
         if ( finished() )
-            return ctb::TilePoint(0,0) ; // dummy, should never happen
-        ctb::TilePoint tp = m_tilesToProcess[m_index] ;
+            return qmgc::TilePoint(0,0) ; // dummy, should never happen
+        qmgc::TilePoint tp = m_tilesToProcess[m_index] ;
         m_index++ ;
         return tp ;
     }
@@ -72,7 +72,7 @@ public:
 
 protected:
     int m_index ;
-    std::vector<ctb::TilePoint> m_tilesToProcess ;
+    std::vector<qmgc::TilePoint> m_tilesToProcess ;
 };
 
 
@@ -94,11 +94,11 @@ public:
     void setScheduler(std::shared_ptr<ZoomTilesSchedulerStrategy> scheduler ) { m_scheduler = scheduler ;}
 
     /// Replication of the ZoomTilesSchedulerBase interphase
-    void initSchedule(const ctb::TileBounds& zoomBounds) { m_scheduler->initSchedule(zoomBounds) ; }
+    void initSchedule(const qmgc::TileBounds& zoomBounds) { m_scheduler->initSchedule(zoomBounds) ; }
 
     void initRootSchedule() { m_scheduler->initRootSchedule(); }
 
-    ctb::TilePoint getNextTile() { return m_scheduler->getNextTile(); }
+    qmgc::TilePoint getNextTile() { return m_scheduler->getNextTile(); }
     bool finished() { return m_scheduler->finished(); }
     int numTiles() { return m_scheduler->numTiles(); }
     int currentIndex() { return m_scheduler->currentIndex(); }
@@ -119,13 +119,13 @@ class ZoomTilesSchedulerRowwiseStrategy : public ZoomTilesSchedulerStrategy
 {
 public:
     /// Initialize the schedule given the zoom bounds
-    void initSchedule(const ctb::TileBounds& zoomBounds)
+    void initSchedule(const qmgc::TileBounds& zoomBounds)
     {
         m_index = 0 ;
         m_tilesToProcess.clear() ;
         for (int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++) {
             for (int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx++) {
-                m_tilesToProcess.push_back(ctb::TilePoint(tx, ty));
+                m_tilesToProcess.push_back(qmgc::TilePoint(tx, ty));
             }
         }
     }
@@ -143,13 +143,13 @@ class ZoomTilesSchedulerColumnwiseStrategy : public ZoomTilesSchedulerStrategy
 {
 public:
     /// Initialize the schedule given the zoom bounds
-    void initSchedule(const ctb::TileBounds& zoomBounds)
+    void initSchedule(const qmgc::TileBounds& zoomBounds)
     {
         m_index = 0 ;
         m_tilesToProcess.clear() ;
         for (int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx++) {
             for (int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++) {
-                m_tilesToProcess.push_back(ctb::TilePoint(tx, ty));
+                m_tilesToProcess.push_back(qmgc::TilePoint(tx, ty));
             }
         }
     }
@@ -169,19 +169,19 @@ class ZoomTilesSchedulerChessboardStrategy : public ZoomTilesSchedulerStrategy
 {
 public:
     /// Initialize the schedule given the zoom bounds
-    void initSchedule(const ctb::TileBounds& zoomBounds)
+    void initSchedule(const qmgc::TileBounds& zoomBounds)
     {
         m_index = 0 ;
         m_tilesToProcess.clear() ;
         for (int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++) {
             if ( ty%2 == 0 ) {
                 for (int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx+=2) {
-                    m_tilesToProcess.push_back(ctb::TilePoint(tx, ty));
+                    m_tilesToProcess.push_back(qmgc::TilePoint(tx, ty));
                 }
             }
             else {
                 for (int tx = zoomBounds.getMinX()+1; tx <= zoomBounds.getMaxX(); tx+=2) {
-                    m_tilesToProcess.push_back(ctb::TilePoint(tx, ty));
+                    m_tilesToProcess.push_back(qmgc::TilePoint(tx, ty));
                 }
             }
         }
@@ -189,12 +189,12 @@ public:
         for (int ty = zoomBounds.getMinY(); ty <= zoomBounds.getMaxY(); ty++) {
             if ( ty%2 == 0 ) {
                 for (int tx = zoomBounds.getMinX()+1; tx <= zoomBounds.getMaxX(); tx+=2) {
-                    m_tilesToProcess.push_back(ctb::TilePoint(tx, ty));
+                    m_tilesToProcess.push_back(qmgc::TilePoint(tx, ty));
                 }
             }
             else {
                 for (int tx = zoomBounds.getMinX(); tx <= zoomBounds.getMaxX(); tx+=2) {
-                    m_tilesToProcess.push_back(ctb::TilePoint(tx, ty));
+                    m_tilesToProcess.push_back(qmgc::TilePoint(tx, ty));
                 }
             }
         }
@@ -214,7 +214,7 @@ public:
     typedef std::vector<std::vector<bool>> VisitedMatrix ;
 
     /// Initialize the schedule given the zoom bounds
-    void initSchedule(const ctb::TileBounds& zoomBounds)
+    void initSchedule(const qmgc::TileBounds& zoomBounds)
     {
         m_index = 0 ;
         m_tilesToProcess.clear() ;
@@ -239,9 +239,9 @@ public:
     }
 
 private:
-    void recursiveAddTiles(const int& tx, const int& ty, const ctb::TileBounds& zoomBounds, VisitedMatrix& visited ) {
+    void recursiveAddTiles(const int& tx, const int& ty, const qmgc::TileBounds& zoomBounds, VisitedMatrix& visited ) {
         if ( inBounds( tx, ty, zoomBounds ) ) {
-            m_tilesToProcess.push_back(ctb::TilePoint(tx, ty)) ;
+            m_tilesToProcess.push_back(qmgc::TilePoint(tx, ty)) ;
 
             int txx = tx-zoomBounds.getMinX() ;
             int tyy = ty-zoomBounds.getMinY() ;
@@ -262,7 +262,7 @@ private:
         }
     }
 
-    bool inBounds( const int& tx, const int& ty, const ctb::TileBounds& zoomBounds ) const {
+    bool inBounds( const int& tx, const int& ty, const qmgc::TileBounds& zoomBounds ) const {
         return tx <= zoomBounds.getMaxX() && tx >= zoomBounds.getMinX() &&
                ty <= zoomBounds.getMaxY() && ty >= zoomBounds.getMinY() ;
     }
@@ -283,7 +283,7 @@ public:
     typedef std::vector<std::vector<bool>> VisitedMatrix ;
 
     /// Initialize the schedule given the zoom bounds
-    void initSchedule(const ctb::TileBounds& zoomBounds)
+    void initSchedule(const qmgc::TileBounds& zoomBounds)
     {
         m_index = 0 ;
         m_tilesToProcess.clear() ;
@@ -305,15 +305,15 @@ public:
         // Middle point
         unsigned int midY = zoomBounds.getMinY() + ( (zoomBounds.getMaxY()-zoomBounds.getMinY())/2 ) ;
         unsigned int midX = zoomBounds.getMinX() + ( (zoomBounds.getMaxX()-zoomBounds.getMinX())/2 ) ;
-        ctb::TilePoint midPt( midX, midY ) ;
+        qmgc::TilePoint midPt( midX, midY ) ;
 
         // Init the queue with the middle point
-        std::queue<ctb::TilePoint> queue ;
+        std::queue<qmgc::TilePoint> queue ;
         queue.push(midPt) ;
 
         while (!queue.empty()) {
             // Pop the next value on the queue
-            ctb::TilePoint tp = queue.front() ;
+            qmgc::TilePoint tp = queue.front() ;
             queue.pop() ;
 
             int tx = tp.x ;
@@ -328,22 +328,22 @@ public:
 
                 // Visit up
                 if ( inBounds(tx+1, ty, zoomBounds) && !visited[tyy][txx+1] )
-                    queue.push(ctb::TilePoint(tx+1, ty)) ;
+                    queue.push(qmgc::TilePoint(tx+1, ty)) ;
                 // Visit down
                 if ( inBounds(tx-1, ty, zoomBounds) && !visited[tyy][txx-1] )
-                    queue.push(ctb::TilePoint(tx-1, ty)) ;
+                    queue.push(qmgc::TilePoint(tx-1, ty)) ;
                 // Visit left
                 if ( inBounds(tx, ty-1, zoomBounds) && !visited[tyy-1][txx] )
-                    queue.push(ctb::TilePoint(tx, ty-1)) ;
+                    queue.push(qmgc::TilePoint(tx, ty-1)) ;
                 // Visit right
                 if ( inBounds(tx, ty+1, zoomBounds) && !visited[tyy+1][txx] )
-                    queue.push(ctb::TilePoint(tx, ty+1)) ;
+                    queue.push(qmgc::TilePoint(tx, ty+1)) ;
             }
         }
     }
 
 private:
-    bool inBounds( const int& tx, const int& ty, const ctb::TileBounds& zoomBounds ) const {
+    bool inBounds( const int& tx, const int& ty, const qmgc::TileBounds& zoomBounds ) const {
         return tx <= zoomBounds.getMaxX() && tx >= zoomBounds.getMinX() &&
                ty <= zoomBounds.getMaxY() && ty >= zoomBounds.getMinY() ;
     }

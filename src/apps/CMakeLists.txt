@@ -5,6 +5,7 @@ add_executable(qm_tiler qm_tiler.cpp
                         ../base/gzip_file_writer.cpp
                         ../base/quantized_mesh.cpp
                         ../base/quantized_mesh_tiler.cpp
+                        ../base/tiling/raster_tiler.cpp
                         ../../3rdParty/meshoptimizer/vcacheoptimizer.cpp
                         ../../3rdParty/meshoptimizer/vfetchoptimizer.cpp
                         ../base/zoom_tiles_border_vertices_cache.cpp
@@ -12,7 +13,6 @@ add_executable(qm_tiler qm_tiler.cpp
 target_link_libraries(qm_tiler TinCreation
                                ${Boost_LIBRARIES}
                                ${ZLIB_LIBRARIES}
-                               ${CTB_LIBRARY}
                                ${CGAL_LIBRARIES}
                                ${GDAL_LIBRARY})
 

@@ -23,7 +23,7 @@
 
 
 
-bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData &bd)
+void ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int& tileX, const int& tileY, BordersData &bd)
 {
     /* Eastern vertices */
     // They come from tile tileX+1, tileY, if exists...
@@ -172,7 +172,7 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
 
 
 
-bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile( const int& tileX, const int& tileY,
+void ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile( const int& tileX, const int& tileY,
                                                                         const std::vector<Point_3>& easternVerticesToPreserve,
                                                                         const std::vector<Point_3>& westernVerticesToPreserve,
                                                                         const std::vector<Point_3>& northernVerticesToPreserve,

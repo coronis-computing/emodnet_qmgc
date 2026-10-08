@@ -30,8 +30,6 @@
 #include <iostream>
 // Project-specific
 #include "quantized_mesh_tile.h"
-// Cesium-terrain-builder
-#include <ctb.hpp>
 
 using namespace std ;
 namespace po = boost::program_options ;
@@ -65,7 +63,7 @@ int main ( int argc, char **argv)
     }
 
     // Read the quantized mesh tile
-    const ctb::TileCoordinate coord(z, x, y);
+    const qmgc::TileCoordinate coord(z, x, y);
     QuantizedMeshTile qmt(coord);
     if ( !qmt.readFile(inputFile) ) {
         cerr << "[ERROR] Cannot read the input file" << endl ;

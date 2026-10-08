@@ -31,10 +31,9 @@
 #include <fstream>
 // JSON
 #include <nlohmann/json.hpp>
-// Cesium-terrain-builder
-#include <ctb.hpp>
 // Project-specific
 #include "quantized_mesh_tile.h"
+#include "tiling/global_geodetic_grid.h"
 
 using namespace std ;
 namespace po = boost::program_options ;
@@ -133,9 +132,13 @@ int main ( int argc, char **argv)
     ifs >> j;
     json jZooms = j["available"] ; // We're only interested in the zooms part
 
-    ctb::GlobalGeodetic profile;
+    qmgc::GlobalGeodeticGrid profile;
     double globalMeanDiffLon = 0, globalMeanDiffLat = 0, globalMeanDiffHeight = 0;
     for ( int zoom = 0; zoom < jZooms.size(); zoom++ ) {
+        // Levels without tiles (e.g., above the pyramid's minimum zoom) are listed empty
+        if (jZooms[zoom].empty())
+            continue;
+
         int startX = jZooms[zoom][0]["startX"].get<int>();
         int endX = jZooms[zoom][0]["endX"].get<int>();
         int startY = jZooms[zoom][0]["startY"].get<int>();
@@ -157,7 +160,7 @@ int main ( int argc, char **argv)
             for ( int y = startY; y <= endY; y++ ) {
                 // Load the tile
                 std::ostringstream ss; ss << inputDir << "/" << zoom << "/" << x << "/" << y << ".terrain";
-                const ctb::TileCoordinate coord(zoom, x, y);
+                const qmgc::TileCoordinate coord(zoom, x, y);
                 if (displayTileStats || displayTileInfo) cout << "Reading tile " << zoom << ", " << x << ", " << y << endl;
                 QuantizedMeshTile qmt(coord);
                 if ( !qmt.readFile(ss.str()) ) {
@@ -167,7 +170,7 @@ int main ( int argc, char **argv)
                 QuantizedMesh::EdgeIndices eiO = qmt.getEdgeIndices();
 
                 if (displayTileInfo) {
-                    ctb::CRSBounds tileBounds = profile.tileBounds(qmt);
+                    qmgc::CRSBounds tileBounds = profile.tileBounds(qmt);
                     cout << "Tile Bounds:" << endl;
                     cout << "minX = " << tileBounds.getMinX() << endl;
                     cout << "maxX = " << tileBounds.getMaxX() << endl;
@@ -192,7 +195,7 @@ int main ( int argc, char **argv)
                     if ( it->first >= startX && it->first <= endX && it->second >= startY && it->second <= endY ) {
                         std::ostringstream ssN; ssN << inputDir << "/" << zoom << "/" << it->first << "/" << it->second << ".terrain";
                         if (displayTileStats || displayTileInfo) cout << "Reading neighboring tile " << zoom << ", " << it->first << ", " << it->second << endl << " from file " << ssN.str() << endl;
-                        const ctb::TileCoordinate coord(zoom, it->first, it->second);
+                        const qmgc::TileCoordinate coord(zoom, it->first, it->second);
                         QuantizedMeshTile qmtN(coord);
                         if (!qmtN.readFile(ssN.str())) {
                             cerr << "[ERROR] Cannot read the input file" << endl;
@@ -202,7 +205,7 @@ int main ( int argc, char **argv)
                         QuantizedMesh::VertexData vdN = qmtN.getVertexData();
 
                         if (displayTileInfo) {
-                            ctb::CRSBounds tileBoundsN = profile.tileBounds(qmtN);
+                            qmgc::CRSBounds tileBoundsN = profile.tileBounds(qmtN);
                             cout << "Neighboring Tile Bounds:" << endl;
                             cout << "minX = " << tileBoundsN.getMinX() << endl;
                             cout << "maxX = " << tileBoundsN.getMaxX() << endl;

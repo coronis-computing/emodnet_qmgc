@@ -30,9 +30,9 @@ simplify(const std::vector<Point_3> &pts) {
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
     // Simplify using grid simplification (erase-remove idiom)
-    ptsToSimpECEF.erase(CGAL::grid_simplify_point_set(ptsToSimpECEF.begin(),
-                                                      ptsToSimpECEF.end(),
-                                                      m_cellSize),
+    // Note: since CGAL 5.x these functions take the point range itself rather
+    // than an iterator pair, and their extra arguments are named parameters.
+    ptsToSimpECEF.erase(CGAL::grid_simplify_point_set(ptsToSimpECEF, m_cellSize),
                         ptsToSimpECEF.end());
 
     // Convert to the local (XY-projectable) coordinates again

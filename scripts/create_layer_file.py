@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import argparse
 import json
@@ -45,37 +45,42 @@ if __name__ == '__main__':
 
     # Get the zoom levels
 
-    # List of folders in the base level
-    list_zoom_dirs = get_folders(param.tms_dir)
-    list_zoom_ints = map(int, list_zoom_dirs) # As integers
+    # List of folders in the base level (only the numeric ones are zoom levels)
+    # Note: lists rather than map() objects, which in Python 3 can only be consumed once
+    list_zoom_ints = sorted(int(d) for d in get_folders(param.tms_dir) if d.isdigit())
+    if not list_zoom_ints:
+        raise SystemExit("[ERROR] No zoom level folders found in " + param.tms_dir)
 
     # Extract the minimum and maximum zoom from the available dirs
     data["minzoom"] = min(list_zoom_ints)
     data["maxzoom"] = max(list_zoom_ints)
 
     # Get the limits for each zoom
-    list_zoom_ints = sorted(list_zoom_ints)
-
-    available = []
-    for folder_x_int in list_zoom_ints:
-        cur_limits = {}
-        folder_x = str(folder_x_int)
+    # Note: Cesium indexes "available" by zoom level, so it must start at zoom 0
+    # even if the pyramid does not. Levels without tiles get an empty list.
+    available = [[] for _ in range(data["maxzoom"] + 1)]
+    for zoom in list_zoom_ints:
+        folder_zoom = os.path.join(param.tms_dir, str(zoom))
 
         # --- Limits in X ---
-        dir_cnt_X = get_folders(os.path.join(param.tms_dir, folder_x))
-        dir_cnt_X_ints = map(int, dir_cnt_X)  # As integers
-        cur_limits["startX"] = min(dir_cnt_X_ints)
-        cur_limits["endX"] = max(dir_cnt_X_ints)
+        dir_cnt_X = [d for d in get_folders(folder_zoom) if d.isdigit()]
+        if not dir_cnt_X:
+            continue
+        dir_cnt_X_ints = [int(d) for d in dir_cnt_X]
 
         # --- Limits in Y ---
-        dir_cnt_Y = get_files(os.path.join(param.tms_dir, folder_x, dir_cnt_X[0])) # We use the first folder in X, they are all supposed to have the same number of tiles and with the same numbering
-        dir_cnt_Y = [f.replace(".terrain", "") for f in dir_cnt_Y] # Remove the ".terrain" part of the files
-        dir_cnt_Y_ints = map(int, dir_cnt_Y)  # As integers
-        cur_limits["startY"] = min(dir_cnt_Y_ints)
-        cur_limits["endY"] = max(dir_cnt_Y_ints)
+        # Gathered over all the X folders, rather than assuming they all contain the same tiles
+        dir_cnt_Y_ints = []
+        for folder_x in dir_cnt_X:
+            files_Y = get_files(os.path.join(folder_zoom, folder_x))
+            dir_cnt_Y_ints.extend(int(f[:-len(".terrain")]) for f in files_Y
+                                  if f.endswith(".terrain") and f[:-len(".terrain")].isdigit())
+        if not dir_cnt_Y_ints:
+            continue
 
-        cur_limits_list = [cur_limits]
-        available.append(cur_limits_list)
+        cur_limits = {"startX": min(dir_cnt_X_ints), "endX": max(dir_cnt_X_ints),
+                      "startY": min(dir_cnt_Y_ints), "endY": max(dir_cnt_Y_ints)}
+        available[zoom] = [cur_limits]
 
     # Compute the bounds of the map based on the coordinates of the tiles in the deeper zoom level
     deeper_limits = available[data["maxzoom"]][0]

@@ -19,7 +19,7 @@
 // Author: Ricard Campos (ricardcd@gmail.com)
 
 #include "quantized_mesh_tiles_pyramid_builder.h"
-#include <ctb.hpp>
+#include "tiling/geo_types.h"
 #include "zoom_tiles_border_vertices_cache.h"
 #include <future>
 
@@ -51,14 +51,14 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        ctb::TileBounds zoomBounds;
+        qmgc::TileBounds zoomBounds;
         if (zoom == 0) {
-            zoomBounds = ctb::TileBounds(ctb::TileCoordinate(0,0,0), ctb::TileCoordinate(0,1,0));
+            zoomBounds = qmgc::TileBounds(qmgc::TileCoordinate(0,0,0), qmgc::TileCoordinate(0,1,0));
         }
         else {
-            ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
-            ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
-            zoomBounds = ctb::TileBounds(ll, ur);
+            qmgc::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
+            qmgc::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
+            zoomBounds = qmgc::TileBounds(ll, ur);
         }
 
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
@@ -82,9 +82,9 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
             // Throw as many threads as possible to run in parallel
             int numThread = 0; // Number of threads thrown in this iteration
             std::vector<std::vector<Point_3>> tileEastVerticesVec, tileWestVerticesVec, tileNorthVerticesVec, tileSouthVerticesVec ;
-            std::vector<ctb::TileCoordinate> coords ;
+            std::vector<qmgc::TileCoordinate> coords ;
             std::vector<std::future<BordersData> > futures ;
-            ctb::TilePoint tp;
+            qmgc::TilePoint tp;
             while (numThread < m_numThreads && getNextTileToProcess(tp)) {
                 numLaunchedProcesses++ ;
                 std::cout << "Processing tile " << numLaunchedProcesses << "/" << m_scheduler.numTiles()
@@ -93,7 +93,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
                           << "(num. cache entries = " << m_bordersCache.numCacheEntries() << ")"
                           << std::endl;
 
-                ctb::TileCoordinate coord(zoom, tp.x, tp.y);
+                qmgc::TileCoordinate coord(zoom, tp.x, tp.y);
                 coords.push_back(coord) ;
 
                 // Get constraints at borders from cache
@@ -143,14 +143,14 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        ctb::TileBounds zoomBounds;
+        qmgc::TileBounds zoomBounds;
         if (zoom == 0) {
-            zoomBounds = ctb::TileBounds(ctb::TileCoordinate(0,0,0), ctb::TileCoordinate(0,1,0));
+            zoomBounds = qmgc::TileBounds(qmgc::TileCoordinate(0,0,0), qmgc::TileCoordinate(0,1,0));
         }
         else {
-            ctb::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
-            ctb::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
-            zoomBounds = ctb::TileBounds(ll, ur);
+            qmgc::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
+            qmgc::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
+            zoomBounds = qmgc::TileBounds(ll, ur);
         }
 
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
@@ -164,7 +164,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
             int numThread = 0; // Number of threads thrown in this iteration
             std::vector<std::future<BordersData> > futures ;
             while (numThread < m_numThreads && !m_scheduler.finished()) {
-                ctb::TilePoint tp = m_scheduler.getNextTile();
+                qmgc::TilePoint tp = m_scheduler.getNextTile();
 
                 numLaunchedProcesses++ ;
 
@@ -173,7 +173,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
                           << " (thread " << numThread << ")"
                           << std::endl ;
 
-                ctb::TileCoordinate coord(zoom, tp.x, tp.y);
+                qmgc::TileCoordinate coord(zoom, tp.x, tp.y);
 
                 // Launch thread
                 BordersData bd; // empty borders...
@@ -196,10 +196,10 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
 
 
 
-bool QuantizedMeshTilesPyramidBuilder::getNextTileToProcess(ctb::TilePoint& tileXY)
+bool QuantizedMeshTilesPyramidBuilder::getNextTileToProcess(qmgc::TilePoint& tileXY)
 {
     // Prioritize the processing of those tiles waiting because of restrictions in neighboring tiles (allows to clear memory from the cache when not needed anymore)
-    for ( std::vector<ctb::TilePoint>::iterator it = m_tilesWaitingToProcess.begin();
+    for ( std::vector<qmgc::TilePoint>::iterator it = m_tilesWaitingToProcess.begin();
           it != m_tilesWaitingToProcess.end(); ++it ) {
         if ( m_bordersCache.canTileStartProcessing(it->x, it->y) ) {
             tileXY = *it ;
@@ -234,7 +234,7 @@ bool QuantizedMeshTilesPyramidBuilder::getNextTileToProcess(ctb::TilePoint& tile
 
 
 BordersData
-QuantizedMeshTilesPyramidBuilder::createTile( const ctb::TileCoordinate& coord,
+QuantizedMeshTilesPyramidBuilder::createTile( const qmgc::TileCoordinate& coord,
                                                       const int& numThread,
                                                       const std::string& outDir,
                                                       const BordersData& bd )
@@ -261,7 +261,7 @@ QuantizedMeshTilesPyramidBuilder::createTile( const ctb::TileCoordinate& coord,
 
 
 
-std::string QuantizedMeshTilesPyramidBuilder::getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
+std::string QuantizedMeshTilesPyramidBuilder::getTileFileAndCreateDirs( const qmgc::TileCoordinate &coord,
                                                                                 const std::string &mainOutDir )
 {
     // Check/create the tile folder (zoom/x)
@@ -280,7 +280,7 @@ std::string QuantizedMeshTilesPyramidBuilder::getTileFileAndCreateDirs( const ct
 
 
 
-std::string QuantizedMeshTilesPyramidBuilder::getDebugTileFileAndCreateDirs( const ctb::TileCoordinate &coord )
+std::string QuantizedMeshTilesPyramidBuilder::getDebugTileFileAndCreateDirs( const qmgc::TileCoordinate &coord )
 {
     // Check/create the tile folder (zoom/x)
     fs::path mainOutDirPath(m_debugDir) ;

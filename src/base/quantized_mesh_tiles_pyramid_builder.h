@@ -21,7 +21,7 @@
 #ifndef EMODNET_QMGC_QUANTIZED_MESH_TILES_PYRAMID_BUILDER_H
 #define EMODNET_QMGC_QUANTIZED_MESH_TILES_PYRAMID_BUILDER_H
 
-#include <ctb.hpp>
+#include "tiling/geo_types.h"
 #include "tin_creation/tin_creation_cgal_types.h"
 #include "quantized_mesh_tiler.h"
 #include "zoom_tiles_scheduler.h"
@@ -75,7 +75,7 @@ public:
      *
      * @return The path of the tile's file.
      */
-    static std::string getTileFileAndCreateDirs( const ctb::TileCoordinate &coord,
+    static std::string getTileFileAndCreateDirs( const qmgc::TileCoordinate &coord,
                                                  const std::string &mainOutDir ) ;
 
     /**
@@ -87,7 +87,7 @@ public:
      * @param bd The BordersData structure input. It contains the data to preserve at the borders as a result of previously generated tiles.
      * @return It returns the data at the borders to be maintained for neighboring tiles to be generated in the future (i.e., what was already restricted in \p bd, plus the new borders created).
      */
-    BordersData createTile( const ctb::TileCoordinate& coord,
+    BordersData createTile( const qmgc::TileCoordinate& coord,
                             const int& numThread,
                             const std::string& outDir,
                             const BordersData& bd ) ;
@@ -97,14 +97,14 @@ public:
      * @param tileXY The (x,y) coordinates of the tile to process within the current zoom
      * @return Returns true if a tile to be processed was located in the queue, false otherwise
      */
-    bool getNextTileToProcess(ctb::TilePoint& tileXY) ;
+    bool getNextTileToProcess(qmgc::TilePoint& tileXY) ;
 
 private:
     // --- Attributes ---
     int m_numThreads ;
     std::vector<QuantizedMeshTiler> m_tilers ;
     ZoomTilesScheduler m_scheduler ;
-    std::vector<ctb::TilePoint> m_tilesWaitingToProcess ;
+    std::vector<qmgc::TilePoint> m_tilesWaitingToProcess ;
     ZoomTilesBorderVerticesCache m_bordersCache ;
     bool m_debugMode ;
     std::string m_debugDir ;
@@ -115,7 +115,7 @@ private:
     *
     * @return The path of the debug OFF tile's file.
     */
-    std::string getDebugTileFileAndCreateDirs( const ctb::TileCoordinate &coord ) ;
+    std::string getDebugTileFileAndCreateDirs( const qmgc::TileCoordinate &coord ) ;
 
 };
 

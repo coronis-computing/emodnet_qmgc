@@ -30,13 +30,13 @@
 #include <gdal.h>
 #include "misc_utils.h"
 
-QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coord, BordersData& bd)
+QuantizedMeshTile QuantizedMeshTiler::createTile( const qmgc::TileCoordinate &coord, BordersData& bd)
 {
     // Get a terrain tile represented by the tile coordinate
     QuantizedMeshTile qmTile(coord, m_options.RefEllipsoid );
 
     float minHeight, maxHeight;
-    ctb::CRSBounds tileBounds;
+    qmgc::CRSBounds tileBounds;
     std::vector<Point_3 > uvhPts = getUVHPointsFromRaster(coord, bd,
                                                           minHeight, maxHeight, tileBounds );
 
@@ -62,36 +62,38 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const ctb::TileCoordinate &coo
 
 
 
-std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const ctb::TileCoordinate &coord,
+std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(const qmgc::TileCoordinate &coord,
                                                                              BordersData& bd,
                                                                              float& minHeight, float& maxHeight,
-                                                                             ctb::CRSBounds& tileBounds ) const
+                                                                             qmgc::CRSBounds& tileBounds ) const
 {
-    m_mutex.lock() ;
-    ctb::GDALTile *rasterTile = createRasterTile(coord); // the raster associated with this tile coordinate
-    GDALRasterBand *heightsBand = rasterTile->dataset->GetRasterBand(1);
+    // The raster associated with this tile coordinate. The dataset owns itself now,
+    // so an exception below cannot leak it; there is also no mutex to strand, since
+    // every worker thread holds its own tiler over its own GDALDataset.
+    const int numSamples = m_options.HeighMapSamplingSteps;
+    const qmgc::GdalDatasetPtr rasterTile = m_rasterTiler.createRasterTile(coord, numSamples, tileBounds);
+    GDALRasterBand *heightsBand = rasterTile->GetRasterBand(1);
 
-    // The commented snipplet below retrieves the pixel size of this tile
-//    double adfGeoTransform[6];
-//    rasterTile->dataset->GetGeoTransform(adfGeoTransform);
-//    std::cout << "Pixel size = " << adfGeoTransform[1] << ", " << adfGeoTransform[5] << std::endl;
+    // The heights are read as float, so compare against the nodata value as a float
+    // too. Comparing a float height against the double nodata value never matches
+    // when that value is not exactly representable as a float (e.g., -99999.9).
+    int hasNoData = FALSE;
+    const double noDataValueDouble = heightsBand->GetNoDataValue(&hasNoData);
+    const float noDataValue = static_cast<float>(noDataValueDouble);
+    const bool noDataIsNaN = hasNoData && std::isnan(noDataValueDouble);
 
-    double noDataValue = heightsBand->GetNoDataValue();
-    double resolution                                                                                                               ;
-    tileBounds = terrainTileBounds(coord, resolution);
-
-    // Copy the raster data into an array
-    float rasterHeights[m_options.HeighMapSamplingSteps * m_options.HeighMapSamplingSteps];
-    if (heightsBand->RasterIO(GF_Read, 0, 0, 256, 256,
-                              (void *) rasterHeights,
+    // Copy the raster data into an array.
+    // Note: heap allocated. This used to be a variable-length array, which is not
+    // standard C++ and put a quarter of a megabyte on the stack.
+    std::vector<float> rasterHeights(static_cast<size_t>(numSamples) * numSamples);
+    if (heightsBand->RasterIO(GF_Read, 0, 0, numSamples, numSamples,
+                              rasterHeights.data(),
                               m_options.HeighMapSamplingSteps, m_options.HeighMapSamplingSteps,
                               GDT_Float32, 0, 0) != CE_None) {
-        throw ctb::CTBException("Could not read heights from raster");
-
-        for (int a = 0; a < m_options.HeighMapSamplingSteps*m_options.HeighMapSamplingSteps; a++)
-                rasterHeights[a] = 0.0;
+        throw qmgc::QmgcException("Could not read heights from the raster of tile " +
+                                  std::to_string(coord.zoom) + "/" + std::to_string(coord.x) + "/" +
+                                  std::to_string(coord.y));
     }
-    m_mutex.unlock() ;
 
     // Create a base triangulation (using Delaunay) with all the raster info available
     std::vector< Point_3 > heightMapPoints ;
@@ -127,12 +129,14 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
             // Compute the height value
             float height = rasterHeights[j * m_options.HeighMapSamplingSteps + i];
 
+            // When no data is available, we assume ground data.
+            // Note: checked before clipping, which would otherwise turn a nodata
+            // value outside the clipping range into a valid-looking height.
+            if ( hasNoData && ( noDataIsNaN ? std::isnan(height) : height == noDataValue ) )
+                height = 0 ;
+
             // Clipping
             height = clip( height, m_options.ClippingLowValue, m_options.ClippingHighValue ) ;
-
-            // When no data is available, we assume ground data
-            if ( height == noDataValue )
-                height = 0 ;
 
             // If the input DEM contains bathymetry, consider the data as depth instead of altitude (negative value!)
             if ( m_options.IsBathymetry )
@@ -208,8 +212,6 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
         uvhPts.push_back( Point_3( u, v, h ) ) ;
     }
 
-    delete rasterTile;
-
     return uvhPts ;
 }
 
@@ -218,15 +220,22 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
 void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
                                                      const Polyhedron& surface,
                                                      const float& minHeight, float& maxHeight,
-                                                     const ctb::CRSBounds& tileBounds ) const
+                                                     const qmgc::CRSBounds& tileBounds ) const
 {
     // Convert to lat/lon format
+    // Note: the surface is in normalized u/v/h coordinates, all in [0..1], so the
+    // height must be mapped back to meters too. Using the normalized value directly
+    // computed the bounding sphere and horizon occlusion point of a flat surface
+    // lying on the ellipsoid, regardless of the actual relief of the tile.
+    // Also note that lat/lon are kept in double precision: as floats, they lose
+    // about a meter of precision.
     std::vector<Point_3> latLonPoints;
     for ( Polyhedron::Point_const_iterator it = surface.points_begin(); it != surface.points_end(); ++it ) {
         // In Latitude, Longitude, Height format
-        float lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * it->y());
-        float lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * it->x());
-        latLonPoints.push_back(Point_3(lat, lon, it->z()));
+        double lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * it->y());
+        double lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * it->x());
+        double height = remap(it->z(), 0.0, 1.0, minHeight, maxHeight);
+        latLonPoints.push_back(Point_3(lat, lon, height));
     }
 
     // Points in ECEF coordinates

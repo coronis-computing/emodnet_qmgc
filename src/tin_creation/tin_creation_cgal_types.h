@@ -49,10 +49,9 @@
 
 // Simplification
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_stop_predicate.h> // Stop-condition policy based on a fixed number of desired output edges
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h> // // Stop-condition policy that stops when the number of undirected edges drops below a given % of the initial count
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_count_stop_predicate.h> // Stop-condition policy based on a fixed number of desired output edges
+// Note: LindstromTurk_params no longer has a header of its own; it comes with the cost policy.
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_cost.h>
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_params.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/LindstromTurk_placement.h>
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Bounded_normal_change_placement.h>
 #include <CGAL/Polygon_2.h>
@@ -108,10 +107,10 @@ typedef CGAL::Min_sphere_of_points_d_traits_3<K, FT>        MinSphereTraits;
 typedef CGAL::Min_sphere_of_spheres_d<MinSphereTraits>      MinSphere;
 typedef MinSphereTraits::Sphere                             Sphere;
 typedef SMS::LindstromTurk_cost<Polyhedron>                 SimplificationCost;
-typedef SMS::LindstromTurk_params                           SimplificationCostParams;
+typedef SMS::internal::LindstromTurk_params                 SimplificationCostParams; // Moved into the internal namespace in CGAL 5.x
 typedef SMS::Bounded_normal_change_placement<
         SMS::LindstromTurk_placement<Polyhedron> >          SimplificationPlacement; // Note: Do not change this to use edge_length cost! While it lowers computational overhead, it will certainly destroy the border edges
-typedef SMS::Count_stop_predicate<Polyhedron>               SimplificationStopPredicate;
+typedef SMS::Edge_count_stop_predicate<Polyhedron>          SimplificationStopPredicate; // Named Count_stop_predicate before CGAL 5.x
 
 // Polyline simplification related
 typedef PS::Stop_above_cost_threshold                       PSStopCost;

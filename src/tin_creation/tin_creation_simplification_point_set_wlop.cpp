@@ -30,13 +30,20 @@ simplify(const std::vector<Point_3> &pts) {
     std::vector<Point_3> ptsToSimpECEF = this->convertUVHToECEF(pts);
 
     std::vector<Point_3> ptsSimpECEF;
+    // Note: since CGAL 5.x this takes the point range itself, and its tuning
+    // arguments are named parameters rather than positional ones.
+    //
+    // m_iterNumber is passed explicitly here: it is set from the
+    // --tc-ps-wlop-iter-number option but was never forwarded to CGAL, so that
+    // option silently did nothing. CGAL's default matches the option's default
+    // of 35, so wiring it up leaves default runs unchanged.
     CGAL::wlop_simplify_and_regularize_point_set
             <Concurrency_tag>
-            (ptsToSimpECEF.begin(),
-             ptsToSimpECEF.end(),
+            (ptsToSimpECEF,
              std::back_inserter(ptsSimpECEF),
-             m_retainPercentage,
-             m_radius
+             CGAL::parameters::select_percentage(m_retainPercentage)
+                     .neighbor_radius(m_radius)
+                     .number_of_iterations(m_iterNumber)
             );
 
     // Convert to the local (XY-projectable) coordinates again

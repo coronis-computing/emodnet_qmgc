@@ -29,8 +29,11 @@
 #ifndef EMODNET_QMGC_CGAL_FURTHER_CONSTRAINED_PLACEMENT_H
 #define EMODNET_QMGC_CGAL_FURTHER_CONSTRAINED_PLACEMENT_H
 
-#include <CGAL/Surface_mesh_simplification/Detail/Common.h>
+// Note: CGAL/Surface_mesh_simplification/Detail/Common.h was removed in CGAL 5.x.
+// It was what pulled boost::optional into scope here, so include it explicitly.
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_profile.h>
+#include <CGAL/boost/graph/iterator.h>
+#include <boost/optional.hpp>
 #include <iostream>
 
 
@@ -60,8 +63,9 @@ namespace CGAL {
                     : BasePlacement(base), Edge_is_constrained_map(edgesMap), Vertex_is_constrained_map(vertMap) {}
 
             template<typename Profile>
-            optional<typename Profile::Point> operator()(Profile const &aProfile) const {
-                typedef typename Profile::ECM ECM;
+            boost::optional<typename Profile::Point> operator()(Profile const &aProfile) const {
+                // Note: Edge_profile::ECM was renamed Triangle_mesh in CGAL 5.x
+                typedef typename Profile::Triangle_mesh ECM;
                 typedef typename CGAL::Halfedge_around_target_iterator<ECM> in_edge_iterator;
 
                 // Constrained vertices
@@ -74,12 +78,10 @@ namespace CGAL {
                 }
                 else if ( isConstrainedV0 ) {
                     // v0 is constrained, return it as the placement
-                    typename Profile::Point p = get(aProfile.vertex_point_map(), aProfile.v0()) ;
                     return get(aProfile.vertex_point_map(), aProfile.v0()) ;
                 }
                 else if ( isConstrainedV1 ) {
                     // v1 is constrained, return it as the placement
-                    typename Profile::Point p = get(aProfile.vertex_point_map(), aProfile.v1()) ;
                     return get(aProfile.vertex_point_map(), aProfile.v1()) ;
                 }
 

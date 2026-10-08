@@ -24,6 +24,7 @@
 #include "quantized_mesh.h"
 #include "ellipsoid.h"
 #include "tin_creation/tin_creation_cgal_types.h"
+#include "tiling/geo_types.h"
 
 
 /**
@@ -31,9 +32,8 @@
  * @brief Encapsulates a Tile in Quantized Mesh format *
  */
 class QuantizedMeshTile :
-public QuantizedMesh, public ctb::Tile
+public QuantizedMesh, public qmgc::TileCoordinate
 {
-    friend class TerrainTiler;
     friend class QuantizedMeshTiler;
 
 public:
@@ -46,10 +46,10 @@ public:
      * @param coord Coordinates of the tile
      * @param e The reference Ellipsoid to use
      */
-    QuantizedMeshTile(const ctb::TileCoordinate &coord,
+    QuantizedMeshTile(const qmgc::TileCoordinate &coord,
                       const Ellipsoid& e = WGS84Ellipsoid())
             : QuantizedMesh()
-            , Tile(coord)
+            , qmgc::TileCoordinate(coord)
             , m_ellipsoid(e) {}
 
     /**
@@ -59,10 +59,10 @@ public:
      * @param e The reference Ellipsoid to use
      */
     QuantizedMeshTile(const char *fileName,
-                      const ctb::TileCoordinate &coord,
+                      const qmgc::TileCoordinate &coord,
                       const Ellipsoid& e = WGS84Ellipsoid())
             : QuantizedMesh(fileName)
-            , Tile(coord)
+            , qmgc::TileCoordinate(coord)
             , m_ellipsoid(e) {}
 
     /**
@@ -72,10 +72,10 @@ public:
      * @param e The reference Ellipsoid to use
      */
     QuantizedMeshTile(const QuantizedMesh &qm,
-                      const ctb::TileCoordinate &coord,
+                      const qmgc::TileCoordinate &coord,
                       const Ellipsoid& e = WGS84Ellipsoid())
             : QuantizedMesh(qm)
-            , Tile(coord)
+            , qmgc::TileCoordinate(coord)
             , m_ellipsoid(e) {}
 
     /// Convert U/V/Height coordinates in quantized mesh tile to Lon/Lat/Height

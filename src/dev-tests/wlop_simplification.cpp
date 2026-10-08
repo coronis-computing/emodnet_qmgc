@@ -86,13 +86,14 @@ int main(int argc, char*argv[])
 
     // Simplification of the point set using WLOP
     std::vector<Point_3> simpPts ;
+    // Note: since CGAL 5.x this takes the point range itself, and its tuning
+    // arguments are named parameters rather than positional ones.
     CGAL::wlop_simplify_and_regularize_point_set
             <Concurrency_tag>
-            (points.begin(),
-             points.end(),
+            (points,
              std::back_inserter(simpPts),
-             percentToRetain,
-             neighborRadius
+             CGAL::parameters::select_percentage(percentToRetain)
+                     .neighbor_radius(neighborRadius)
             );
     std::size_t memory = CGAL::Memory_sizer().virtual_size();
 

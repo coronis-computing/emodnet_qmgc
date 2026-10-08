@@ -21,6 +21,7 @@
 #include "quantized_mesh_tile.h"
 #include "tin_creation/tin_creation_cgal_types.h"
 #include "cgal/cgal_utils.h"
+#include "tiling/global_geodetic_grid.h"
 #include <fstream>
 
 
@@ -28,8 +29,8 @@
 void QuantizedMeshTile::convertUVHToLonLatHeight( const unsigned short &u, const unsigned short &v, const unsigned short &h,
                                                   double &lon, double &lat, double &height ) const
 {
-    const ctb::GlobalGeodetic profile;
-    const ctb::CRSBounds tileBounds = profile.tileBounds(*this);
+    const qmgc::GlobalGeodeticGrid profile;
+    const qmgc::CRSBounds tileBounds = profile.tileBounds(*this);
     const Header header = getHeader() ;
 
     lon = tileBounds.getMinX() + fabs( tileBounds.getMaxX() - tileBounds.getMinX() ) * (double)u/(double)QuantizedMesh::MAX_VERTEX_DATA ;

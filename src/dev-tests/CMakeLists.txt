@@ -3,7 +3,7 @@ add_executable(qm_parser qm_parser.cpp
                ../base/gzip_file_reader.cpp
                ../base/gzip_file_writer.cpp
                ../base/quantized_mesh.cpp)
-target_link_libraries(qm_parser ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CTB_LIBRARY} ${CGAL_LIBRARIES} ${GDAL_LIBRARY})
+target_link_libraries(qm_parser ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CGAL_LIBRARIES} ${GDAL_LIBRARY})
 
 add_executable(test_read_write test_read_write.cpp
                                ../base/quantized_mesh_tile.cpp
@@ -12,7 +12,7 @@ add_executable(test_read_write test_read_write.cpp
                                ../base/quantized_mesh.cpp)
 target_link_libraries(test_read_write ${Boost_LIBRARIES}
                                       ${ZLIB_LIBRARIES}
-                                      ${CTB_LIBRARY}
+                                     
                                       ${CGAL_LIBRARIES}
                                       ${GDAL_LIBRARY})
 
@@ -33,7 +33,7 @@ add_executable(test_check_borders test_check_borders.cpp
                                   ../base/gzip_file_reader.cpp
                                   ../base/gzip_file_writer.cpp
                                   ../base/quantized_mesh.cpp)
-target_link_libraries(test_check_borders ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CTB_LIBRARY} ${GDAL_LIBRARY})
+target_link_libraries(test_check_borders ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${GDAL_LIBRARY})
 
 add_executable(detect_features_without_borders detect_features_without_borders.cpp)
 target_link_libraries(detect_features_without_borders ${Boost_LIBRARIES} ${CGAL_LIBRARIES})
@@ -41,10 +41,11 @@ target_link_libraries(detect_features_without_borders ${Boost_LIBRARIES} ${CGAL_
 add_executable(compute_statistics compute_statistics.cpp
                                   ../base/quantized_mesh_tile.cpp
                                   ../base/quantized_mesh_tiler.cpp
+                                  ../base/tiling/raster_tiler.cpp
                                   ../base/gzip_file_reader.cpp
                                   ../base/gzip_file_writer.cpp
                                   ../base/quantized_mesh.cpp
                                   ../../3rdParty/meshoptimizer/vcacheoptimizer.cpp
                                   ../../3rdParty/meshoptimizer/vfetchoptimizer.cpp
                                   ../base/crs_conversions.cpp)
-target_link_libraries(compute_statistics ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${CTB_LIBRARY} ${GDAL_LIBRARY})
+target_link_libraries(compute_statistics ${Boost_LIBRARIES} ${ZLIB_LIBRARIES} ${GDAL_LIBRARY})

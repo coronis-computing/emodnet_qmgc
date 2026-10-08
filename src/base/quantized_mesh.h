@@ -25,7 +25,6 @@
 #include <string>
 #include <vector>
 #include "cgal/cgal_utils.h"
-#include <ctb.hpp>
 #include "misc_utils.h"
 
 /**
