@@ -95,7 +95,7 @@ int main ( int argc, char **argv)
     int heighMapSamplingSteps, greedyInitGridSize;
     unsigned int psWlopIterNumber, psMinFeaturePolylineSize;
     int numThreads = 0;
-    bool bathymetryFlag, psPreserveSharpEdges;
+    bool bathymetryFlag, psPreserveSharpEdges, noNormals;
     // Parameters per zoom level
     std::vector<int> simpStopEdgesCount;
     std::vector<unsigned int> psHierMaxClusterSize;
@@ -109,6 +109,7 @@ int main ( int argc, char **argv)
             ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level (i.e., the TMS pyramid is constructed from bottom to top). If smaller than zero, defaults to the maximum zoom possible according to DEM resolution." )
             ( "end-zoom,e", po::value<int>(&endZoom)->default_value(0), "The zoom level to end at. This should be less than the start zoom level (i.e., the TMS pyramid is constructed from bottom to top)." )
             ( "bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations" )
+            ( "no-normals", po::bool_switch(&noNormals)->default_value(false), "Do not add the oct-encoded per-vertex normals extension to the tiles (required by Cesium to shade the terrain)" )
             ( "samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify." )
             ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold." )
             ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
@@ -217,6 +218,7 @@ int main ( int argc, char **argv)
         qmtOptions.ClippingLowValue = clippingLowValue;
         qmtOptions.AboveSeaLevelScaleFactor = aboveSeaLevelScaleFactor;
         qmtOptions.BelowSeaLevelScaleFactor = belowSeaLevelScaleFactor;
+        qmtOptions.ComputeNormals = !noNormals;
 
         // Setup the TIN creator
         TinCreator tinCreator;

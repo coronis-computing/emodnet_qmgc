@@ -338,8 +338,8 @@ bool QuantizedMesh::writeFile( const std::string &filePath ) {
     if ( m_vertexNormals.nx.size() > 0 ) {
         // --- Oct-Encoded Per-Vertex Normals extension ---
         // Write extension header
-        writer.writeUChar((int)1) ; // extensionId
-        writer.writeUInt(m_vertexData.vertexCount*2*8) ; // extensionLength
+        writer.writeUChar(OCT_VERTEX_NORMALS) ; // extensionId
+        writer.writeUInt(m_vertexData.vertexCount*2) ; // extensionLength, in bytes (2 per vertex)
 
         // Write oct-encoded normals
         for ( int i = 0; i < m_vertexNormals.nx.size(); i++ ) {
@@ -358,7 +358,7 @@ bool QuantizedMesh::writeFile( const std::string &filePath ) {
     if ( m_waterMask.mask.size() > 0 ) {
         // --- Water Mask extension ---
         // Write extension header
-        writer.writeUChar((int)2) ; // extensionId
+        writer.writeUChar(WATER_MASK) ; // extensionId
         writer.writeUInt(m_waterMask.mask.size()) ; // extensionLength
         // Write the mask's data
         for ( int i = 0; i < m_waterMask.mask.size(); i++ ) {

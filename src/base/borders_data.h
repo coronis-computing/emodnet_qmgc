@@ -30,6 +30,7 @@
 struct BordersData
 {
     typedef TinCreation::Point_3 Point_3;
+    typedef TinCreation::Vector_3 Vector_3;
 
     std::vector<Point_3> tileEastVertices; //!< Vertices to maintain for the eastern border of the tile
     std::vector<Point_3> tileWestVertices; //!< Vertices to maintain for the western border of the tile
@@ -43,6 +44,15 @@ struct BordersData
     Point_3 northEastCorner; //!< The north-east corner to maintain (if constrainNorthEastCorner is set)
     Point_3 southWestCorner; //!< The south-west corner to maintain (if constrainSouthWestCorner is set)
     Point_3 southEastCorner; //!< The south-east corner to maintain (if constrainSouthEastCorner is set)
+    // Normals (in ECEF) of the vertices above, so that both tiles sharing a border use the same ones
+    std::vector<Vector_3> tileEastNormals; //!< Normals of tileEastVertices (same order)
+    std::vector<Vector_3> tileWestNormals; //!< Normals of tileWestVertices (same order)
+    std::vector<Vector_3> tileNorthNormals; //!< Normals of tileNorthVertices (same order)
+    std::vector<Vector_3> tileSouthNormals; //!< Normals of tileSouthVertices (same order)
+    Vector_3 northWestCornerNormal; //!< Normal of northWestCorner
+    Vector_3 northEastCornerNormal; //!< Normal of northEastCorner
+    Vector_3 southWestCornerNormal; //!< Normal of southWestCorner
+    Vector_3 southEastCornerNormal; //!< Normal of southEastCorner
 
     /**
      * @brief Default constructor
@@ -56,6 +66,14 @@ struct BordersData
             , northEastCorner(-1, -1, -1)
             , southWestCorner(-1, -1, -1)
             , southEastCorner(-1, -1, -1)
+            , tileEastNormals()
+            , tileWestNormals()
+            , tileNorthNormals()
+            , tileSouthNormals()
+            , northWestCornerNormal(0, 0, 0)
+            , northEastCornerNormal(0, 0, 0)
+            , southWestCornerNormal(0, 0, 0)
+            , southEastCornerNormal(0, 0, 0)
             , constrainNorthWestCorner(false)
             , constrainNorthEastCorner(false)
             , constrainSouthWestCorner(false)
@@ -74,6 +92,14 @@ struct BordersData
         northEastCorner = bd.northEastCorner;
         southWestCorner = bd.southWestCorner;
         southEastCorner = bd.southEastCorner;
+        tileEastNormals = bd.tileEastNormals;
+        tileWestNormals = bd.tileWestNormals;
+        tileNorthNormals = bd.tileNorthNormals;
+        tileSouthNormals = bd.tileSouthNormals;
+        northWestCornerNormal = bd.northWestCornerNormal;
+        northEastCornerNormal = bd.northEastCornerNormal;
+        southWestCornerNormal = bd.southWestCornerNormal;
+        southEastCornerNormal = bd.southEastCornerNormal;
         constrainNorthWestCorner = bd.constrainNorthWestCorner;
         constrainNorthEastCorner = bd.constrainNorthEastCorner;
         constrainSouthWestCorner = bd.constrainSouthWestCorner;

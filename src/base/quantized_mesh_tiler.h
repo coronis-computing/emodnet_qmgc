@@ -29,6 +29,7 @@
 #include "ellipsoid.h"
 #include "tin_creation/tin_creator.h"
 #include "borders_data.h"
+#include <map>
 
 namespace fs = boost::filesystem ;
 
@@ -50,6 +51,7 @@ class QuantizedMeshTiler
     typedef TinCreation::Vector_3 Vector_3;
     typedef TinCreation::Point_2 Point_2;
     typedef TinCreation::Polyhedron Polyhedron;
+    typedef std::pair<unsigned short, unsigned short> QuantizedUV; //!< Identifies a vertex by its quantized u/v coordinates
 
 public:
     // --- Options struct ---
@@ -61,6 +63,7 @@ public:
         float ClippingLowValue = -std::numeric_limits<float>::infinity() ; //!< Minimum value allowed on the raster, clip values if smaller
         float AboveSeaLevelScaleFactor = -1;    //!< Scale factor to apply to the readings above sea level (ignored if < 0)
         float BelowSeaLevelScaleFactor = -1;    //!< Scale factor to apply to the readings below sea level (ignored if < 0)
+        bool ComputeNormals = true;             //!< Add the oct-encoded per-vertex normals extension to the tiles
     };
 
     // --- Methods ---
@@ -207,18 +210,42 @@ private:
      * @param surface The base triangle mesh containing the (simplified) geometry of the tile
      * @param minHeight Min height on the tile from raster
      * @param maxHeight Max height on the tile from raster
-     * @param[out] tileEastVertices Eastern vertices of the tile
-     * @param[out] tileWestVertices Western vertices of the tile
-     * @param[out] tileNorthVertices Northern vertices of the tile
-     * @param[out] tileSouthVertices Southern vertices of the tile
+     * @param tileBounds The tile bounds (in the geographic reference system coordinates)
+     * @param[in,out] bd On input, the borders' data to preserve from the neighboring tiles (used to reuse their
+     *                   normals). On output, the border vertices (and their normals) of this tile.
      */
     void computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                                       Polyhedron& surface,
                                       const float& minHeight, const float& maxHeight,
-                                      std::vector<Point_3> &tileEastVertices,
-                                      std::vector<Point_3> &tileWestVertices,
-                                      std::vector<Point_3> &tileNorthVertices,
-                                      std::vector<Point_3> &tileSouthVertices ) const ;
+                                      const qmgc::CRSBounds& tileBounds,
+                                      BordersData& bd ) const ;
+
+    /**
+     * @brief Collect the normals of the vertices shared with already built neighboring tiles
+     * @param bd The borders' data to preserve, as provided by the neighboring tiles
+     * @return Map from the quantized u/v coordinates of each shared vertex to its normal
+     */
+    std::map<QuantizedUV, Vector_3> collectNeighborNormals(const BordersData& bd) const ;
+
+    /**
+     * @brief Compute the per-vertex normals of the surface, in ECEF
+     *
+     * Area-weighted average of the normals of the facets around each vertex. Vertices shared with an already built
+     * neighboring tile reuse the normal of the neighbor instead, so that the shading is continuous across borders.
+     *
+     * @param surface The surface, in normalized u/v/h coordinates
+     * @param minHeight Minimum height of the tile
+     * @param maxHeight Maximum height of the tile
+     * @param tileBounds The lat/lon extent of the tile
+     * @param quantizedVertices The quantized u/v/h coordinates of the vertices, in the surface's order
+     * @param neighborNormals Normals to reuse, from collectNeighborNormals()
+     * @return The unit normals (null vectors if normals are disabled), in the surface's vertex order
+     */
+    std::vector<Vector_3> computeVertexNormals(const Polyhedron& surface,
+                                               const float& minHeight, const float& maxHeight,
+                                               const qmgc::CRSBounds& tileBounds,
+                                               const std::vector<unsigned short>& quantizedVertices,
+                                               const std::map<QuantizedUV, Vector_3>& neighborNormals) const ;
 };
 
 #endif //EMODNET_QMGC_QUANTIZED_MESH_TILER_H

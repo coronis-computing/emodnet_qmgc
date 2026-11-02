@@ -22,6 +22,7 @@
 #define EMODNET_QMGC_QUANTIZED_MESH_H
 
 
+#include <cmath>
 #include <string>
 #include <vector>
 #include "cgal/cgal_utils.h"
@@ -211,46 +212,63 @@ private:
         return (value << 1) ^ (value >> 31) ;
     }
 
-    /// Encode a vector using oct-encoding
+    /**
+     * @brief Encode a unit vector using oct-encoding
+     *
+     * Matches Cesium's AttributeCompression.octEncodeInRange(vector, 255): the vector is projected onto the
+     * octahedron |x|+|y|+|z| = 1, the lower hemisphere is folded over the upper one, and the resulting x/y in
+     * [-1, 1] are stored as SNORM values in [0, 255].
+     */
     void octEncode( const float xyz[3], unsigned char octxy[2] ) {
-        const float invL1Norm = (1.0f) / (fabs(xyz[0]) + fabs(xyz[1]) + fabs(xyz[2]));
+        const float invL1Norm = 1.0f / (std::fabs(xyz[0]) + std::fabs(xyz[1]) + std::fabs(xyz[2]));
+        float x = xyz[0] * invL1Norm;
+        float y = xyz[1] * invL1Norm;
 
         if (xyz[2] < 0.0f) {
-            octxy[0] = static_cast<unsigned char>((1.0f - float(fabs(xyz[1] * invL1Norm))) * sign(xyz[0]));
-            octxy[1] = static_cast<unsigned char>((1.0f - float(fabs(xyz[0] * invL1Norm))) * sign(xyz[1]));
-        } else {
-            octxy[0] = static_cast<unsigned char>(xyz[0] * invL1Norm);
-            octxy[1] = static_cast<unsigned char>(xyz[1] * invL1Norm);
+            const float oldX = x;
+            x = (1.0f - std::fabs(y)) * signNotZero(oldX);
+            y = (1.0f - std::fabs(oldX)) * signNotZero(y);
         }
+
+        octxy[0] = toSNorm(x);
+        octxy[1] = toSNorm(y);
     }
 
-    /// Decode a vector using oct-encoding
+    /**
+     * @brief Decode an oct-encoded unit vector
+     *
+     * Matches Cesium's AttributeCompression.octDecodeInRange(x, y, 255, result).
+     */
     void octDecode( const unsigned char octxy[2], float xyz[3] ) {
-
-        xyz[0] = uchar2float(octxy[0]);
-        xyz[1] = uchar2float(octxy[1]);
-        xyz[2] = 1.0f - (fabs(xyz[0]) + fabs(xyz[1]));
+        xyz[0] = fromSNorm(octxy[0]);
+        xyz[1] = fromSNorm(octxy[1]);
+        xyz[2] = 1.0f - (std::fabs(xyz[0]) + std::fabs(xyz[1]));
 
         if (xyz[2] < 0.0f) {
-            float oldX = xyz[0];
-            xyz[0] = ((1.0f) - fabs(xyz[1])) * sign(oldX);
-            xyz[1] = ((1.0f) - fabs(oldX))   * sign(xyz[1]);
+            const float oldX = xyz[0];
+            xyz[0] = (1.0f - std::fabs(xyz[1])) * signNotZero(oldX);
+            xyz[1] = (1.0f - std::fabs(oldX)) * signNotZero(xyz[1]);
         }
+
+        const float norm = std::sqrt(xyz[0]*xyz[0] + xyz[1]*xyz[1] + xyz[2]*xyz[2]);
+        xyz[0] /= norm;
+        xyz[1] /= norm;
+        xyz[2] /= norm;
     }
 
-    /// Returns -1 if negative, 1 otherwise
-    inline float sign(float v) {
+    /// Returns -1 if negative, 1 otherwise (zero included)
+    inline float signNotZero(float v) {
         return (v < 0.0f) ? -1.0f : 1.0f;
     }
 
-    /// Decodes an unsigned char to a float (previously coded with float2uchar)
-    float uchar2float( unsigned char u ) {
-        return float(clamp(int(8) * (1.0f / float((uint64_t(1) << 7) - 1)), -1.0f, 1.0f));
+    /// Converts a value in [-1, 1] to an SNORM value in [0, 255] (as Cesium's CesiumMath.toSNorm)
+    unsigned char toSNorm( float v ) {
+        return static_cast<unsigned char>(round((clamp(v, -1.0f, 1.0f) * 0.5f + 0.5f) * 255.0f));
     }
 
-    /// Encodes a float with the 8 bits of the char
-    unsigned char float2uchar( float f ) {
-        return (unsigned char)round(clamp(f, -1.0f, 1.0f) * ((uint64_t(1) << 7) - 1));
+    /// Converts an SNORM value in [0, 255] back to [-1, 1] (as Cesium's CesiumMath.fromSNorm)
+    float fromSNorm( unsigned char v ) {
+        return (static_cast<float>(v) / 255.0f) * 2.0f - 1.0f;
     }
 
     /// Clamps a value between low and hi limits

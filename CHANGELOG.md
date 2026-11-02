@@ -12,6 +12,10 @@ All notable changes to this project are documented in this file.
 
 ### Added
 
+- **Per-vertex normals.** Tiles now include Cesium's oct-encoded per-vertex normals extension, which Cesium needs in order to shade the terrain. The normals are area-weighted normals of the final mesh, in ECEF. The vertices on the border shared by two tiles get exactly the same normals in both: the tile built first passes them to its neighbors through the border vertices cache, so the shading has no seams at tile borders. Exception: the `delaunay` strategy, which does not share borders between tiles.
+  - `create_layer_file.py` declares the extension in `layer.json` (`"extensions": ["octvertexnormals"]`), which Cesium requires before it requests and decodes the normals. The client also has to set `requestVertexNormals: true`.
+  - `qm_tiler --no-normals` (and `create_layer_file.py --no-normals`) leaves the normals out.
+
 - `src/base/tiling/geo_types.h`: `TilePoint`, `TileCoordinate`, `TileBounds`, `CRSPoint` and `CRSBounds`. These are derived from libctb's types and replace them.
 - `src/base/tiling/global_geodetic_grid.h`: `GlobalGeodeticGrid`, the TMS global-geodetic (EPSG:4326) tiling grid. It replaces `ctb::Grid` / `ctb::GlobalGeodetic`.
 - `src/base/tiling/raster_tiler.h/.cpp`: `RasterTiler`, which extracts the piece of the source raster covered by one tile. It replaces `ctb::GDALTiler` / `ctb::TerrainTiler`. The raster is warped with GDAL's own `GDALWarp()`, so GDAL now takes care of choosing overviews, handling nodata and reprojecting.
@@ -56,6 +60,12 @@ All notable changes to this project are documented in this file.
 - The new `get_tile_bounds` dev-tool uses the `qmgc` grid instead of libctb.
 
 ### Fixed
+
+- **The normals extension was unusable.** The code already wrote a normals extension, but Cesium never requested it (`layer.json` did not declare it), and its content was wrong in every respect:
+  - The normals were computed in the normalized u/v/h space of the tile instead of in ECEF.
+  - They were written in the original vertex order, while the vertices themselves are reordered for the vertex fetch optimization, so each normal was assigned to a different vertex.
+  - The oct encoding did not map the values to the [0, 255] range (and the decoding ignored its input).
+  - The extension length was written 8 times too large.
 
 - **Tile headers ignored the terrain's height.** Cesium uses the header's bounding sphere, center and horizon occlusion point to cull tiles and choose the level of detail. These were computed using the normalized height of each vertex (between 0 and 1) as if it were meters, which described a flat surface lying on the ellipsoid regardless of the actual relief. With significant relief, tiles could be culled while still visible, or refined at the wrong distance. Heights are now converted back to meters first, and the latitude/longitude of each vertex is kept in double precision (as floats, it lost about a meter).
 - **Nodata cells could become valid heights.** Two problems:

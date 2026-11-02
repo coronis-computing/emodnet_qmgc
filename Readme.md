@@ -51,11 +51,22 @@ qm_tiler -h
 
 After creating the TMS pyramid of tiles, use the script `create_layer_file.py` to create the `layer.json` file required by Cesium.
 
+The tiles include per-vertex normals (Cesium's `octvertexnormals` extension), which Cesium needs in order to shade the terrain. The `layer.json` file created by `create_layer_file.py` declares them, but Cesium only uses them when they are requested on the client side, and lighting is enabled:
+
+```
+viewer.terrainProvider = await Cesium.CesiumTerrainProvider.fromUrl(url, { requestVertexNormals: true });
+viewer.scene.globe.enableLighting = true;
+```
+
+If the normals are not needed, they can be left out with `qm_tiler --no-normals` (and `create_layer_file.py --no-normals`).
+
 Finally, in order to easily test the project, we also provide the `simple_tiles_server.py`, which creates a simple web server of tiles.
 
 Please refer to the [wiki](https://github.com/coronis-computing/emodnet_qmgc/wiki) page of this project for further information.
 
 ## Known issues
+
+* With the `delaunay` TIN creation strategy, the borders of neighboring tiles are not shared, so each tile computes the normals of its border vertices on its own. This may show as faint lighting seams along the tile borders. The other strategies reuse the normals of the neighboring tiles, so the shading is continuous.
 
 * Creating tiles at low zoom levels from very large DEMs requires resampling large parts of the source raster for each tile. The raster is warped through GDAL, which automatically uses the overviews of the source dataset when available, so it is recommended to build them beforehand (e.g., `gdaladdo -r average <input_raster>`).
 

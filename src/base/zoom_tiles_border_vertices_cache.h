@@ -40,6 +40,7 @@ class ZoomTilesBorderVerticesCache
 {
     // --- Private typedefs ---
     typedef TinCreation::Point_3 Point_3;
+    typedef TinCreation::Vector_3 Vector_3;
 
 public:
     /**

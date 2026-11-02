@@ -43,36 +43,52 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
 
     // Eastern border
     std::vector<BorderVertex> borderCoords = tbv.getEasternVertices();
-    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
+    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it ) {
         bd.tileEastVertices.push_back(Point_3(m_tileMaxCoord, it->coord, it->height));
+        bd.tileEastNormals.push_back(it->normal);
+    }
     // Western border
     borderCoords = tbv.getWesternVertices();
-    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
+    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it ) {
         bd.tileWestVertices.push_back(Point_3(0.0, it->coord, it->height));
+        bd.tileWestNormals.push_back(it->normal);
+    }
     // Northern border
     borderCoords = tbv.getNorthernVertices();
-    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
+    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it ) {
         bd.tileNorthVertices.push_back(Point_3(it->coord, m_tileMaxCoord, it->height));
+        bd.tileNorthNormals.push_back(it->normal);
+    }
     // Southern border
     borderCoords = tbv.getSouthernVertices();
-    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it )
+    for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it ) {
         bd.tileSouthVertices.push_back(Point_3(it->coord, 0.0, it->height));
+        bd.tileSouthNormals.push_back(it->normal);
+    }
 
     // Corners
     if (tbv.hasNorthWestCorner()) {
-        bd.northWestCorner = Point_3(0.0, m_tileMaxCoord, m_mapTileToBorderVertices[tileInd].getNorthWestCorner());
+        const BorderVertex corner = tbv.getNorthWestCorner();
+        bd.northWestCorner = Point_3(0.0, m_tileMaxCoord, corner.height);
+        bd.northWestCornerNormal = corner.normal;
         bd.constrainNorthWestCorner = true;
     }
     if (tbv.hasNorthEastCorner()) {
-        bd.northEastCorner = Point_3(m_tileMaxCoord, m_tileMaxCoord, m_mapTileToBorderVertices[tileInd].getNorthEastCorner());
+        const BorderVertex corner = tbv.getNorthEastCorner();
+        bd.northEastCorner = Point_3(m_tileMaxCoord, m_tileMaxCoord, corner.height);
+        bd.northEastCornerNormal = corner.normal;
         bd.constrainNorthEastCorner = true;
     }
     if (tbv.hasSouthWestCorner()) {
-        bd.southWestCorner = Point_3(0.0, 0.0, m_mapTileToBorderVertices[tileInd].getSouthWestCorner());
+        const BorderVertex corner = tbv.getSouthWestCorner();
+        bd.southWestCorner = Point_3(0.0, 0.0, corner.height);
+        bd.southWestCornerNormal = corner.normal;
         bd.constrainSouthWestCorner = true;
     }
     if (tbv.hasSouthEastCorner()) {
-        bd.southEastCorner = Point_3(m_tileMaxCoord, 0.0, m_mapTileToBorderVertices[tileInd].getSouthEastCorner());
+        const BorderVertex corner = tbv.getSouthEastCorner();
+        bd.southEastCorner = Point_3(m_tileMaxCoord, 0.0, corner.height);
+        bd.southEastCornerNormal = corner.normal;
         bd.constrainSouthEastCorner = true;
     }
 
@@ -121,21 +137,25 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     westernBorderVertices = std::make_shared<std::vector<BorderVertex>>();
     northernBorderVertices = std::make_shared<std::vector<BorderVertex>>();
     southernBorderVertices = std::make_shared<std::vector<BorderVertex>>();
-    for (std::vector<Point_3>::const_iterator it = bd.tileEastVertices.begin();
-         it != bd.tileEastVertices.end(); ++it ) {
-        easternBorderVertices->push_back( BorderVertex( it->y(), it->z() ) ) ;
+    for (std::size_t i = 0; i < bd.tileEastVertices.size(); i++) {
+        const Point_3& p = bd.tileEastVertices[i];
+        const Vector_3 n = i < bd.tileEastNormals.size() ? bd.tileEastNormals[i] : Vector_3(0, 0, 0);
+        easternBorderVertices->push_back( BorderVertex( p.y(), p.z(), n ) ) ;
     }
-    for (std::vector<Point_3>::const_iterator it = bd.tileWestVertices.begin();
-         it != bd.tileWestVertices.end(); ++it ) {
-        westernBorderVertices->push_back( BorderVertex( it->y(), it->z() ) ) ;
+    for (std::size_t i = 0; i < bd.tileWestVertices.size(); i++) {
+        const Point_3& p = bd.tileWestVertices[i];
+        const Vector_3 n = i < bd.tileWestNormals.size() ? bd.tileWestNormals[i] : Vector_3(0, 0, 0);
+        westernBorderVertices->push_back( BorderVertex( p.y(), p.z(), n ) ) ;
     }
-    for (std::vector<Point_3>::const_iterator it = bd.tileNorthVertices.begin();
-         it != bd.tileNorthVertices.end(); ++it ) {
-        northernBorderVertices->push_back( BorderVertex( it->x(), it->z() ) ) ;
+    for (std::size_t i = 0; i < bd.tileNorthVertices.size(); i++) {
+        const Point_3& p = bd.tileNorthVertices[i];
+        const Vector_3 n = i < bd.tileNorthNormals.size() ? bd.tileNorthNormals[i] : Vector_3(0, 0, 0);
+        northernBorderVertices->push_back( BorderVertex( p.x(), p.z(), n ) ) ;
     }
-    for (std::vector<Point_3>::const_iterator it = bd.tileSouthVertices.begin();
-         it != bd.tileSouthVertices.end(); ++it ) {
-        southernBorderVertices->push_back( BorderVertex( it->x(), it->z() ) ) ;
+    for (std::size_t i = 0; i < bd.tileSouthVertices.size(); i++) {
+        const Point_3& p = bd.tileSouthVertices[i];
+        const Vector_3 n = i < bd.tileSouthNormals.size() ? bd.tileSouthNormals[i] : Vector_3(0, 0, 0);
+        southernBorderVertices->push_back( BorderVertex( p.x(), p.z(), n ) ) ;
     }
 
     // Extract and exclude the corners
@@ -144,11 +164,11 @@ bool ZoomTilesBorderVerticesCache::setConstrainedBorderVerticesForTile(const int
     std::sort(northernBorderVertices->begin(), northernBorderVertices->end());
     std::sort(southernBorderVertices->begin(), southernBorderVertices->end());
 
-    std::shared_ptr<double> northWestCorner, northEastCorner, southWestCorner, southEastCorner;
-    northWestCorner = std::make_shared<double>(northernBorderVertices->begin()->height);
-    northEastCorner = std::make_shared<double>(northernBorderVertices->rbegin()->height);
-    southWestCorner = std::make_shared<double>(southernBorderVertices->begin()->height);
-    southEastCorner = std::make_shared<double>(southernBorderVertices->rbegin()->height);
+    std::shared_ptr<BorderVertex> northWestCorner, northEastCorner, southWestCorner, southEastCorner;
+    northWestCorner = std::make_shared<BorderVertex>(*northernBorderVertices->begin());
+    northEastCorner = std::make_shared<BorderVertex>(*northernBorderVertices->rbegin());
+    southWestCorner = std::make_shared<BorderVertex>(*southernBorderVertices->begin());
+    southEastCorner = std::make_shared<BorderVertex>(*southernBorderVertices->rbegin());
 
     easternBorderVertices->erase(easternBorderVertices->begin());
     easternBorderVertices->pop_back();

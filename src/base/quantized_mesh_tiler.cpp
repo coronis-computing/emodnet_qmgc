@@ -22,7 +22,6 @@
 #include <algorithm>
 #include "tin_creation/tin_creation_cgal_types.h"
 #include <CGAL/centroid.h>
-#include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <cmath>
 #include "meshoptimizer/meshoptimizer.h"
 #include "crs_conversions.h"
@@ -30,6 +29,21 @@
 #include <gdal.h>
 #include "misc_utils.h"
 #include <GeographicLib/Geocentric.hpp>
+#include <map>
+
+namespace {
+
+/// Convert a surface point in normalized u/v/h coordinates (all in [0..1]) to latitude/longitude (degrees) and height (meters)
+void uvhToGeodetic(const TinCreation::Point_3& p, const qmgc::CRSBounds& tileBounds,
+                   const double& minHeight, const double& maxHeight,
+                   double& lat, double& lon, double& height)
+{
+    lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * p.y());
+    lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * p.x());
+    height = remap(p.z(), 0.0, 1.0, minHeight, maxHeight);
+}
+
+} // namespace
 
 QuantizedMeshTile QuantizedMeshTiler::createTile( const qmgc::TileCoordinate &coord, BordersData& bd)
 {
@@ -80,7 +94,8 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const qmgc::TileCoordinate &co
     computeQuantizedMeshHeader( qmTile, surface, minHeight, maxHeight, tileBounds ) ;
 
     // ...and the QuantizedMesh geometry
-    computeQuantizedMeshGeometry( qmTile, surface, minHeight, maxHeight, bd.tileEastVertices, bd.tileWestVertices, bd.tileNorthVertices, bd.tileSouthVertices) ;
+    // Note: bd holds the constraints from the neighboring tiles on input, and this tile's borders on output
+    computeQuantizedMeshGeometry( qmTile, surface, minHeight, maxHeight, tileBounds, bd ) ;
 
     return qmTile;
 }
@@ -269,9 +284,8 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
     std::vector<Point_3> latLonPoints;
     for ( Polyhedron::Point_const_iterator it = surface.points_begin(); it != surface.points_end(); ++it ) {
         // In Latitude, Longitude, Height format
-        double lat = tileBounds.getMinY() + ((tileBounds.getMaxY() - tileBounds.getMinY()) * it->y());
-        double lon = tileBounds.getMinX() + ((tileBounds.getMaxX() - tileBounds.getMinX()) * it->x());
-        double height = remap(it->z(), 0.0, 1.0, minHeight, maxHeight);
+        double lat, lon, height;
+        uvhToGeodetic(*it, tileBounds, minHeight, maxHeight, lat, lon, height);
         latLonPoints.push_back(Point_3(lat, lon, height));
     }
 
@@ -348,15 +362,25 @@ void QuantizedMeshTiler::computeQuantizedMeshHeader( QuantizedMeshTile& qmTile,
 void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                                                       Polyhedron& surface,
                                                       const float& minHeight, const float& maxHeight,
-                                                      std::vector<Point_3> &tileEastVertices,
-                                                      std::vector<Point_3> &tileWestVertices,
-                                                      std::vector<Point_3> &tileNorthVertices,
-                                                      std::vector<Point_3> &tileSouthVertices) const
+                                                      const qmgc::CRSBounds& tileBounds,
+                                                      BordersData& bd) const
 {
+    // Normals of the vertices shared with already built neighboring tiles, which must be reused as they are, so that
+    // the shading is continuous across tile borders. Collected before bd is overwritten with this tile's borders.
+    const std::map<QuantizedUV, Vector_3> neighborNormals = collectNeighborNormals(bd);
+
+    std::vector<Point_3>& tileEastVertices = bd.tileEastVertices;
+    std::vector<Point_3>& tileWestVertices = bd.tileWestVertices;
+    std::vector<Point_3>& tileNorthVertices = bd.tileNorthVertices;
+    std::vector<Point_3>& tileSouthVertices = bd.tileSouthVertices;
     tileEastVertices.clear();
     tileWestVertices.clear();
     tileNorthVertices.clear();
     tileSouthVertices.clear();
+    bd.tileEastNormals.clear();
+    bd.tileWestNormals.clear();
+    bd.tileNorthNormals.clear();
+    bd.tileSouthNormals.clear();
 
     // --> VertexData part
     std::vector<unsigned short> vertices ;
@@ -392,6 +416,10 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
         vertices.push_back(v) ;
         vertices.push_back(h) ;
     }
+
+    // --> Normals (indexed as the surface's vertices, i.e., before reordering them below)
+    std::vector<Vector_3> normals = computeVertexNormals(surface, minHeight, maxHeight, tileBounds,
+                                                        vertices, neighborNormals);
 
     // --> IndexData part
     QuantizedMesh::IndexData indexData ;
@@ -454,6 +482,7 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
     {
         // Get the vertex index in the surface structure
         unsigned int vertInd = static_cast<unsigned int>( std::distance(surface.vertices_begin(), e->vertex() ) ) ;
+        const Vector_3 normal = normals[vertInd] ;
         // Re-map the vertex index to the new index after optimizing for vertex fetching
         vertInd = vertexRemap[vertInd] ;
 
@@ -489,25 +518,33 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                 edgeIndices.westIndices.push_back(vertInd);
                 edgeIndices.southIndices.push_back(vertInd);
                 tileWestVertices.push_back(phm) ;
+                bd.tileWestNormals.push_back(normal) ;
                 tileSouthVertices.push_back(phm) ;
+                bd.tileSouthNormals.push_back(normal) ;
             }
             else if ( p0.x() < 0.5 && p0.y() > 0.5 ) { // Corner (0, 1)
                 edgeIndices.westIndices.push_back(vertInd);
                 edgeIndices.northIndices.push_back(vertInd);
-                tileWestVertices.push_back( phm ) ;
-                tileNorthVertices.push_back( phm ) ;
+                tileWestVertices.push_back(phm) ;
+                bd.tileWestNormals.push_back(normal) ;
+                tileNorthVertices.push_back(phm) ;
+                bd.tileNorthNormals.push_back(normal) ;
             }
             else if ( p0.x() > 0.5 && p0.y() > 0.5 ) { // Corner (1, 1)
                 edgeIndices.northIndices.push_back(vertInd);
                 edgeIndices.eastIndices.push_back(vertInd);
-                tileNorthVertices.push_back( phm ) ;
-                tileEastVertices.push_back( phm ) ;
+                tileNorthVertices.push_back(phm) ;
+                bd.tileNorthNormals.push_back(normal) ;
+                tileEastVertices.push_back(phm) ;
+                bd.tileEastNormals.push_back(normal) ;
             }
             else { // p0.x() > 0.5 && p0.y() < 0.5 ) // Corner (1, 0)
                 edgeIndices.eastIndices.push_back(vertInd);
                 edgeIndices.southIndices.push_back(vertInd);
-                tileEastVertices.push_back( phm ) ;
-                tileSouthVertices.push_back( phm ) ;
+                tileEastVertices.push_back(phm) ;
+                bd.tileEastNormals.push_back(normal) ;
+                tileSouthVertices.push_back(phm) ;
+                bd.tileSouthNormals.push_back(normal) ;
             }
         }
         else {
@@ -517,10 +554,12 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                     // Western border edge/vertex
                     edgeIndices.westIndices.push_back(vertInd);
                     tileWestVertices.push_back(phm) ;
+                    bd.tileWestNormals.push_back(normal) ;
                 } else { // p0.x() >= 0.5
                     // Eastern border vertex
                     edgeIndices.eastIndices.push_back(vertInd);
                     tileEastVertices.push_back(phm) ;
+                    bd.tileEastNormals.push_back(normal) ;
                 }
             } else { // diffX >= diffY
                 // Horizontal edge, can be a northern or southern edge
@@ -528,10 +567,12 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
                     // Southern border edge/vertex
                     edgeIndices.southIndices.push_back(vertInd);
                     tileSouthVertices.push_back(phm) ;
+                    bd.tileSouthNormals.push_back(normal) ;
                 } else { // p0.y() >= 0.5
                     // Northern border edge/vertex
                     edgeIndices.northIndices.push_back(vertInd);
                     tileNorthVertices.push_back(phm) ;
+                    bd.tileNorthNormals.push_back(normal) ;
                 }
             }
         }
@@ -550,20 +591,134 @@ void QuantizedMeshTiler::computeQuantizedMeshGeometry(QuantizedMeshTile& qmTile,
 
     qmTile.setEdgeIndices(edgeIndices) ;
 
-    // Extensions
-    // Compute normals
-    namespace PMP=CGAL::Polygon_mesh_processing;
-    QuantizedMesh::VertexNormals vertexNormals ;
-    for ( Polyhedron::Vertex_iterator vit = surface.vertices_begin(); vit != surface.vertices_end(); ++vit ) {
-        Vector_3 vn = PMP::compute_vertex_normal(vit, surface) ;
+    // --> Extensions: oct-encoded per-vertex normals (in the order of the optimized vertices)
+    if (m_options.ComputeNormals) {
+        QuantizedMesh::VertexNormals vertexNormals;
+        vertexNormals.nx.resize(numVertices);
+        vertexNormals.ny.resize(numVertices);
+        vertexNormals.nz.resize(numVertices);
+        for (int i = 0; i < numVertices; i++) {
+            const unsigned int outInd = vertexRemap[i];
+            vertexNormals.nx[outInd] = static_cast<float>(normals[i].x());
+            vertexNormals.ny[outInd] = static_cast<float>(normals[i].y());
+            vertexNormals.nz[outInd] = static_cast<float>(normals[i].z());
+        }
+        qmTile.setVertexNormals(vertexNormals);
+    }
+}
 
-        vertexNormals.nx.push_back((float)vn.x()) ;
-        vertexNormals.ny.push_back((float)vn.y()) ;
-        vertexNormals.nz.push_back((float)vn.z()) ;
+
+
+std::map<QuantizedMeshTiler::QuantizedUV, TinCreation::Vector_3> QuantizedMeshTiler::collectNeighborNormals(const BordersData& bd) const
+{
+    std::map<QuantizedUV, Vector_3> neighborNormals;
+    if (!m_options.ComputeNormals)
+        return neighborNormals;
+
+    // Quantize a point in heightmap coordinates exactly as computeQuantizedMeshGeometry does with the surface vertices
+    const double maxCoord = m_options.HeighMapSamplingSteps - 1;
+    auto add = [&](const Point_3& p, const Vector_3& n) {
+        if (n == CGAL::NULL_VECTOR)
+            return; // The neighbor did not compute normals
+        const double u = std::min(std::max(remap(p.x(), 0.0, maxCoord, 0.0, 1.0), 0.0), 1.0);
+        const double v = std::min(std::max(remap(p.y(), 0.0, maxCoord, 0.0, 1.0), 0.0), 1.0);
+        neighborNormals[QuantizedUV(QuantizedMesh::remapToVertexDataValue(u, 0.0, 1.0),
+                                    QuantizedMesh::remapToVertexDataValue(v, 0.0, 1.0))] = n;
+    };
+    auto addBorder = [&](const std::vector<Point_3>& pts, const std::vector<Vector_3>& normals) {
+        for (std::size_t i = 0; i < pts.size() && i < normals.size(); i++)
+            add(pts[i], normals[i]);
+    };
+
+    addBorder(bd.tileEastVertices, bd.tileEastNormals);
+    addBorder(bd.tileWestVertices, bd.tileWestNormals);
+    addBorder(bd.tileNorthVertices, bd.tileNorthNormals);
+    addBorder(bd.tileSouthVertices, bd.tileSouthNormals);
+    if (bd.constrainNorthWestCorner) add(bd.northWestCorner, bd.northWestCornerNormal);
+    if (bd.constrainNorthEastCorner) add(bd.northEastCorner, bd.northEastCornerNormal);
+    if (bd.constrainSouthWestCorner) add(bd.southWestCorner, bd.southWestCornerNormal);
+    if (bd.constrainSouthEastCorner) add(bd.southEastCorner, bd.southEastCornerNormal);
+
+    return neighborNormals;
+}
+
+
+
+std::vector<TinCreation::Vector_3>
+QuantizedMeshTiler::computeVertexNormals(const Polyhedron& surface,
+                                         const float& minHeight, const float& maxHeight,
+                                         const qmgc::CRSBounds& tileBounds,
+                                         const std::vector<unsigned short>& quantizedVertices,
+                                         const std::map<QuantizedUV, Vector_3>& neighborNormals) const
+{
+    const std::size_t numVertices = surface.size_of_vertices();
+    std::vector<Vector_3> normals(numVertices, CGAL::NULL_VECTOR);
+    if (!m_options.ComputeNormals)
+        return normals;
+
+    // Vertices in ECEF, relative to the first one to keep the differences well conditioned,
+    // and the ellipsoid's normal ("up" direction) at each of them
+    const GeographicLib::Geocentric& earth = GeographicLib::Geocentric::WGS84();
+    std::vector<Point_3> ecefPoints;
+    std::vector<Vector_3> ups;
+    ecefPoints.reserve(numVertices);
+    ups.reserve(numVertices);
+    double refX = 0, refY = 0, refZ = 0;
+    for (Polyhedron::Point_const_iterator it = surface.points_begin(); it != surface.points_end(); ++it) {
+        double lat, lon, height;
+        uvhToGeodetic(*it, tileBounds, minHeight, maxHeight, lat, lon, height);
+        double x, y, z;
+        earth.Forward(lat, lon, height, x, y, z);
+        if (ecefPoints.empty()) {
+            refX = x; refY = y; refZ = z;
+        }
+        ecefPoints.push_back(Point_3(x - refX, y - refY, z - refZ));
+
+        const double latRad = lat * M_PI / 180.0, lonRad = lon * M_PI / 180.0;
+        ups.push_back(Vector_3(std::cos(latRad) * std::cos(lonRad),
+                               std::cos(latRad) * std::sin(lonRad),
+                               std::sin(latRad)));
     }
 
-    // Write normals to tile
-    qmTile.setVertexNormals(vertexNormals) ;
+    // Area-weighted normals: the cross product of two edges of a facet is perpendicular to it, and its length is
+    // twice the facet's area
+    std::vector<Vector_3> accum(numVertices, CGAL::NULL_VECTOR);
+    for (Polyhedron::Facet_const_iterator f = surface.facets_begin(); f != surface.facets_end(); ++f) {
+        Polyhedron::Halfedge_around_facet_const_circulator h = f->facet_begin();
+        const std::size_t i0 = std::distance(surface.vertices_begin(), h->vertex()); ++h;
+        const std::size_t i1 = std::distance(surface.vertices_begin(), h->vertex()); ++h;
+        const std::size_t i2 = std::distance(surface.vertices_begin(), h->vertex());
+        const Vector_3 n = CGAL::cross_product(ecefPoints[i1] - ecefPoints[i0], ecefPoints[i2] - ecefPoints[i0]);
+        accum[i0] = accum[i0] + n;
+        accum[i1] = accum[i1] + n;
+        accum[i2] = accum[i2] + n;
+    }
+
+    for (std::size_t i = 0; i < numVertices; i++) {
+        // Vertices shared with an already built neighbor reuse its normal
+        const QuantizedUV key(quantizedVertices[3 * i], quantizedVertices[3 * i + 1]);
+        std::map<QuantizedUV, Vector_3>::const_iterator it = neighborNormals.find(key);
+        if (it != neighborNormals.end()) {
+            normals[i] = it->second;
+            continue;
+        }
+
+        Vector_3 n = accum[i];
+        const double len = std::sqrt(n.squared_length());
+        if (len <= 0.0) {
+            n = ups[i]; // Degenerate neighborhood: use the ellipsoid's normal
+        }
+        else {
+            n = n / len;
+            // A terrain is a height field, so its normals always point away from the ellipsoid. This also makes the
+            // result independent of the orientation of the facets.
+            if (n * ups[i] < 0.0)
+                n = -n;
+        }
+        normals[i] = n;
+    }
+
+    return normals;
 }
 
 

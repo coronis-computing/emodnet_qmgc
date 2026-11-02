@@ -30,13 +30,17 @@
  * @brief Class storing a vertex on the border of a tile
  *
  * Since for the border vertices one of the coordinates can be deduced depending on which border vertex they are, we
- * just store the variable coordinate and the height measure
+ * just store the variable coordinate and the height measure. The vertex normal (in ECEF) is also kept, so that the
+ * neighboring tile can reuse it and the shading is continuous across the border.
  */
 struct BorderVertex {
     double coord ;
     double height ;
+    TinCreation::Vector_3 normal ;
 
-    BorderVertex( const double& c, const double& h ) : coord(c), height(h) {}
+    BorderVertex( const double& c, const double& h,
+                  const TinCreation::Vector_3& n = TinCreation::Vector_3(0, 0, 0) )
+            : coord(c), height(h), normal(n) {}
 
     // To be able to sort the vertices by coordinates
     bool operator < (const BorderVertex& v) const
@@ -77,10 +81,10 @@ public:
     void setWesternVertices(std::shared_ptr<std::vector<BorderVertex>> ptr) {m_westernVerticesPtr = ptr;}
     void setNorthernVertices(std::shared_ptr<std::vector<BorderVertex>> ptr) {m_northernVerticesPtr = ptr;}
     void setSouthernVertices(std::shared_ptr<std::vector<BorderVertex>> ptr) {m_southernVerticesPtr = ptr;}
-    void setNorthWestCorner(std::shared_ptr<double> ptr) {m_northWestCornerPtr = ptr;}
-    void setSouthWestCorner(std::shared_ptr<double> ptr) {m_southWestCornerPtr = ptr;}
-    void setNorthEastCorner(std::shared_ptr<double> ptr) {m_northEastCornerPtr = ptr;}
-    void setSouthEastCorner(std::shared_ptr<double> ptr) {m_southEastCornerPtr = ptr;}
+    void setNorthWestCorner(std::shared_ptr<BorderVertex> ptr) {m_northWestCornerPtr = ptr;}
+    void setSouthWestCorner(std::shared_ptr<BorderVertex> ptr) {m_southWestCornerPtr = ptr;}
+    void setNorthEastCorner(std::shared_ptr<BorderVertex> ptr) {m_northEastCornerPtr = ptr;}
+    void setSouthEastCorner(std::shared_ptr<BorderVertex> ptr) {m_southEastCornerPtr = ptr;}
 
     std::vector<BorderVertex> getEasternVertices() {
         if (m_easternVerticesPtr == nullptr)
@@ -106,30 +110,30 @@ public:
         else
             return *m_southernVerticesPtr;
     }
-    double getNorthWestCorner() {return *m_northWestCornerPtr;}
-    double getSouthWestCorner() {return *m_southWestCornerPtr;}
-    double getNorthEastCorner() {return *m_northEastCornerPtr;}
-    double getSouthEastCorner() {return *m_southEastCornerPtr;}
+    BorderVertex getNorthWestCorner() {return *m_northWestCornerPtr;}
+    BorderVertex getSouthWestCorner() {return *m_southWestCornerPtr;}
+    BorderVertex getNorthEastCorner() {return *m_northEastCornerPtr;}
+    BorderVertex getSouthEastCorner() {return *m_southEastCornerPtr;}
 
     std::shared_ptr<std::vector<BorderVertex>> getEasternVerticesPtr() {return m_easternVerticesPtr;}
     std::shared_ptr<std::vector<BorderVertex>> getWesternVerticesPtr() {return m_westernVerticesPtr;}
     std::shared_ptr<std::vector<BorderVertex>> getNorthernVerticesPtr() {return m_northernVerticesPtr;}
     std::shared_ptr<std::vector<BorderVertex>> getSouthernVerticesPtr() {return m_southernVerticesPtr;}
-    std::shared_ptr<double> getNorthWestCornerPtr() {return m_northWestCornerPtr;}
-    std::shared_ptr<double> getSouthWestCornerPtr() {return m_southWestCornerPtr;}
-    std::shared_ptr<double> getNorthEastCornerPtr() {return m_northEastCornerPtr;}
-    std::shared_ptr<double> getSouthEastCornerPtr() {return m_southEastCornerPtr;}
+    std::shared_ptr<BorderVertex> getNorthWestCornerPtr() {return m_northWestCornerPtr;}
+    std::shared_ptr<BorderVertex> getSouthWestCornerPtr() {return m_southWestCornerPtr;}
+    std::shared_ptr<BorderVertex> getNorthEastCornerPtr() {return m_northEastCornerPtr;}
+    std::shared_ptr<BorderVertex> getSouthEastCornerPtr() {return m_southEastCornerPtr;}
 
 private:
     std::shared_ptr<std::vector<BorderVertex>> m_easternVerticesPtr;
     std::shared_ptr<std::vector<BorderVertex>> m_westernVerticesPtr;
     std::shared_ptr<std::vector<BorderVertex>> m_northernVerticesPtr;
     std::shared_ptr<std::vector<BorderVertex>> m_southernVerticesPtr;
-    // Note that for corners we only store the height value!
-    std::shared_ptr<double> m_northWestCornerPtr;
-    std::shared_ptr<double> m_southWestCornerPtr;
-    std::shared_ptr<double> m_northEastCornerPtr;
-    std::shared_ptr<double> m_southEastCornerPtr;
+    // Note that for corners only the height and normal are meaningful (the coord is unused)
+    std::shared_ptr<BorderVertex> m_northWestCornerPtr;
+    std::shared_ptr<BorderVertex> m_southWestCornerPtr;
+    std::shared_ptr<BorderVertex> m_northEastCornerPtr;
+    std::shared_ptr<BorderVertex> m_southEastCornerPtr;
 };
 
 #endif //EMODNET_QMGC_TILE_BORDER_VERTICES_H

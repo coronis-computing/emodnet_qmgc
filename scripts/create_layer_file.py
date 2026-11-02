@@ -38,10 +38,15 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Creates the layer.json file required by Cesium from a TMS folder structure (quantized-mesh format assumed)")
     parser.add_argument("tms_dir", action="store", type=str, help="The root of a TMS directory in Cesium''s quantized-mesh format. The generated layer.json file will be created here")
 
+    parser.add_argument("--no-normals", dest="no_normals", action="store_true", help="Do not declare the oct-encoded per-vertex normals extension (use it when the tiles were created with qm_tiler --no-normals)")
+
     param = parser.parse_args()
 
     # Base layer.json data
     data = {"tilejson": "2.1.0", "format": "quantized-mesh-1.0", "version": "1.2.0", "scheme": "tms", "tiles": ["{z}/{x}/{y}.terrain?v={version}"], "attribution": "Terrain Data,Author: Created using the EMODnet Quantized Mesh Generator for Cesium", "projection": "EPSG:4326"}
+    if not param.no_normals:
+        # Note: Cesium only requests and decodes the normals if the extension is listed here
+        data["extensions"] = ["octvertexnormals"]
 
     # Get the zoom levels
 
