@@ -1,0 +1,77 @@
+/* Colors taken from the Coronis Computing logo (blue) and EMODnet (orange accent) */
+:root,
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #1f4e8c;
+  --md-primary-fg-color--light: #3a6fb5;
+  --md-primary-fg-color--dark: #163a69;
+  --md-accent-fg-color: #f29a38;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #163a69;
+  --md-primary-fg-color--light: #3a6fb5;
+  --md-primary-fg-color--dark: #0f2a4d;
+  --md-accent-fg-color: #f7b25e;
+}
+
+/* Header logo: the Coronis logo is almost square, give it a bit more room */
+.md-header__button.md-logo img {
+  height: 1.6rem;
+}
+
+/* Footer with the logos */
+.qmgc-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.5rem;
+}
+
+.qmgc-footer__logos {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.md-footer-meta .qmgc-footer img {
+  height: 2.6rem;
+  max-height: 2.6rem;
+  width: auto;
+  max-width: none;
+}
+
+/* The EMODnet logo has an opaque white background, frame it so it looks intentional on the dark footer */
+.md-footer-meta .qmgc-footer .qmgc-footer__emodnet {
+  background: #fff;
+  padding: 0.15rem 0.3rem;
+  border-radius: 0.2rem;
+}
+
+.qmgc-footer__text {
+  line-height: 1.6;
+}
+
+/* Logos on the home page */
+.qmgc-partners {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.qmgc-partners img {
+  height: 5rem;
+  width: auto;
+}
+
+.qmgc-partners .qmgc-partners__emodnet {
+  background: #fff;
+  padding: 0.3rem 0.5rem;
+  border-radius: 0.2rem;
+}
+
+/* Wide option tables: keep the option names on one line */
+.md-typeset table:not([class]) td:first-child code {
+  white-space: nowrap;
+}

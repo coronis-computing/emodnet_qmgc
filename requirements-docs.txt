@@ -1,0 +1,2 @@
+# Python packages needed to build the documentation (mkdocs build / mkdocs serve)
+mkdocs-material>=9.5,<10

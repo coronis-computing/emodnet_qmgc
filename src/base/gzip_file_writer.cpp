@@ -25,6 +25,7 @@ GZipFileWriter::GZipFileWriter( const std::string &filePath )
 {
     m_file = gzopen(filePath.c_str(), "wb") ;
     m_pos = 0 ;
+    m_failed = false ;
 }
 
 

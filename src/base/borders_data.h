@@ -53,6 +53,12 @@ struct BordersData
     Vector_3 northEastCornerNormal; //!< Normal of northEastCorner
     Vector_3 southWestCornerNormal; //!< Normal of southWestCorner
     Vector_3 southEastCornerNormal; //!< Normal of southEastCorner
+    // Whether each border is shared with an already built neighbor, and must thus be kept as it is. Note that the
+    // vectors above may be empty even then, if the neighbor kept no vertices on that border other than its corners.
+    bool constrainEasternBorder = false; //!< The eastern border must be maintained
+    bool constrainWesternBorder = false; //!< The western border must be maintained
+    bool constrainNorthernBorder = false; //!< The northern border must be maintained
+    bool constrainSouthernBorder = false; //!< The southern border must be maintained
 
     /**
      * @brief Default constructor
@@ -78,33 +84,6 @@ struct BordersData
             , constrainNorthEastCorner(false)
             , constrainSouthWestCorner(false)
             , constrainSouthEastCorner(false) {}
-
-    /**
-     * @brief Copy constructor
-     * @param bd BordersData structure to copy
-     */
-    BordersData(const BordersData& bd) {
-        tileEastVertices = bd.tileEastVertices;
-        tileWestVertices = bd.tileWestVertices;
-        tileNorthVertices = bd.tileNorthVertices;
-        tileSouthVertices = bd.tileSouthVertices;
-        northWestCorner = bd.northWestCorner;
-        northEastCorner = bd.northEastCorner;
-        southWestCorner = bd.southWestCorner;
-        southEastCorner = bd.southEastCorner;
-        tileEastNormals = bd.tileEastNormals;
-        tileWestNormals = bd.tileWestNormals;
-        tileNorthNormals = bd.tileNorthNormals;
-        tileSouthNormals = bd.tileSouthNormals;
-        northWestCornerNormal = bd.northWestCornerNormal;
-        northEastCornerNormal = bd.northEastCornerNormal;
-        southWestCornerNormal = bd.southWestCornerNormal;
-        southEastCornerNormal = bd.southEastCornerNormal;
-        constrainNorthWestCorner = bd.constrainNorthWestCorner;
-        constrainNorthEastCorner = bd.constrainNorthEastCorner;
-        constrainSouthWestCorner = bd.constrainSouthWestCorner;
-        constrainSouthEastCorner = bd.constrainSouthEastCorner;
-    }
 
 //    /**
 //     * @brief Check if the north-west corner is already constrained by one of the borders

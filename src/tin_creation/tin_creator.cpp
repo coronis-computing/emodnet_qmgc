@@ -90,9 +90,6 @@ Point_3 TinCreationStrategy::convertUVHToECEF(const Point_3& p) const
     double lon = this->getMinX() + ((this->getMaxX() - this->getMinX()) * p.x());
     double h = this->getMinZ() + ((this->getMaxZ() - this->getMinZ()) * p.z());
 
-    if (h < this->getMinZ() || h > this->getMaxZ())
-        std::cout << "h = " << std::endl;
-
     // Requirement of the GeographicLib::Geocentric::Forward function, and makes sense too...
     if (lat > 90)
         lat = 90;

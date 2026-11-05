@@ -81,6 +81,8 @@ public:
 //        Byte buffer[sz];
 //        memcpy( &buffer[0], &val, sz ) ;
         int bytesWritten = gzwrite( m_file, reinterpret_cast<char *>(&val), sz ) ;
+        if ( bytesWritten != sz )
+            m_failed = true ;
 
         // Update the position of the pointer in the file
         m_pos += sz ;
@@ -92,11 +94,19 @@ public:
     int getPos() { return m_pos ; }
 
     /// Closes the file
-    bool close() { return gzclose(m_file) ; }
+    /// @return true if the file was closed and all the data was written successfully
+    bool close() {
+        if ( m_file == NULL )
+            return false ;
+        const bool closed = gzclose(m_file) == Z_OK ;
+        m_file = NULL ;
+        return closed && !m_failed ;
+    }
 
 private:
     gzFile m_file ; //!< The file to read
     int m_pos ;     //!< The position on the file (byte index)
+    bool m_failed ; //!< Set when any write failed
 };
 
 

@@ -41,6 +41,12 @@ bool ZoomTilesBorderVerticesCache::getConstrainedBorderVerticesForTile(const int
     // Convert the data from the map to 3D points
     TileBorderVertices& tbv = m_mapTileToBorderVertices[tileInd];
 
+    // A border set by a neighbor must be maintained even if it holds no vertices apart from the corners
+    bd.constrainEasternBorder = tbv.hasEasternVertices();
+    bd.constrainWesternBorder = tbv.hasWesternVertices();
+    bd.constrainNorthernBorder = tbv.hasNorthernVertices();
+    bd.constrainSouthernBorder = tbv.hasSouthernVertices();
+
     // Eastern border
     std::vector<BorderVertex> borderCoords = tbv.getEasternVertices();
     for ( std::vector<BorderVertex>::iterator it = borderCoords.begin(); it != borderCoords.end(); ++it ) {

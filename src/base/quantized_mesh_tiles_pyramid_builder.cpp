@@ -51,30 +51,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramid(const int &startZoom, co
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        qmgc::TileBounds zoomBounds;
-        if (zoom == 0) {
-            zoomBounds = qmgc::TileBounds(qmgc::TileCoordinate(0,0,0), qmgc::TileCoordinate(0,1,0));
-        }
-        else {
-//            std::cout << "m_tilers[0].bounds().getLowerLeft() = " << m_tilers[0].bounds().getLowerLeft().x << ", " << m_tilers[0].bounds().getLowerLeft().y << std::endl;
-//            std::cout << "m_tilers[0].bounds().getUpperRight() = " << m_tilers[0].bounds().getUpperRight().x << ", " << m_tilers[0].bounds().getUpperRight().y << std::endl;
-            qmgc::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
-            qmgc::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
-
-            // Check latitude bounds... if the map covers up to latitude (+/-)90deg, a tile over the poles is constructed...
-            if ( m_tilers[0].grid().tileBounds(ur).getMinY() >= 90) {
-                ur = qmgc::TileCoordinate(ur.zoom, ur.x, ur.y-1);
-            }
-            else if (m_tilers[0].grid().tileBounds(ll).getMinY() <= -90) {
-                ll = qmgc::TileCoordinate(ll.zoom, ll.x, ll.y+1);
-            }
-
-//            std::cout << "Tile bounds ur = " << std::endl
-//                      << "- min = " << m_tilers[0].grid().tileBounds(ur).getMinX() << ", " << m_tilers[0].grid().tileBounds(ur).getMinY() << std::endl
-//                      << "- max = " << m_tilers[0].grid().tileBounds(ur).getMaxX() << ", " << m_tilers[0].grid().tileBounds(ur).getMaxY() << std::endl;
-
-            zoomBounds = qmgc::TileBounds(ll, ur);
-        }
+        const qmgc::TileBounds zoomBounds = tileBoundsForZoom(zoom);
 
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl;
 
@@ -163,30 +140,7 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
 
     // Process one zoom at a time, just parallelize the tile generation within a zoom
     for (int zoom = startZ; zoom >= endZ; --zoom) {
-        qmgc::TileBounds zoomBounds;
-        if (zoom == 0) {
-            zoomBounds = qmgc::TileBounds(qmgc::TileCoordinate(0,0,0), qmgc::TileCoordinate(0,1,0));
-        }
-        else {
-//            std::cout << "m_tilers[0].bounds().getLowerLeft() = " << m_tilers[0].bounds().getLowerLeft().x << ", " << m_tilers[0].bounds().getLowerLeft().y << std::endl;
-//            std::cout << "m_tilers[0].bounds().getUpperRight() = " << m_tilers[0].bounds().getUpperRight().x << ", " << m_tilers[0].bounds().getUpperRight().y << std::endl;
-            qmgc::TileCoordinate ll = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getLowerLeft(), zoom);
-            qmgc::TileCoordinate ur = m_tilers[0].grid().crsToTile(m_tilers[0].bounds().getUpperRight(), zoom);
-
-            // Check latitude bounds... if the map covers up to latitude (+/-)90deg, a tile over the poles is constructed...
-            if ( m_tilers[0].grid().tileBounds(ur).getMinY() >= 90) {
-                ur = qmgc::TileCoordinate(ur.zoom, ur.x, ur.y-1);
-            }
-            else if (m_tilers[0].grid().tileBounds(ll).getMinY() <= -90) {
-                ll = qmgc::TileCoordinate(ll.zoom, ll.x, ll.y+1);
-            }
-
-//            std::cout << "Tile bounds ur = " << std::endl
-//                      << "- min = " << m_tilers[0].grid().tileBounds(ur).getMinX() << ", " << m_tilers[0].grid().tileBounds(ur).getMinY() << std::endl
-//                      << "- max = " << m_tilers[0].grid().tileBounds(ur).getMaxX() << ", " << m_tilers[0].grid().tileBounds(ur).getMaxY() << std::endl;
-
-            zoomBounds = qmgc::TileBounds(ll, ur);
-        }
+        const qmgc::TileBounds zoomBounds = tileBoundsForZoom(zoom);
 
 
         std::cout << "--- Zoom " << zoom << " (" << zoomBounds.getMinX() << ", " << zoomBounds.getMinY() << ") --> (" << zoomBounds.getMaxX() << ", " << zoomBounds.getMaxY() << ") ---" << std::endl ;
@@ -223,13 +177,23 @@ void QuantizedMeshTilesPyramidBuilder::createTmsPyramidUnconstrainedBorders(cons
             }
 
             // Join the threads with the main thread and wait for the results to be ready
+            // Note: get(), unlike wait(), rethrows the exceptions raised while creating the tiles
             for(auto &f : futures) {
-                f.wait() ;
+                f.get() ;
             }
         }
     }
 }
 
+
+
+qmgc::TileBounds QuantizedMeshTilesPyramidBuilder::tileBoundsForZoom(const int& zoom) const
+{
+    // The root is always made of its two tiles, so that Cesium has the whole globe to start refining from
+    if (zoom == 0)
+        return qmgc::TileBounds(0, 0, 1, 0);
+    return m_tilers[0].tileBoundsForZoom(zoom);
+}
 
 
 bool QuantizedMeshTilesPyramidBuilder::getNextTileToProcess(qmgc::TilePoint& tileXY)
@@ -278,16 +242,20 @@ QuantizedMeshTilesPyramidBuilder::createTile( const qmgc::TileCoordinate& coord,
     QuantizedMeshTile terrainTile = m_tilers[numThread].createTile(coord, bdC) ;
 
     // Write the file to disk (should be thread safe, as every thread will write to a different file, but we don't risk and use a mutex)
-    m_diskWriteMutex.lock();
-    const std::string fileName = getTileFileAndCreateDirs(coord, outDir);
-    terrainTile.writeFile(fileName);
+    {
+        std::lock_guard<std::mutex> lock(m_diskWriteMutex);
+        const std::string fileName = getTileFileAndCreateDirs(coord, outDir);
+        if (fileName.empty() || !terrainTile.writeFile(fileName))
+            throw qmgc::QmgcException("Could not write the tile file " + fileName + " (tile " +
+                                      std::to_string(coord.zoom) + "/" + std::to_string(coord.x) + "/" +
+                                      std::to_string(coord.y) + ")");
 
-    // [DEBUG] Export the geometry of the tile in OFF format
-    if (m_debugMode) {
-        const std::string fileNameDebug = getDebugTileFileAndCreateDirs(coord);
-        terrainTile.exportToOFF(fileNameDebug);
+        // [DEBUG] Export the geometry of the tile in OFF format
+        if (m_debugMode) {
+            const std::string fileNameDebug = getDebugTileFileAndCreateDirs(coord);
+            terrainTile.exportToOFF(fileNameDebug);
+        }
     }
-    m_diskWriteMutex.unlock();
 
     // Return borders data
     return bdC ;

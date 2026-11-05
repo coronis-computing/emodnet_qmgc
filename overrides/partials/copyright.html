@@ -1,0 +1,18 @@
+<!-- Overrides Material's footer copyright block to add the logos of the developer and the funding project -->
+<div class="md-copyright qmgc-footer">
+  <div class="qmgc-footer__logos">
+    <a href="https://www.coronis.es" title="Coronis Computing S.L." target="_blank" rel="noopener">
+      <img class="qmgc-footer__coronis" src="{{ 'logos/coronis_logo_web.png' | url }}" alt="Coronis Computing logo">
+    </a>
+    <a href="https://emodnet.ec.europa.eu/en/bathymetry" title="EMODnet Bathymetry" target="_blank" rel="noopener">
+      <img class="qmgc-footer__emodnet" src="{{ 'logos/EMODnet_col_all_vert.gif' | url }}" alt="EMODnet logo">
+    </a>
+  </div>
+  <div class="qmgc-footer__text">
+    Developed by <a href="https://www.coronis.es" target="_blank" rel="noopener">Coronis Computing S.L.</a>
+    within the <a href="https://emodnet.ec.europa.eu/en/bathymetry" target="_blank" rel="noopener">EMODnet Bathymetry</a> project.
+    {% if config.copyright %}
+      <br>{{ config.copyright }}
+    {% endif %}
+  </div>
+</div>

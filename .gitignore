@@ -1,1 +1,60 @@
+# --- Scratch ---
 garbage/
+
+# --- CMake / build outputs ---
+build/
+build-*/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+Testing/
+_deps/
+*.ninja
+.ninja_deps
+.ninja_log
+
+# --- C/C++ compiled artifacts ---
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.gch
+*.pch
+
+# --- Documentation outputs ---
+# mkdocs build
+site/
+# doxygen (OUTPUT_DIRECTORY = docs)
+docs/html/
+docs/latex/
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# --- Editors / IDEs ---
+.vscode/
+.idea/
+# clangd index
+.cache/
+*.swp
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db

@@ -1,0 +1,75 @@
+name: Docker image
+
+# - Pull requests and pushes to devel: build only (checks that the image compiles)
+# - Pushes to master: build and push <user>/emodnet_qmgc:master
+# - Version tags (v*): build and push <user>/emodnet_qmgc:<tag> and :latest
+#
+# Required repository secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN (Docker Hub access token, read & write)
+
+on:
+  push:
+    branches: [master, devel]
+    tags: ['v*']
+  pull_request:
+    branches: [master, devel]
+  workflow_dispatch:
+
+env:
+  PUSH: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')) }}
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Image tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME || 'emodnet_qmgc' }}/emodnet_qmgc
+          flavor: latest=false
+          tags: |
+            type=ref,event=branch
+            type=ref,event=tag
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: emodnet_qmgc:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: |
+          # qm_tiler/dem2tin exit with 1 on --help, so check their output instead
+          out=$(docker run --rm emodnet_qmgc:ci qm_tiler --help 2>&1 || true)
+          grep -q "Quantized Mesh" <<< "$out" || { echo "$out"; exit 1; }
+          out=$(docker run --rm emodnet_qmgc:ci dem2tin --help 2>&1 || true)
+          grep -q "Triangulated Irregular Network" <<< "$out" || { echo "$out"; exit 1; }
+          docker run --rm emodnet_qmgc:ci simple_tiles_server.py --help > /dev/null
+          docker run --rm emodnet_qmgc:ci create_layer_file.py --help > /dev/null
+
+      - name: Push
+        if: env.PUSH == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha

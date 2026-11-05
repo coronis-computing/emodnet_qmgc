@@ -1,0 +1,119 @@
+name: Documentation
+
+# Builds the user guide (MkDocs) and the C++ API reference (Doxygen, under /api/), and publishes both to GitHub Pages.
+# - Pushes to master: build and deploy
+# - Pull requests and pushes to devel: build only (checks that the docs build without warnings)
+# - Manual runs (workflow_dispatch): build, and deploy if run on master
+#
+# One-time setup: in the repository, Settings > Pages > Build and deployment > Source: "GitHub Actions".
+
+on:
+  push:
+    branches: [master, devel]
+    paths:
+      - 'docs/**'
+      - 'overrides/**'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+      - 'doxyfile.cfg'
+      - 'src/**'
+      - 'Changelog.md'
+      - 'DeveloperNotes.md'
+      - 'Readme.md'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    branches: [master, devel]
+    paths:
+      - 'docs/**'
+      - 'overrides/**'
+      - 'mkdocs.yml'
+      - 'requirements-docs.txt'
+      - 'doxyfile.cfg'
+      - 'src/**'
+      - 'Changelog.md'
+      - 'DeveloperNotes.md'
+      - 'Readme.md'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only one deployment at a time; do not cancel a deployment in progress
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history, for the "edit this page" and revision info
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install MkDocs
+        run: pip install -r requirements-docs.txt
+
+      - name: Install Doxygen
+        run: sudo apt-get update -y && sudo apt-get install -y --no-install-recommends doxygen
+
+      - name: Build the user guide (MkDocs)
+        run: mkdocs build --strict --site-dir site
+
+      - name: Build the API reference (Doxygen)
+        run: |
+          # doxyfile.cfg is a CMake template: fill in the source dir, and override the output settings
+          sed "s|@CMAKE_CURRENT_SOURCE_DIR@|$GITHUB_WORKSPACE|g" doxyfile.cfg > "$RUNNER_TEMP/doxyfile"
+          {
+            cat "$RUNNER_TEMP/doxyfile"
+            echo "OUTPUT_DIRECTORY = $GITHUB_WORKSPACE/site"
+            echo "HTML_OUTPUT = api"
+            echo "GENERATE_LATEX = NO"
+          } | doxygen -
+          test -f site/api/index.html
+
+      - name: Keep the old API reference address working
+        run: |
+          # The Doxygen docs used to be published at /html/index.html
+          mkdir -p site/html
+          cat > site/html/index.html <<'EOF'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8">
+            <title>Redirecting...</title>
+            <meta http-equiv="refresh" content="0; url=../api/index.html">
+            <link rel="canonical" href="../api/index.html">
+          </head>
+          <body><p>The API reference has moved to <a href="../api/index.html">api/</a>.</p></body>
+          </html>
+          EOF
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -75,7 +75,7 @@ int main ( int argc, char **argv) {
              "Type of the input terrain file. Options: gdal, point-set, off")
             ("output,o", po::value<std::string>(&outputFile)->default_value("./out.off"),
              "Output OFF file with the TIN")
-            ("bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false),
+            ("bathymetry,b", po::bool_switch(&bathymetryFlag)->default_value(false),
              "Switch to consider the input DEM as containing depths instead of elevations (only for GDAL files)")
             ("clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()),
              "Clip values in the DEM above this threshold (only for GDAL files)")
@@ -246,14 +246,14 @@ int main ( int argc, char **argv) {
         maxY = heightsBand->GetYSize() - 1;
 
         // Delete the allocated memory that is not needed anymore
-        delete rasterHeights;
-        delete gdalDataset;
+        delete[] rasterHeights;
+        GDALClose(gdalDataset);
         if (verbose) cout << " done." << endl;
     } else if (inputType.compare("point-set") == 0) {
         if (verbose) cout << "Reading the input point set..." << flush;
         std::ifstream stream(inputFile.c_str());
         bool success = stream &&
-                       CGAL::read_xyz_points(stream, std::back_inserter(samples));
+                       CGAL::IO::read_XYZ(stream, std::back_inserter(samples));
         if (!success) {
             std::cerr << "\n[Error] Cannot read point set file " << inputFile << std::endl;
             return EXIT_FAILURE;

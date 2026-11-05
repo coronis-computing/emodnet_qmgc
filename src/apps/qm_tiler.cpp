@@ -36,6 +36,7 @@
 #include <ogrsf_frmts.h>
 // Project-specific
 #include "quantized_mesh_tiles_pyramid_builder.h"
+#include "layer_json.h"
 #include "zoom_tiles_scheduler.h"
 #include "ellipsoid.h"
 #include "tin_creation/tin_creator.h"
@@ -92,34 +93,34 @@ int main ( int argc, char **argv)
     int startZoom, endZoom;
     double simpWeightVolume, simpWeightBoundary, simpWeightShape, remeshingFacetAngle;
     float clippingHighValue, clippingLowValue, belowSeaLevelScaleFactor, aboveSeaLevelScaleFactor;
-    int heighMapSamplingSteps, greedyInitGridSize;
+    int heighMapSamplingSteps;
     unsigned int psWlopIterNumber, psMinFeaturePolylineSize;
     int numThreads = 0;
     bool bathymetryFlag, psPreserveSharpEdges, noNormals;
     // Parameters per zoom level
-    std::vector<int> simpStopEdgesCount;
+    std::vector<int> simpStopEdgesCount, greedyInitGridSize;
     std::vector<unsigned int> psHierMaxClusterSize;
     std::vector<double> greedyErrorTol, remeshingFacetDistance, remeshingFacetSize, remeshingEdgeSize, psBorderSimpMaxDist, psBorderSimpMaxLength, psHierMaxSurfaceVariance, psWlopRetainPercentage, psWlopRadius, psGridCellSize, psRandomRemovePercentage;
 
     po::options_description options("qm_tiler options");
     options.add_options()
             ( "help,h", "Produce help message" )
-            ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse (can be specified like this or as a positional parameter)" )
-            ( "output-dir,o", po::value<std::string>(&outDir)->default_value("terrain_tiles_qm"), "The output directory for the tiles" )
+            ( "input,i", po::value<std::string>(&inputFile), "Input terrain file to parse, in any raster format supported by GDAL (can be specified like this or as a positional parameter)" )
+            ( "output-dir,o", po::value<std::string>(&outDir)->default_value("terrain_tiles_qm"), "The output directory for the tiles. A layer.json file describing them, as required by Cesium, is also written there (merged with the one already there, if any, so that a pyramid can be built in several runs)" )
             ( "start-zoom,s", po::value<int>(&startZoom)->default_value(-1), "The zoom level to start at. This should be greater than the end zoom level (i.e., the TMS pyramid is constructed from bottom to top). If smaller than zero, defaults to the maximum zoom possible according to DEM resolution." )
             ( "end-zoom,e", po::value<int>(&endZoom)->default_value(0), "The zoom level to end at. This should be less than the start zoom level (i.e., the TMS pyramid is constructed from bottom to top)." )
-            ( "bathymetry,b", po::value<bool>(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations" )
+            ( "bathymetry,b", po::bool_switch(&bathymetryFlag)->default_value(false), "Switch to consider the input DEM as containing depths instead of elevations" )
             ( "no-normals", po::bool_switch(&noNormals)->default_value(false), "Do not add the oct-encoded per-vertex normals extension to the tiles (required by Cesium to shade the terrain)" )
             ( "samples-per-tile", po::value<int>(&heighMapSamplingSteps)->default_value(256), "Samples to take in each dimension per tile. While TMS tiles are supposed to comprise 256x256 pixels/samples, using this option we can sub-sample it to lower resolutions. Note that a smaller sampling provides a coarser base mesh that will be easier to simplify." )
             ( "clip-high", po::value<float>(&clippingHighValue)->default_value(std::numeric_limits<float>::infinity()), "Clip values in the DEM above this threshold." )
             ( "clip-low", po::value<float>(&clippingLowValue)->default_value(-std::numeric_limits<float>::infinity()), "Clip values in the DEM below this threshold." )
             ( "above-sea-level-scale-factor", po::value<float>(&aboveSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings above sea level (ignored if < 0)" )
             ( "below-sea-level-scale-factor", po::value<float>(&belowSeaLevelScaleFactor)->default_value(-1), "Scale factor to apply to the readings below sea level (ignored if < 0)" )
-            ( "num-threads", po::value<int>(&numThreads)->default_value(1), "Number of threads used (0=max_threads)" )
+            ( "num-threads", po::value<int>(&numThreads)->default_value(0), "Number of threads used (0 = as many as the available cores)" )
             ( "scheduler", po::value<string>(&schedulerType)->default_value("rowwise"), "Scheduler type. Defines the preferred tile processing order within a zoom. Note that on multithreaded executions this order may not be preserved. OPTIONS: rowwise, columnwise, chessboard, 4connected (see documentation for the meaning of each)" )
             ( "tc-strategy", po::value<string>(&tinCreationStrategy)->default_value("greedy"), "TIN creation strategy. OPTIONS: greedy, lt, delaunay, ps-hierarchy, ps-wlop, ps-grid, ps-random (see documentation for further information)" )
             ( "tc-greedy-error-tol", po::value<vector<double> >(&greedyErrorTol)->multitoken()->default_value(vector<double>{150000}), "Error tolerance for a tile to fulfill in the greedy insertion approach (*).")
-            ( "tc-greedy-init-grid-size", po::value<int>(&greedyInitGridSize)->default_value(-1), "An initial grid of this size will be used as base mesh to start the insertion process. Defaults to the 4 corners of the tile if < 0")
+            ( "tc-greedy-init-grid-size", po::value<vector<int> >(&greedyInitGridSize)->multitoken()->default_value(vector<int>{64, 32, 16, 0}), "An initial grid of this size (number of cells per side) will be used as base mesh to start the insertion process. It sets a minimum density of the mesh, needed at the shallowest zooms to preserve the curvature of the globe. The default sets a 2.8 deg grid at zooms 0, 1 and 2, and no grid for the rest. Uses only the 4 corners of the tile if <= 0, so set it to 0 to disable it (*).")
             ( "tc-greedy-error-type", po::value<string>(&greedyErrorType)->default_value("height"), "The error computation type. Available: height, 3d.")
             ( "tc-lt-stop-edges-count", po::value<vector<int> >(&simpStopEdgesCount)->multitoken()->default_value(vector<int>{500}), "Simplification stops when the number of edges is below this value (*)." )
             ( "tc-lt-weight-volume", po::value<double>(&simpWeightVolume)->default_value(0.5), "Simplification volume weight (Lindstrom-Turk cost function, see original reference)." )
@@ -134,36 +135,42 @@ int main ( int argc, char **argv)
             ( "tc-ps-border-max-length-xy-percent", po::value<vector<double> >(&psBorderSimpMaxLength)->multitoken()->default_value(std::vector<double>{20}), "Polyline simplification, maximum length of border edges when projected to the XY plane. Expressed as a percentage [0..100] (*)." )
             ( "tc-ps-preserve-sharp-edges", po::value<bool>(&psPreserveSharpEdges)->default_value(true), "Preserve and simplify the sharp edges present in the terrain (dihedral angle between incident faces > 60 degrees)." )
             ( "tc-ps-features-min-size", po::value<unsigned int>(&psMinFeaturePolylineSize)->default_value(5), "Minimum number of points in a feature polyline to be considered." )
-            ( "tc-ps-hierarchy-cluster-size", po::value<vector<unsigned int> >(&psHierMaxClusterSize)->default_value(vector<unsigned int>{1000}), "Hierarchy point set simplification maximum cluster size (*)." )
-            ( "tc-ps-hierarchy-max-surface-variance", po::value<vector<double> >(&psHierMaxSurfaceVariance)->default_value(vector<double>{1000}), "Hierarchy point set simplification maximum surface variation (*)." )
+            ( "tc-ps-hierarchy-cluster-size", po::value<vector<unsigned int> >(&psHierMaxClusterSize)->multitoken()->default_value(vector<unsigned int>{1000}), "Hierarchy point set simplification maximum cluster size (*)." )
+            ( "tc-ps-hierarchy-max-surface-variance", po::value<vector<double> >(&psHierMaxSurfaceVariance)->multitoken()->default_value(vector<double>{1000}), "Hierarchy point set simplification maximum surface variation (*)." )
             ( "tc-ps-wlop-retain-percent", po::value<vector<double> >(&psWlopRetainPercentage)->multitoken()->default_value(vector<double>{1}), "Percentage of points to retain, [0..100] (*)." )
             ( "tc-ps-wlop-radius", po::value<vector<double> >(&psWlopRadius)->multitoken()->default_value(vector<double>{10000}), "PS WLOP simplification: radius." )
             ( "tc-ps-wlop-iter-number", po::value<unsigned int>(&psWlopIterNumber)->default_value(35), "PS WLOP simplification: number of iterations." )
             ( "tc-ps-grid-cell-size", po::value<vector<double> >(&psGridCellSize)->multitoken()->default_value(vector<double>{10000}), "PS Grid simplification: Cell size (*).")
             ( "tc-ps-random-percent", po::value<vector<double> >(&psRandomRemovePercentage)->multitoken()->default_value(vector<double>{90}), "PS Random simplification: percentage to remove.")
             ( "debug-dir", po::value<string>(&debugDir)->default_value(""), "Debug directory where simplified meshes will be stored in OFF format for easing visualization.")
-            ( "config,c", po::value<string>(&configFile)->default_value(""), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options in the config file have preference over the ones specified on the command line.")
+            ( "config,c", po::value<string>(&configFile)->default_value(""), "Configuration file with a set of the options above specified in the form <option>=<value>. Note that the options specified on the command line have preference over the ones in the config file.")
     ;
     po::positional_options_description positionalOptions;
     positionalOptions.add("input", 1);
 
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).
-            options(options).positional(positionalOptions).run(), vm);
+    try {
+        po::store(po::command_line_parser(argc, argv).
+                options(options).positional(positionalOptions).run(), vm);
 
-    // Read the configuration file (if exists)
-    if(vm.count("config") > 0 && !vm["config"].as<std::string>().empty()) {
-        configFile = vm["config"].as<std::string>() ;
-        ifstream ifs(configFile);
-        if (ifs.good())
-            po::store(po::parse_config_file(ifs, options), vm);
-        else {
-            cerr << "[Error] Could not open config file " << configFile << endl;
-            return 1;
+        // Read the configuration file (if exists)
+        if(vm.count("config") > 0 && !vm["config"].as<std::string>().empty()) {
+            configFile = vm["config"].as<std::string>() ;
+            ifstream ifs(configFile);
+            if (ifs.good())
+                po::store(po::parse_config_file(ifs, options), vm);
+            else {
+                cerr << "[Error] Could not open config file " << configFile << endl;
+                return 1;
+            }
         }
-    }
 
-    po::notify(vm);
+        po::notify(vm);
+    }
+    catch (const po::error& e) {
+        cerr << "[Error] " << e.what() << " (see qm_tiler --help)" << endl;
+        return EXIT_FAILURE;
+    }
 
     if (vm.count("help")) {
         cout << "Creates the tiles of a GDAL raster terrain in Cesium's Quantized Mesh format\n\n"
@@ -173,9 +180,15 @@ int main ( int argc, char **argv)
                 "and the values for the deeper levels will be computed as value/2^zoom, for those parameters whose scale needs to be lowered at deeper levels,\n"
                 "or value*2^zoom, for those whose scale needs to grow with depth.\n\n"
              << options << "\n";
-        return 1;
+        return EXIT_SUCCESS;
     }
 
+    if (inputFile.empty()) {
+        cerr << "[Error] No input file specified (see qm_tiler --help)" << endl;
+        return EXIT_FAILURE;
+    }
+
+    std::transform(tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower);
     bool preserveBorders = tinCreationStrategy.compare("delaunay") != 0;
 
     // Setup all GDAL-supported raster drivers
@@ -185,14 +198,14 @@ int main ( int argc, char **argv)
     // --- Create as many tilers as required threads ---
     std::vector<QuantizedMeshTiler> tilers ;
     std::vector<GDALDataset *> gdalDatasets ;
-    if (numThreads == 0)
-        numThreads = std::thread::hardware_concurrency();
+    if (numThreads <= 0)
+        numThreads = std::max(1u, std::thread::hardware_concurrency()); // hardware_concurrency() may return 0 if unknown
     for ( int i = 0; i < numThreads; i++ ) {
         // Open the input dataset
         //GDALDataset *gdalDataset = (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly);
         gdalDatasets.push_back( (GDALDataset *) GDALOpen(inputFile.c_str(), GA_ReadOnly) );
         if (gdalDatasets[i] == NULL) {
-            cerr << "[Error] Could not open GDAL dataset" << endl;
+            cerr << "[Error] Could not open the GDAL dataset " << inputFile << endl;
             return EXIT_FAILURE;
         }
 
@@ -222,7 +235,6 @@ int main ( int argc, char **argv)
 
         // Setup the TIN creator
         TinCreator tinCreator;
-        std::transform(tinCreationStrategy.begin(), tinCreationStrategy.end(), tinCreationStrategy.begin(), ::tolower);
         if (tinCreationStrategy.compare("lt") == 0) {
             std::shared_ptr<TinCreationSimplificationLindstromTurkStrategy> tcLT
                     = std::make_shared<TinCreationSimplificationLindstromTurkStrategy>(simpStopEdgesCount,
@@ -239,7 +251,7 @@ int main ( int argc, char **argv)
             else if (greedyErrorType.compare("3d") == 0)
                 et = TinCreationGreedyInsertionStrategy::Error3D;
             else {
-                std::cerr << "[ERROR] Unknown error type \"" << tinCreationStrategy << "\" for the Greedy TIN creation strategy" << std::endl;
+                std::cerr << "[ERROR] Unknown error type \"" << greedyErrorType << "\" for the Greedy TIN creation strategy" << std::endl;
                 return 1;
             }
 
@@ -305,9 +317,13 @@ int main ( int argc, char **argv)
         }
 
         // Create the tiler object
-        QuantizedMeshTiler tiler(gdalDatasets[i], grid, gdalTilerOptions, qmtOptions, tinCreator);
-        // Add the tiler
-        tilers.push_back(tiler);
+        try {
+            tilers.emplace_back(gdalDatasets[i], grid, gdalTilerOptions, qmtOptions, tinCreator);
+        }
+        catch (const std::exception& e) {
+            cerr << "[ERROR] " << e.what() << endl;
+            return EXIT_FAILURE;
+        }
     }
 
     // Define the tiles' processing scheduler
@@ -341,30 +357,51 @@ int main ( int argc, char **argv)
 
     // Create the output directory, if needed
     fs::path outDirPath(outDir) ;
-    if (!fs::exists(outDirPath) && !fs::create_directory(outDirPath)) {
+    if (!fs::exists(outDirPath) && !fs::create_directories(outDirPath)) {
         cerr << "[ERROR] Cannot create the output folder" << outDirPath << endl ;
         return EXIT_FAILURE;
     }
 
     // Create the tiles
     QuantizedMeshTilesPyramidBuilder qmtpb(tilers, scheduler);
+    const int startZ = (startZoom < 0) ? tilers[0].maxZoomLevel() : startZoom;
+    const int endZ = (endZoom < 0) ? 0 : endZoom;
+    if (endZ > startZ) {
+        cerr << "[ERROR] The start zoom (" << startZ << ") must be greater than or equal to the end zoom (" << endZ
+             << "), the pyramid is built from bottom to top" << endl;
+        return EXIT_FAILURE;
+    }
     auto start = std::chrono::high_resolution_clock::now();
-    if (preserveBorders)
-        qmtpb.createTmsPyramid(startZoom, endZoom, outDir, debugDir);
-    else
-        qmtpb.createTmsPyramidUnconstrainedBorders(startZoom, endZoom, outDir, debugDir);
+    try {
+        if (preserveBorders)
+            qmtpb.createTmsPyramid(startZ, endZ, outDir, debugDir);
+        else
+            qmtpb.createTmsPyramidUnconstrainedBorders(startZ, endZ, outDir, debugDir);
+    }
+    catch (const std::exception& e) {
+        cerr << "[ERROR] " << e.what() << endl;
+        return EXIT_FAILURE;
+    }
     auto finish = std::chrono::high_resolution_clock::now();
 
     std::chrono::duration<double> elapsed = finish - start;
-    std::cout << "Requested tiles created in " << elapsed.count() << " seconds" << std::endl
-              << "Remember to create a layer.json file in the root folder! (see ""create_layer_json.py script"")"
-              << std::endl ;
+    std::cout << "Requested tiles created in " << elapsed.count() << " seconds" << std::endl;
 
-    // Delete gdalDatasets pointers;
-    for (std::vector<GDALDataset *>::iterator it = gdalDatasets.begin() ; it != gdalDatasets.end(); ++it)
-    {
-        delete (*it);
+    // Describe the tileset for Cesium
+    std::map<int, qmgc::TileBounds> tilesPerZoom;
+    for (int zoom = endZ; zoom <= startZ; zoom++)
+        tilesPerZoom[zoom] = qmtpb.tileBoundsForZoom(zoom);
+    std::string layerError;
+    if (!writeLayerJson(outDir, tilesPerZoom, tilers[0].bounds(), !noNormals, layerError)) {
+        cerr << "[ERROR] " << layerError << endl;
+        return EXIT_FAILURE;
     }
+    std::cout << "Tileset description written to " << (fs::path(outDir) / "layer.json").string() << std::endl;
+
+    // Close the datasets (the tilers only borrow them)
+    tilers.clear();
+    for (GDALDataset* ds : gdalDatasets)
+        GDALClose(ds);
 
     return EXIT_SUCCESS;
 }

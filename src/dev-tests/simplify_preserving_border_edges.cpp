@@ -39,8 +39,8 @@
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h> // Simplification function
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Midpoint_placement.h> // Midpoint placement policy
 #include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Constrained_placement.h> //Placement wrapper
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_stop_predicate.h> // Stop-condition policy based on a fixed number of desired output edges
-#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Count_ratio_stop_predicate.h> // // Stop-condition policy that stops when the number of undirected edges drops below a given % of the initial count
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_count_stop_predicate.h> // Stop-condition policy based on a fixed number of desired output edges
+#include <CGAL/Surface_mesh_simplification/Policies/Edge_collapse/Edge_count_ratio_stop_predicate.h> // // Stop-condition policy that stops when the number of undirected edges drops below a given % of the initial count
 // Boost
 #include <boost/program_options.hpp>
 
@@ -140,8 +140,8 @@ int main( int argc, char** argv )
     }
 
     // Stop predicate
-    SMS::Count_stop_predicate<Surface_mesh> stop(numOutEdges);
-//    SMS::Count_ratio_stop_predicate<Surface_mesh> stop(simpRatio) ;
+    SMS::Edge_count_stop_predicate<Surface_mesh> stop(numOutEdges);
+//    SMS::Edge_count_ratio_stop_predicate<Surface_mesh> stop(simpRatio) ;
 
     Border_is_constrained_edge_map bem(surface_mesh);
 

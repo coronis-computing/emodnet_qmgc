@@ -27,6 +27,7 @@
 #define EMODNET_QMGC_TILING_GLOBAL_GEODETIC_GRID_H
 
 #include "geo_types.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 
@@ -85,8 +86,10 @@ public:
      * finer of the two.
      */
     i_zoom zoomForResolution(double resolution) const {
-        return static_cast<i_zoom>(
-                std::ceil(std::log2(m_initialResolution) - std::log2(resolution)));
+        // The tolerance keeps a resolution matching a zoom level exactly from
+        // being rounded up to the next one by floating point noise
+        const double zoom = std::log2(m_initialResolution) - std::log2(resolution);
+        return std::max(0, static_cast<i_zoom>(std::ceil(zoom - 1e-9)));
     }
 
     /// Convert pixel coordinates at a given zoom level to CRS coordinates
@@ -134,9 +137,10 @@ public:
 
     /// Get the tiles spanned by the whole grid at a given zoom level
     TileBounds getTileExtent(i_zoom zoom) const {
-        const TileCoordinate ll = crsToTile(m_extent.getLowerLeft(), zoom);
-        const TileCoordinate ur = crsToTile(m_extent.getUpperRight(), zoom);
-        return TileBounds(ll, ur);
+        // Note: not derived from crsToTile(), which reports the upper-right
+        // corner of the extent (180E, 90N) as one tile past the last one
+        const i_tile numTilesY = static_cast<i_tile>(1) << zoom;
+        return TileBounds(0, 0, 2 * numTilesY - 1, numTilesY - 1);
     }
 
 private:

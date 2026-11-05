@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Simple Terrain Viewer</title>
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.120/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    html, body, #cesiumContainer { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="cesiumContainer"></div>
+  <script type="module">
+    // Imagery bundled with CesiumJS, so that no Cesium ion token is needed
+    const imagery = Cesium.ImageryLayer.fromProviderAsync(
+      Cesium.TileMapServiceImageryProvider.fromUrl(Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII"))
+    );
+
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      baseLayer: imagery,
+      baseLayerPicker: false,
+      geocoder: false,
+      terrainProvider: await Cesium.CesiumTerrainProvider.fromUrl("http://localhost:8000/", {
+        requestVertexNormals: true, // needed for shading (the tiles include the octvertexnormals extension)
+      }),
+    });
+
+    viewer.scene.globe.enableLighting = true;
+    viewer.scene.verticalExaggeration = 5; // enhance the relief
+  </script>
+</body>
+</html>

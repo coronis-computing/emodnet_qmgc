@@ -3,4 +3,6 @@
 
         add_subdirectory(tin_creation)
         add_subdirectory(apps)
-        add_subdirectory(dev-tests)
+        if(QMGC_BUILD_DEV_TESTS)
+            add_subdirectory(dev-tests)
+        endif()

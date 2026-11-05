@@ -84,7 +84,7 @@ QuantizedMeshTile QuantizedMeshTiler::createTile( const qmgc::TileCoordinate &co
 //    }
 
     // Simplify the surface
-    Polyhedron surface = m_tinCreator.create(uvhPts, bd.tileEastVertices.size() > 0, bd.tileWestVertices.size() > 0, bd.tileNorthVertices.size() > 0, bd.tileSouthVertices.size() > 0) ;
+    Polyhedron surface = m_tinCreator.create(uvhPts, bd.constrainEasternBorder, bd.constrainWesternBorder, bd.constrainNorthernBorder, bd.constrainSouthernBorder) ;
 
     // Important call! Sorts halfedges such that the non-border edges precede the border edges
     // Needed for the next steps to work properly
@@ -141,10 +141,11 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
 
     // Check the start of the rasters: if there are constrained vertices from neighboring tiles to maintain,
     // the western and/or the southern vertices are not touched, and thus we should parse the raster starting from index 1
-    bool constrainEastVertices = bd.tileEastVertices.size() > 0 ;
-    bool constrainWestVertices = bd.tileWestVertices.size() > 0 ;
-    bool constrainNorthVertices = bd.tileNorthVertices.size() > 0 ;
-    bool constrainSouthVertices = bd.tileSouthVertices.size() > 0 ;
+    // Note: a constrained border may come with no vertices, if the neighbor kept only the corners on it
+    bool constrainEastVertices = bd.constrainEasternBorder ;
+    bool constrainWestVertices = bd.constrainWesternBorder ;
+    bool constrainNorthVertices = bd.constrainNorthernBorder ;
+    bool constrainSouthVertices = bd.constrainSouthernBorder ;
 //    bool constrainEastVertices = false, constrainWestVertices = false, constrainNorthVertices = false, constrainSouthVertices = false;
 //    getConstraintsAtBorders(bd, constrainEastVertices, constrainWestVertices, constrainNorthVertices, constrainSouthVertices);
 
@@ -160,10 +161,10 @@ std::vector<TinCreation::Point_3> QuantizedMeshTiler::getUVHPointsFromRaster(con
             int y = m_options.HeighMapSamplingSteps - 1 - j;
 
             // Skip special cases where we are at the corners, and the height was already computed
-            if (i == 0 && y == 0 && bd.useSouthWestCorner() ||
-                i == 0 && y == m_options.HeighMapSamplingSteps-1 && bd.useNorthWestCorner() ||
-                i == m_options.HeighMapSamplingSteps-1 && y == m_options.HeighMapSamplingSteps-1 && bd.useNorthEastCorner() ||
-                i == m_options.HeighMapSamplingSteps-1 && y == 0 && bd.useSouthEastCorner())
+            if ((i == 0 && y == 0 && bd.useSouthWestCorner()) ||
+                (i == 0 && y == m_options.HeighMapSamplingSteps-1 && bd.useNorthWestCorner()) ||
+                (i == m_options.HeighMapSamplingSteps-1 && y == m_options.HeighMapSamplingSteps-1 && bd.useNorthEastCorner()) ||
+                (i == m_options.HeighMapSamplingSteps-1 && y == 0 && bd.useSouthEastCorner()))
                 continue;
 
 //            // Check the latitude value: do not include measures over 90 deg

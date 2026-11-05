@@ -1,0 +1,118 @@
+site_name: EMODnet Quantized Mesh Generator for Cesium
+site_description: Create terrain tiles in Cesium's quantized-mesh format from any GDAL raster.
+site_author: Coronis Computing S.L.
+site_url: https://coronis-computing.github.io/emodnet_qmgc/
+repo_url: https://github.com/coronis-computing/emodnet_qmgc
+repo_name: coronis-computing/emodnet_qmgc
+edit_uri: edit/master/docs/
+copyright: Copyright &copy; 2018-2026 Coronis Computing S.L. &middot; Licensed under the GNU GPL v3
+
+theme:
+  name: material
+  custom_dir: overrides
+  logo: logos/coronis_logo_web.png
+  favicon: logos/coronis_favicon_32x32.png
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  icon:
+    repo: fontawesome/brands/github
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - icon: fontawesome/solid/globe
+      link: https://www.coronis.es
+      name: Coronis Computing
+    - icon: fontawesome/solid/water
+      link: https://emodnet.ec.europa.eu/en/bathymetry
+      name: EMODnet Bathymetry
+    - icon: fontawesome/brands/github
+      link: https://github.com/coronis-computing/emodnet_qmgc
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets:
+      base_path: ["."]
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quick start: getting-started/quickstart.md
+      - Tutorial: getting-started/tutorial.md
+  - User guide:
+      - qm_tiler:
+          - Overview: user-guide/qm_tiler.md
+          - General parameters: user-guide/general-parameters.md
+          - Parameters per zoom: user-guide/parameters-per-zoom.md
+          - Tile processing & threads: user-guide/tile-processing.md
+      - TIN creation:
+          - user-guide/tin-creation/index.md
+          - Greedy insertion: user-guide/tin-creation/greedy.md
+          - Edge collapse (Lindstrom-Turk): user-guide/tin-creation/edge-collapse.md
+          - Point set simplification: user-guide/tin-creation/point-set.md
+      - Visualizing in Cesium: user-guide/cesium.md
+      - Helper scripts: user-guide/scripts.md
+      - dem2tin: user-guide/dem2tin.md
+      - Known issues: user-guide/known-issues.md
+  - Developer guide:
+      - Architecture: developer/architecture.md
+      - Developer tools: developer/dev-tools.md
+      - Implementation notes: developer/notes.md
+      - API reference (Doxygen): developer/api-reference.md
+      - Documentation: developer/documentation.md
+  - Changelog: changelog.md

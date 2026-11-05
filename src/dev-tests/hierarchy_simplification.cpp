@@ -71,7 +71,7 @@ int main(int argc, char*argv[])
     std::vector<Point_3> points;
     std::ifstream stream(inputFile);
     if (!stream ||
-        !CGAL::read_xyz_points(stream, std::back_inserter(points)))
+        !CGAL::IO::read_XYZ(stream, std::back_inserter(points)))
     {
         std::cerr << "Error: cannot read file " << inputFile << std::endl;
         return EXIT_FAILURE;

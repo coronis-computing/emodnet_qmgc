@@ -149,9 +149,29 @@ public:
         setParamsForZoom(0);
     }
 
+    /**
+     * Constructor
+     * @param rootApproxTolerance Approximation tolerances per zoom (the errors guiding the end of the process)
+     * @param initGridSamplesPerZoom Size of the fixed grid of samples to use, per zoom. It effectively defines a minimum complexity on the mesh,
+     *                               which is useful at the shallowest zooms to preserve the curvature of the globe. Values <= 0 disable the grid.
+     * @param errorType Type of error to use.
+     */
+    TinCreationGreedyInsertionStrategy(const std::vector<FT>& approxTolPerZoom,
+                                       const std::vector<int>& initGridSamplesPerZoom,
+                                       int errorType = ErrorHeight)
+            : m_initGridSamples(-1)
+            , m_errorType(errorType)
+            , m_approxTolPerZoom(approxTolPerZoom)
+            , m_initGridSamplesPerZoom(initGridSamplesPerZoom)
+    {
+        setParamsForZoom(0);
+    }
+
     void setParamsForZoom(const unsigned int& zoom)
     {
         m_approxTol = standardHandlingOfThresholdPerZoom(m_approxTolPerZoom, zoom);
+        if (!m_initGridSamplesPerZoom.empty())
+            m_initGridSamples = standardHandlingOfThresholdPerZoom(m_initGridSamplesPerZoom, zoom);
     }
 
     Polyhedron create(const std::vector<Point_3>& dataPts,
@@ -169,6 +189,7 @@ private:
     int m_errorType;
     int m_initGridSamples;
     std::vector<FT> m_approxTolPerZoom; // in metric, not squared!
+    std::vector<int> m_initGridSamplesPerZoom;
 
     // --- Private Methods ---
     /// Initialize the data structures

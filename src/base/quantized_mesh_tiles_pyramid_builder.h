@@ -99,6 +99,13 @@ public:
      */
     bool getNextTileToProcess(qmgc::TilePoint& tileXY) ;
 
+    /**
+     * Get the tiles to create at a given zoom: those spanned by the input dataset, or both root tiles at zoom 0
+     * @param zoom The zoom level
+     * @return The (inclusive) tile bounds
+     */
+    qmgc::TileBounds tileBoundsForZoom(const int& zoom) const ;
+
 private:
     // --- Attributes ---
     int m_numThreads ;

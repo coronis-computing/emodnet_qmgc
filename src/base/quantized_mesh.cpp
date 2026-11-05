@@ -366,8 +366,7 @@ bool QuantizedMesh::writeFile( const std::string &filePath ) {
         }
     }
 
-    writer.close() ;
-    return true ;
+    return writer.close() ;
 }
 
 

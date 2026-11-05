@@ -9,7 +9,8 @@ add_executable(qm_tiler qm_tiler.cpp
                         ../../3rdParty/meshoptimizer/vcacheoptimizer.cpp
                         ../../3rdParty/meshoptimizer/vfetchoptimizer.cpp
                         ../base/zoom_tiles_border_vertices_cache.cpp
-                        ../base/quantized_mesh_tiles_pyramid_builder.cpp)
+                        ../base/quantized_mesh_tiles_pyramid_builder.cpp
+                        ../base/layer_json.cpp)
 target_link_libraries(qm_tiler TinCreation
                                ${Boost_LIBRARIES}
                                ${ZLIB_LIBRARIES}

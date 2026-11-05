@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
-project("EMODnet Quantized Mesh Generator for Cesium")
+project(emodnet_qmgc
+        VERSION 0.3.0
+        DESCRIPTION "EMODnet Quantized Mesh Generator for Cesium"
+        LANGUAGES CXX)
 
 # -----------------------------------------------------------------------------
 # Extent the module path
@@ -15,6 +18,9 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build" FORCE)
   set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
+
+# The developer tools in src/dev-tests are not needed to create tiles
+option(QMGC_BUILD_DEV_TESTS "Build the developer tools in src/dev-tests" ON)
 
 # C++14 is the minimum required by CGAL 5.x
 set(CMAKE_CXX_STANDARD 14)

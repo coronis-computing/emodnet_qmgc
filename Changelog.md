@@ -2,19 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased]
+## [v0.3]
 
 ### Removed
 
 - **Dependency on Cesium Terrain Builder (libctb).** The project no longer needs libctb to build or run. The parts of it that were used now live in this repository, under `src/base/tiling/` (namespace `qmgc`).
 - `cmake/modules/FindCTB.cmake`.
 - `docker/cesium-terrain-builder/patches/GDALTiler.cpp.patch`, plus the steps in the Dockerfile that built GDAL 2.1 and libctb from source.
+- `scripts/split_large_geotiff_to_vrt.py` and `scripts/tests/emodnet_esri_ascii_to_geotiff.py`. Both were broken under Python 3, and are not needed: GDAL reads large rasters (with overviews) and ESRI ASCII grids directly, and `gdalbuildvrt` joins several files into one input.
+- `python3-gdal` from the Docker image, which only those two scripts used.
+- `scripts/qm_tiler_large_files.py`. It was Python 2 only and relied on the `ctb-tile` tool of Cesium Terrain Builder, which is no longer installed. To tile very large DEMs, build overviews of the source raster beforehand (e.g., `gdaladdo -r average <input_raster>`); GDAL uses them automatically when warping the low zoom levels.
 
 ### Added
 
+- **`qm_tiler` writes `layer.json`.** It is written to the output folder once the tiles are created, so the pyramid is ready for Cesium without running a script. The `available` ranges are exactly the tiles created. If the folder already holds a `layer.json`, the zooms it lists that were not created in this run are kept, so a pyramid can be built in several runs (e.g., `-s 12 -e 6`, then `-s 5 -e 0`).
+  - `create_layer_file.py` is kept for existing tilesets (e.g., created with older versions): it builds `layer.json` from the tiles found in the folder. Its `layer.json` only differs in `bounds`, which it takes from the outer edges of the tiles at the deepest zoom, since it does not know the extent of the data.
 - **Per-vertex normals.** Tiles now include Cesium's oct-encoded per-vertex normals extension, which Cesium needs in order to shade the terrain. The normals are area-weighted normals of the final mesh, in ECEF. The vertices on the border shared by two tiles get exactly the same normals in both: the tile built first passes them to its neighbors through the border vertices cache, so the shading has no seams at tile borders. Exception: the `delaunay` strategy, which does not share borders between tiles.
   - `create_layer_file.py` declares the extension in `layer.json` (`"extensions": ["octvertexnormals"]`), which Cesium requires before it requests and decodes the normals. The client also has to set `requestVertexNormals: true`.
   - `qm_tiler --no-normals` (and `create_layer_file.py --no-normals`) leaves the normals out.
+
+- **Per-zoom minimum mesh density for the greedy strategy.** `qm_tiler --tc-greedy-init-grid-size` now takes one value per zoom, like the other parameters marked with (*). At the shallowest zooms the greedy insertion only measures the error in height, so it left z0 tiles with a handful of vertices and the triangles cut straight through the globe. A base grid there preserves its curvature. The default is now `64 32 16 0`: a 2.8° grid at zooms 0, 1 and 2, and no grid deeper. Set it to `0` to disable it.
 
 - `src/base/tiling/geo_types.h`: `TilePoint`, `TileCoordinate`, `TileBounds`, `CRSPoint` and `CRSBounds`. These are derived from libctb's types and replace them.
 - `src/base/tiling/global_geodetic_grid.h`: `GlobalGeodeticGrid`, the TMS global-geodetic (EPSG:4326) tiling grid. It replaces `ctb::Grid` / `ctb::GlobalGeodetic`.
@@ -55,6 +62,17 @@ All notable changes to this project are documented in this file.
 - **Docker image:** now based on Ubuntu 24.04 and uses the distribution's `libgdal-dev` / `libcgal-dev` / `libgeographiclib-dev` packages.
 - **GeographicLib is required again**, for the ECEF conversions. `FindGeographicLib.cmake` now also finds GeographicLib 2.x, whose library was renamed from `Geographic` to `GeographicLib`.
 - `Readme.md` and `DeveloperNotes.md` are updated to match.
+- `qm_tiler`:
+  - `--num-threads` defaults to 0, i.e., as many threads as available cores (it was 1).
+  - `--help` exits with 0.
+  - Invalid options are reported with a message instead of aborting with an uncaught exception.
+  - Errors (unreadable raster, failed warp, failed write...) are reported with a message and exit code 1, instead of aborting with an uncaught exception.
+  - A missing input file, or a start zoom smaller than the end zoom, is reported as such.
+  - The output folder is created with its parents.
+  - `--tc-ps-hierarchy-cluster-size` and `--tc-ps-hierarchy-max-surface-variance` accept several values after a single flag, like the other per-zoom options.
+- **`--bathymetry` (`-b`) is now a flag**, in `qm_tiler`, `dem2tin` and `compute_statistics`: use `-b` instead of `-b true`. The old form is now an error, since `true` is taken as a second input file. In a configuration file, `bathymetry=true` still works.
+- New CMake option `QMGC_BUILD_DEV_TESTS` (`ON` by default) to build the developer tools in `src/dev-tests`. The Docker image sets it to `OFF`, since those tools are not installed anyway, which shortens the build.
+- `simple_tiles_server.py` is Python 3 only, serves requests from several threads (Cesium requests many tiles at once), and sends `Cache-Control: no-cache` instead of a one-year cache, so regenerated tiles show up without clearing the browser's cache.
 - The `test_check_borders` and `compute_statistics` dev-tests now handle zoom levels that have no tiles in `layer.json`.
 - `compute_statistics` shares a single tiler (and GDAL dataset) across its OpenMP threads. libctb's tiler serialized raster reads with an internal mutex, which is gone, so the read is now serialized with an OpenMP critical section instead.
 - The new `get_tile_bounds` dev-tool uses the `qmgc` grid instead of libctb.
@@ -83,7 +101,12 @@ All notable changes to this project are documented in this file.
 - **Out-of-bounds neighbouring tiles were accepted.** Tile indices are now signed. With unsigned indices, a neighbour at `x - 1 = -1` wrapped around to a huge positive value and passed the bounds checks in the schedulers and the border-vertices cache.
 - **Pixel overflow at deep zoom levels.** Pixel indices in the grid are now 64-bit. libctb's 32-bit indices overflow beyond zoom level ~22.
 - **`--tc-ps-wlop-iter-number` had no effect.** The option was read but never passed to CGAL. Default runs are unaffected, because the option's default and CGAL's default are both 35.
-
-### Known issues
-
-- `scripts/qm_tiler_large_files.py` is Python 2 only, so it does not run in the Docker image. It also still calls the `ctb-tile` command-line tool to produce intermediate GeoTIFF tiles. That tool is no longer installed in the Docker image, so the script only works where Cesium Terrain Builder is installed separately.
+- **Datasets south of the equator made `qm_tiler` abort.** When computing the tiles of each zoom, the southernmost row (`y = 0`) was always dropped, as if it were a tile over the south pole. At zoom 1, where row 0 covers the whole southern hemisphere, a dataset south of the equator ended up with an empty range of tiles, and `qm_tiler` aborted with *"The minimum Y value is greater than the maximum Y value"*. For datasets crossing the equator, the southern tiles of zoom 1 were missing.
+- **Tiles outside the dataset or past 180°E.** A dataset whose east or north edge lies exactly on a tile edge got an extra column or row of tiles entirely outside it, and one reaching 180°E got tiles with an `x` index past the last one of the grid. The range of tiles per zoom is now computed in a single place (`RasterTiler::tileBoundsForZoom`) and clamped to the grid. `GlobalGeodeticGrid::getTileExtent` had the same off-by-one.
+- **Borders shared with a neighbor that kept only its corners.** When the tile built first kept no vertices on a shared border other than the two corners, the cache passed an empty list of vertices, and the second tile took the border as unconstrained. It could then add vertices on it, leaving a crack between both tiles. Whether a border is constrained is now an explicit flag in `BordersData`.
+- **Failed tile writes went unnoticed.** `GZipFileWriter::close()` returned the result of `gzclose()` as a `bool`, so success read as `false` and failure as `true`, and `QuantizedMesh::writeFile` ignored it anyway. Write errors (e.g., a full disk) are now detected and stop `qm_tiler` with an error.
+- **Errors in the `delaunay` strategy were silently ignored.** Its tile loop waited for the worker threads without collecting their results, so a tile that failed was simply missing from the output.
+- `qm_tiler` reported an unknown `--tc-greedy-error-type` by printing the TIN strategy's name instead of the wrong value.
+- `qm_tiler --help` stated that the options in the configuration file override the ones on the command line. It is the other way around.
+- `GlobalGeodeticGrid::zoomForResolution` could round a resolution matching a zoom level exactly up to the next zoom, due to floating point noise.
+- Removed a debug print that wrote a bare `h = ` line to the console.

@@ -203,11 +203,28 @@ public:
     /// Get the deepest zoom level justified by the source dataset's resolution
     i_zoom maxZoomLevel() const { return m_grid.zoomForResolution(m_resolution); }
 
-    /// Get the tiles spanned by the source dataset at a given zoom level
+    /**
+     * @brief Get the tiles spanned by the source dataset at a given zoom level
+     *
+     * The result is clamped to the tiles that exist in the grid at that zoom.
+     * Also, a dataset whose upper/right edge lies exactly on a tile edge does
+     * not span the tile beyond it (GlobalGeodeticGrid::crsToTile reports such a
+     * coordinate as belonging to the *next* tile).
+     */
     TileBounds tileBoundsForZoom(i_zoom zoom) const {
-        const TileCoordinate ll = m_grid.crsToTile(m_bounds.getLowerLeft(), zoom);
-        const TileCoordinate ur = m_grid.crsToTile(m_bounds.getUpperRight(), zoom);
-        return TileBounds(ll, ur);
+        TileCoordinate ll = m_grid.crsToTile(m_bounds.getLowerLeft(), zoom);
+        TileCoordinate ur = m_grid.crsToTile(m_bounds.getUpperRight(), zoom);
+        if (ur.x > ll.x && m_grid.tileBounds(ur).getMinX() >= m_bounds.getMaxX())
+            ur.x--;
+        if (ur.y > ll.y && m_grid.tileBounds(ur).getMinY() >= m_bounds.getMaxY())
+            ur.y--;
+
+        const TileBounds gridTiles = m_grid.getTileExtent(zoom);
+        auto clampTo = [](i_tile v, i_tile lo, i_tile hi) { return v < lo ? lo : (v > hi ? hi : v); };
+        return TileBounds(clampTo(ll.x, gridTiles.getMinX(), gridTiles.getMaxX()),
+                          clampTo(ll.y, gridTiles.getMinY(), gridTiles.getMaxY()),
+                          clampTo(ur.x, gridTiles.getMinX(), gridTiles.getMaxX()),
+                          clampTo(ur.y, gridTiles.getMinY(), gridTiles.getMaxY()));
     }
 
     /// Get the source dataset (borrowed)
